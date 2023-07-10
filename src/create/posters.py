@@ -4,7 +4,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 class PosterImageCreator:
 
-    def __init__(self, width, height, start, end, angle, font_path):
+    def __init__(self, width: int, height: int, start: tuple, end: tuple, angle: int, font_path: str):
         self.width = width
         self.height = height
         self.start = start

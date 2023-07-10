@@ -46,7 +46,11 @@ logs/
 
 /src/resources/Series/*
 /src/resources/Movies/*
+/src/resources/Movie/*
 /src/resources/Actors/*
 /src/resources/Collections/*
 
 /config/*
+
+config/*
+

@@ -4,16 +4,14 @@ from mimetypes import guess_type
 import base64
 import time
 
+from src.create.posters import PosterImageCreator
+
+
 class Emby:
     def __init__(self, server_url, username, api_key):
         self.server_url = server_url
         self.username = username
         self.api_key = api_key
-        # self.client = client
-        # self.device_name = device_name
-        # self.device_id = device_id
-        # self.client_version = client_version
-        # self.language = language
         self.headers = {'X-Emby-Token': api_key}
 
         self.user = self.get_user_by_username(username)
@@ -52,28 +50,33 @@ class Emby:
         raise Exception(f"Failed to make the request after {retries} attempts.")
 
         # Modify your existing methods to use the new _get_request_with_retry and _post_request_with_retry methods
+
     def _get_request(self, url):
         return self._get_request_with_retry(url)
 
     def _post_request(self, url, data=None, files=None):
         return self._post_request_with_retry(url, data=data, files=files)
 
+    def create_collection(self, name, type, sort_name=None):
 
-    def create_collection(self, name,type):
-
-        # Get first items id of the correct type (so the collection is sorted right)
-        initial_item_id = self.get_items_by_type(type,1)[0]['Id']
-
+        # Get the first items id of the correct type (so the collection is sorted right)
+        initial_item_id = self.get_items_by_type(type, 1)[0]['Id']
 
         url = self._build_url('Collections', {'Name': name, 'Ids': initial_item_id, 'userId': self.user_id})
         response = self._post_request(url)
         collection = response.json()
 
+        # TODO: Add sort name if other than None
+
         print(f"Created collection: {collection['Name']} ({collection['Id']})")
 
+        if sort_name:
+            self.update_item_sort_name(collection['Id'], sort_name)
+
         # Remove the initial item from the collection,
-        # since we don't want it and I had errors trying
+        # since we don't want the item and I had errors trying
         # to create a collection without an initial item.
+
         try:
             self.delete_item_from_collection(collection['Id'], initial_item_id)
         except:
@@ -81,11 +84,19 @@ class Emby:
 
         return collection
 
+    def update_item_sort_name(self, item_id, sort_name):
+        emby_watchlist_metadata = self.get_item_metadata(item_id)
+
+        emby_watchlist_metadata['ForcedSortName'] = sort_name
+        emby_watchlist_metadata['SortName'] = sort_name
+        emby_watchlist_metadata['LockedFields'] = ['SortName']
+
+        self.update_item_metadata(emby_watchlist_metadata)
+
     def create_playlist(self, name, type):
 
-        # Get first items id of the correct type (so the collection is sorted right)
-        initial_item_id = self.get_items_by_type(type,1)[0]['Id']
-
+        # Get the first items id of the correct type (so the collection is sorted right)
+        initial_item_id = self.get_items_by_type(type, 1)[0]['Id']
 
         url = self._build_url('Playlists', {'Name': name, 'userId': self.user_id})
         response = self._post_request(url)
@@ -106,15 +117,14 @@ class Emby:
         return response.get('Items', [])
 
     def get_playlists(self):
-       url = self._build_url(f'users/{self.user_id}/items',
-                                  {'Fields': 'ChildCount,RecursiveItemCount',
-                                   'Recursive': 'true',
-                                   'SortBy': 'SortName',
-                                   'SortOrder': 'Ascending',
-                                   'IncludeItemTypes': 'playlist'})
-       response = self._get_request(url)
-       return response.get('Items', [])
-
+        url = self._build_url(f'users/{self.user_id}/items',
+                              {'Fields': 'ChildCount,RecursiveItemCount',
+                               'Recursive': 'true',
+                               'SortBy': 'SortName',
+                               'SortOrder': 'Ascending',
+                               'IncludeItemTypes': 'playlist'})
+        response = self._get_request(url)
+        return response.get('Items', [])
 
     # def remove_from_collection(self, collection_id, item_id):
     #    # http://192.168.0.120:8096/emby/Collections/157581/Items/Delete?Ids=179&X-Emby-Client=Emby Web&X-Emby-Device-Name=Firefox&X-Emby-Device-Id=8bb5b233-c701-4fa9-a948-3b21af5b93d0&X-Emby-Client-Version=4.7.13.0&X-Emby-Token=fd8eb5214cd74e01a3ee152207ff3b4d&X-Emby-Language=en-us
@@ -135,13 +145,14 @@ class Emby:
         url = self._build_url(f'users/{self.user_id}/items/{collection_id}/children')
         response = self._get_request(url)
         return response.get('Items', [])
+
     def get_seasons(self, series_id):
         print(f"Getting seasons for series {series_id}")
         url = self._build_url(f'Shows/{series_id}/Seasons')
         response = self._get_request(url)
         return response.get('Items', [])
 
-    def get_episodes(self,  series_id, season_id):
+    def get_episodes(self, series_id, season_id):
         print(f"Getting episodes for series {series_id} season {season_id}")
         url = self._build_url(f'Shows/{series_id}/Episodes', {'SeasonId': season_id})
         response = self._get_request(url)
@@ -153,6 +164,7 @@ class Emby:
             if collection.get('Name') == collection_name:
                 return True
         return False
+
     def get_collection_poster(self, collection_id):
         url = self._build_url(f'Items/{collection_id}/Images/Primary')
         response = requests.get(url, headers=self.headers)
@@ -178,7 +190,6 @@ class Emby:
         response = self._post_request(url)
         return response
 
-
     def delete_collection(self, collection_id):
         return self.delete_item(collection_id)
 
@@ -186,16 +197,16 @@ class Emby:
         return self.delete_item(playlist_id)
 
     def delete_item(self, item_id):
-         url = self._build_url(f'Items/{item_id}/Delete')
-         response = self._post_request(url)
-         return response
+        url = self._build_url(f'Items/{item_id}/Delete')
+        response = self._post_request(url)
+        return response
 
     def delete_all_collections(self):
         collections = self.get_collections()
         for collection in collections:
             # Skip this ALWAYS
             # TODO: implement some sort of "skip" list
-            if(collection.get('Name') == 'Watchlist'):
+            if (collection.get('Name') == 'Watchlist'):
                 continue
 
             print(f"Deleting collection {collection.get('Name')} ({collection.get('Id')})")
@@ -241,7 +252,7 @@ class Emby:
         response = self._get_request(url)
         return response.get('Items', [])
 
-    def upload_image(self, id, image_path, imgType ='Primary'):
+    def upload_image(self, id, image_path, imgType='Primary'):
         mime_type = guess_type(image_path)[0]
         with open(image_path, 'rb') as f:
             image_data = f.read()
@@ -266,14 +277,13 @@ class Emby:
         users = self.get_users()
         return next((user for user in users if user.get('Name') == username), None)
 
-
     def set_favorite(self, item_id):
         url = self._build_url(f'Users/{self.user_id}/FavoriteItems/{item_id}')
         response = self._post_request(url)
         return response
 
     def get_users(self):
-        #https://emby.faiyts.media/emby/users/public?X-Emby-Client=Emby%20Web&X-Emby-Device-Name=Google%20Chrome%20Linux&X-Emby-Device-Id=ea453a6f-4ba4-4901-a3c5-dd875239c834&X-Emby-Client-Version=4.7.13.0&X-Emby-Language=en-us
+        # https://emby.faiyts.media/emby/users/public?X-Emby-Client=Emby%20Web&X-Emby-Device-Name=Google%20Chrome%20Linux&X-Emby-Device-Id=ea453a6f-4ba4-4901-a3c5-dd875239c834&X-Emby-Client-Version=4.7.13.0&X-Emby-Language=en-us
         url = self._build_url(f'Users/Public')
         response = self._get_request(url)
         return response
@@ -294,13 +304,12 @@ class Emby:
         response = self._get_request(url)
         return response.get('Items', [])
 
-#	http://192.168.0.120:8096/emby/Sessions/0378c315c1302972182a1c00cf6bf265/Playing?ItemIds=12910&PlayCommand=PlayNow&X-Emby-Client=Emby Web&X-Emby-Device-Name=Firefox&X-Emby-Device-Id=8bb5b233-c701-4fa9-a948-3b21af5b93d0&X-Emby-Client-Version=4.7.13.0&X-Emby-Token=fd8eb5214cd74e01a3ee152207ff3b4d&X-Emby-Language=en-us
+    #	http://192.168.0.120:8096/emby/Sessions/0378c315c1302972182a1c00cf6bf265/Playing?ItemIds=12910&PlayCommand=PlayNow&X-Emby-Client=Emby Web&X-Emby-Device-Name=Firefox&X-Emby-Device-Id=8bb5b233-c701-4fa9-a948-3b21af5b93d0&X-Emby-Client-Version=4.7.13.0&X-Emby-Token=fd8eb5214cd74e01a3ee152207ff3b4d&X-Emby-Language=en-us
 
     def get_sessions(self):
         url = self._build_url(f'Sessions')
         response = self._get_request(url)
         return response
-
 
     def play_item(self, session_id, item_id):
         url = self._build_url(f'Sessions/{session_id}/Playing', {'ItemIds': item_id, 'PlayCommand': 'PlayNow'})
@@ -311,3 +320,16 @@ class Emby:
         url = self._build_url(f'Sessions/{session_id}/Message', {'Text': message})
         response = self._post_request(url)
         return response
+
+    @staticmethod
+    def create_poster(path, text, root_path, icon_path=f'/resources/tv.png'):
+        width, height = 400, 600
+        start, end = (233, 0, 4), (88, 76, 76)
+        angle = -160
+        font_path = f'{root_path}/resources/OpenSans-SemiBold.ttf'  # path to your .ttf font file
+
+        gradient_creator = PosterImageCreator(width, height, start, end, angle, font_path)
+        img = gradient_creator.create_gradient().add_icon_with_text(icon_path, text)
+
+        img.save(path)
+        return img
