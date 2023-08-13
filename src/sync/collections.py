@@ -1,5 +1,7 @@
+from src.create.list_builder import ListBuilder
 from src.create.posters import PosterImageCreator
 from src.clients.plex import PlexManager
+
 import logging
 import os
 
@@ -10,7 +12,35 @@ print('Deleting all collections. May take some time.')
 # emby.delete_all_collections()
 print('All collections deleted.')
 
-def sync_collection(config):
+
+# This method will sync the collections from the config file to all media servers
+# It will use the list builder to build different collections listed in the config file
+def sync_collections(config):
+
+    # get the collections from the config
+    collections = config.collections
+
+    #   loop over the collections
+    for name, details in collections['lists'].items():
+        # print the collection info
+        print(f'Processing collection {name}')
+
+        list = ListBuilder(config, list=details)
+        list.build()
+
+
+    # Get the collections in the primary server
+    #   loop over the collections
+    #       if the collection exists in the secondary server
+    #           if the collection is different
+    #               update the collection
+    #           else
+    #               do nothing
+    #       else
+    #           create the collection
+
+
+def emby_to_plex_sync_collection(config):
     root_path = config.get_root_path()
     config_path = config.get_config_path()
 
@@ -40,18 +70,22 @@ def sync_collection(config):
 
             # Create movie collections. If a collection with that name already exists, we should suffix our collection
             # with the library name to avoid duplicates
-            is_existing_collection = emby.does_collection_exist(plex_collection.title)
+            is_existing_collection = emby.does_collection_exist(plex_collection.title + f' ({library["type"]})')
 
             poster_path = f'{config_path}/resources/collections/{plex_collection.title}.jpg'
 
-            poster_response = PlexManager.save_plex_poster(poster_url, poster_path)
+            poster_response = PlexManager.save_poster(poster_url, poster_path)
 
             emby_collection = None
 
             if is_existing_collection:
-                emby_collection = emby.create_collection(f'{plex_collection.title} ({library["type"]})', library['type'])
-            else:
-                emby_collection = emby.create_collection(plex_collection.title, library['type'])
+                print(f'Collection {plex_collection.title} already exists. Updating.')
+                try:
+                    emby.delete_collection_by_name(plex_collection.title)
+                except:
+                    print('Error deleting collection')
+
+            emby_collection = emby.create_collection(f'{plex_collection.title} ({library["type"]})', library['type'])
 
             # Upload plex poster
             try:
@@ -96,7 +130,7 @@ def sync_collection(config):
 
                         # TODO: add validation for movie poster save?
                         poster_path = f'{root_path}/resources/{library["type"]}/{media.ratingKey}.jpg'
-                        movie_poster = save_plex_poster(poster_url, poster_path)
+                        PlexManager.save_poster(poster_url, poster_path)
 
                         # Upload plex poster
 
@@ -105,7 +139,7 @@ def sync_collection(config):
                             emby.upload_image(emby_movie['Id'], poster_path)
                         else:
                             print('Poster does not exist. Lets make one I guess')
-                            create_emby_poster(poster_path, media.title, root_path)
+                            emby.create_emby_poster(poster_path, media.title, root_path)
                             emby.upload_image(emby_movie['Id'], poster_path)
 
                         # TODO: if poster is not found in plex, create a poster based on the name of the collection

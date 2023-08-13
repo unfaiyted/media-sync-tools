@@ -1,20 +1,20 @@
-# Use a base image with Python and Uvicorn pre-installed
-FROM tiangolo/uvicorn-gunicorn-fastapi:python3.8
+FROM python:3.10
 
-# Set the working directory inside the container
-WORKDIR /app
+WORKDIR /
 
-# Copy the requirements.txt file to the container
-COPY requirements.txt .
+COPY ./requirements.txt /code/requirements.txt
 
-# Install the Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
+COPY ./src ./src
 
-# Copy the entire application directory to the container
-COPY . .
+# todo: could disable the reload flag for production
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "80","--reload"]
 
-# Expose the port that the application will run on
-EXPOSE 8000
 
-# Set the entrypoint command to run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+
+
+
+
+
+

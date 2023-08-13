@@ -33,10 +33,10 @@ def sync_watchlist(config):
     angle = -160
     font_path = './resources/OpenSans-SemiBold.ttf'  # path to your .ttf font file
 
-    gradient_creator = PosterImageCreator(width, height, start, end, angle, font_path)
+    gradient_creator = PosterImageCreator(width, height, "maroon-darkmaroon", angle, font_path)
     img = gradient_creator.create_gradient().add_icon_with_text('./resources/to-do-list.png', 'Watchlist')
 
-    img.save('./watchlist.png')
+    img.save('./watchlist.png', quality=95)
 
     emby.upload_image(emby_watchlist['Id'], 'watchlist.png')
 

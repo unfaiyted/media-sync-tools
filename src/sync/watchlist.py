@@ -21,7 +21,7 @@ def sync_watchlist(config):
     print(emby_watchlist)
 
     # Create poster
-    icon_path = f'{root_dir}/resources/to-do-list.png'
+    icon_path = f'{root_dir}/resources/eye.png'
 
     emby.create_poster(f'{config_path}/watchlist.png', watchlist_collection_name, root_dir, icon_path)
     emby.upload_image(emby_watchlist['Id'], f'{config_path}/watchlist.png')
@@ -34,7 +34,7 @@ def sync_watchlist(config):
         # Try to find the same media item in Em
         emby_media_items = emby.search(media.title, emby_type)
 
-        #TODO: If the media is a series I would like to add the series Id and not the episodes
+        # TODO: If the media is a series I would like to add the series Id and not the episodes
         for emby_media in emby_media_items:
             try:
                 if emby_media['ProductionYear'] == media.year:

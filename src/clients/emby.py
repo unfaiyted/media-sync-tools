@@ -1,3 +1,6 @@
+import random
+from PIL import Image
+from io import BytesIO
 import requests
 from requests.exceptions import Timeout
 from mimetypes import guess_type
@@ -5,6 +8,42 @@ import base64
 import time
 
 from src.create.posters import PosterImageCreator
+
+from enum import Enum
+
+class EmbyLibraryItemType(Enum):
+    AUDIO = "Audio"
+    VIDEO = "Video"
+    FOLDER = "Folder"
+    EPISODE = "Episode"
+    MOVIE = "Movie"
+    TRAILER = "Trailer"
+    ADULT_VIDEO = "AdultVideo"
+    MUSIC_VIDEO = "MusicVideo"
+    BOX_SET = "BoxSet"
+    MUSIC_ALBUM = "MusicAlbum"
+    MUSIC_ARTIST = "MusicArtist"
+    SEASON = "Season"
+    SERIES = "Series"
+    GAME = "Game"
+    GAME_SYSTEM = "GameSystem"
+    BOOK = "Book"
+
+
+
+class EmbyImageType(Enum):
+    PRIMARY = "Primary"
+    ART = "Art"
+    BACKDROP = "Backdrop"
+    BANNER = "Banner"
+    LOGO = "Logo"
+    THUMB = "Thumb"
+    DISC = "Disc"
+    BOX = "Box"
+    SCREENSHOT = "Screenshot"
+    MENU = "Menu"
+    CHAPTER = "Chapter"
+
 
 
 class Emby:
@@ -23,19 +62,21 @@ class Emby:
             url += '&' + '&'.join(f'{key}={value}' for key, value in params.items())
         return url
 
-    def _get_request_with_retry(self, url, retries=5, delay=1):
+    def _get_request_with_retry(self, url, retries=5, delay=1, stream=False):
         for attempt in range(retries):
             try:
-                response = requests.get(url, headers=self.headers, timeout=60)
+                response = requests.get(url, headers=self.headers, timeout=60, stream=stream)
                 response.raise_for_status()  # Raise an exception for non-2xx status codes
-                return response.json()
+                if stream is True:
+                    return response
+                else:
+                    return response.json()
             except (Timeout, requests.exceptions.RequestException, requests.exceptions.ReadTimeout) as e:
                 print(f"Request failed: {e}")
                 if attempt < retries - 1:
                     print(f"Retrying in {delay} seconds...")
                     time.sleep(delay)
         raise Exception(f"Failed to make the request after {retries} attempts.")
-
     def _post_request_with_retry(self, url, data=None, files=None, retries=5, delay=1):
         for attempt in range(retries):
             try:
@@ -51,13 +92,13 @@ class Emby:
 
         # Modify your existing methods to use the new _get_request_with_retry and _post_request_with_retry methods
 
-    def _get_request(self, url):
-        return self._get_request_with_retry(url)
+    def _get_request(self, url, stream=False):
+        return self._get_request_with_retry(url, stream=stream)
 
     def _post_request(self, url, data=None, files=None):
         return self._post_request_with_retry(url, data=data, files=files)
 
-    def create_collection(self, name, type, sort_name=None):
+    def create_collection(self, name, type, sort_name=None, poster=None):
 
         # Get the first items id of the correct type (so the collection is sorted right)
         initial_item_id = self.get_items_by_type(type, 1)[0]['Id']
@@ -84,16 +125,7 @@ class Emby:
 
         return collection
 
-    def update_item_sort_name(self, item_id, sort_name):
-        emby_watchlist_metadata = self.get_item_metadata(item_id)
-
-        emby_watchlist_metadata['ForcedSortName'] = sort_name
-        emby_watchlist_metadata['SortName'] = sort_name
-        emby_watchlist_metadata['LockedFields'] = ['SortName']
-
-        self.update_item_metadata(emby_watchlist_metadata)
-
-    def create_playlist(self, name, type):
+    def create_playlist(self, name, type, sort_name=None, poster=None):
 
         # Get the first items id of the correct type (so the collection is sorted right)
         initial_item_id = self.get_items_by_type(type, 1)[0]['Id']
@@ -105,6 +137,16 @@ class Emby:
         print(f"Created playlist: {playlist['Name']} ({playlist['Id']})")
 
         return playlist
+
+
+    def update_item_sort_name(self, item_id, sort_name):
+        emby_watchlist_metadata = self.get_item_metadata(item_id)
+
+        emby_watchlist_metadata['ForcedSortName'] = sort_name
+        emby_watchlist_metadata['SortName'] = sort_name
+        emby_watchlist_metadata['LockedFields'] = ['SortName']
+
+        self.update_item_metadata(emby_watchlist_metadata)
 
     def get_collections(self):
         url = self._build_url(f'users/{self.user_id}/items',
@@ -126,14 +168,11 @@ class Emby:
         response = self._get_request(url)
         return response.get('Items', [])
 
-    # def remove_from_collection(self, collection_id, item_id):
-    #    # http://192.168.0.120:8096/emby/Collections/157581/Items/Delete?Ids=179&X-Emby-Client=Emby Web&X-Emby-Device-Name=Firefox&X-Emby-Device-Id=8bb5b233-c701-4fa9-a948-3b21af5b93d0&X-Emby-Client-Version=4.7.13.0&X-Emby-Token=fd8eb5214cd74e01a3ee152207ff3b4d&X-Emby-Language=en-us
-    #     url = self._build_url(f'Collections/{collection_id}/Items/Delete?Ids={item_id}')
-    #     response = self._post_request(url)
-    #     return response
-
-    def get_collection_by_name(self, name):
+    def get_collection_by_name(self, name, item_type=None):
         collections = self.get_collections()
+
+        if item_type is not None:
+            return next((item for item in collections if item.get('Type') == name and item.get('Name') == name), None)
         return next((item for item in collections if item.get('Name') == name), None)
 
     def get_collection(self, collection_id):
@@ -144,7 +183,9 @@ class Emby:
     def get_collection_items(self, collection_id):
         url = self._build_url(f'users/{self.user_id}/items/{collection_id}/children')
         response = self._get_request(url)
-        return response.get('Items', [])
+        items = response.get('Items', [])
+        total_count = response.get('TotalRecordCount', 0)
+        return items, total_count
 
     def get_seasons(self, series_id):
         print(f"Getting seasons for series {series_id}")
@@ -190,6 +231,20 @@ class Emby:
         response = self._post_request(url)
         return response
 
+
+    def get_item_image(self, item_id):
+        url = self._build_url(f'Items/{item_id}/Images/Primary')
+        print(url)
+        response = self._get_request(url, stream=True)
+
+        if response.status_code == 200:
+            # Assuming _get_request is using the requests library.
+            # Use BytesIO to convert the response content into a file-like object so it can be opened by PIL
+            img = Image.open(BytesIO(response.content))
+            return img
+        else:
+            raise Exception(f"Failed to fetch the image for collection {item_id}. Status code: {response.status_code}")
+
     def delete_collection(self, collection_id):
         return self.delete_item(collection_id)
 
@@ -216,7 +271,7 @@ class Emby:
     def delete_collection_by_name(self, collection_name):
         collection = self.get_collection_by_name(collection_name)
         if collection:
-            self.delete_collection(collection.get('Id'))
+            self.delete_item(collection.get('Id'))
         return
 
     def add_search_results_to_collection(self, collection_id, results):
@@ -250,7 +305,10 @@ class Emby:
     def get_items_in_collection(self, collection_id):
         url = self._build_url(f'users/{self.user_id}/items', {'Parentid': collection_id})
         response = self._get_request(url)
-        return response.get('Items', [])
+        items = response.get('Items', [])
+        return items, len(items)
+
+
 
     def upload_image(self, id, image_path, imgType='Primary'):
         mime_type = guess_type(image_path)[0]
@@ -321,15 +379,49 @@ class Emby:
         response = self._post_request(url)
         return response
 
+    def get_movies(self, limit=50, is_played=None, is_favorite=None):
+        return self.get_media(limit, "Movie", is_played, is_favorite)
+
+    def get_media(self, limit=50, item_types="Movie", genre=None, is_played=None, is_favorite=None, external_id=None):
+
+        params = {'Recursive': 'true', 'IncludeItemTypes': item_types, "Limit": limit}
+
+        if is_played is not None:
+            params['IsPlayed'] = str(is_played)
+        if is_favorite is not None:
+            params['IsFavorite'] = str(is_favorite)
+        if genre is not None:
+            params['Genres'] = genre
+        if external_id is not None:
+            params['AnyProviderIdEquals'] = external_id
+
+        url = self._build_url(f'Users/{self.user_id}/Items', params)
+        response = self._get_request(url)
+        items = response.get('Items', [])
+        random.shuffle(items)
+        return items[:limit]
+
+    def get_liked_movies(self, limit=50):
+        return self.get_movies(limit, is_favorite=True)
+
+    def get_unwatched_movies(self, limit=50):
+        return self.get_movies(limit, is_played=False)
+
+    def get_watched_series(self, limit=50):
+        return self.get_media(limit, "Series", is_played=True)
+
+    def get_movies_by_genre(self, limit=50, genre="Action"):
+        return self.get_media(limit, "Movie", genre=genre)
+
     @staticmethod
-    def create_poster(path, text, root_path, icon_path=f'/resources/tv.png'):
+    def create_poster(path, text, root_path, icon_path=f'/resources/icons/tv.png'):
         width, height = 400, 600
         start, end = (233, 0, 4), (88, 76, 76)
         angle = -160
-        font_path = f'{root_path}/resources/OpenSans-SemiBold.ttf'  # path to your .ttf font file
+        font_path = f'{root_path}/resources/fonts/OpenSans-SemiBold.ttf'  # path to your .ttf font file
 
-        gradient_creator = PosterImageCreator(width, height, start, end, angle, font_path)
-        img = gradient_creator.create_gradient().add_icon_with_text(icon_path, text)
+        image_creator = PosterImageCreator(width, height, "cyan-teal", angle, font_path)
+        img = image_creator.create_gradient().add_icon_with_text(icon_path, text)
 
-        img.save(path)
+        img.save(path, quality=95)
         return img
