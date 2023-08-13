@@ -1,22 +1,29 @@
+
 <template>
-    <div id="app">
-<!--        <PlaylistEditor @save="savePlaylistData" />-->
-        <PosterImage />
-        <EndpointTrigger />
+  <div id="app" class="bg-gray-200 min-h-screen">
+    <Header />
+    <div class="flex">
+      <Sidebar />
+      <router-view class="flex-grow bg-gray-100" />
     </div>
+  </div>
 </template>
 
 <script>
-// import PlaylistEditor from "./components/PlaylistEditor.vue";
-import PosterImage from "./components/PosterImage.vue";
-import EndpointTrigger from "@/components/EndpointTrigger.vue";
+import Sidebar from "./components/ui/SidebarView"
+import Header from "./components/ui/HeaderView"
+// import PlaylistEditor from "./components/ListEditor.vue";
+// import PosterImage from "./components/PosterImage.vue";
+// import EndpointTrigger from "@/components/EndpointTrigger.vue";
 
 export default {
     name: "App",
     components: {
-        EndpointTrigger,
-        /*PlaylistEditor*/
-        PosterImage
+      // EndpointTrigger,
+      Sidebar,
+      Header
+      /*PlaylistEditor*/
+      // PosterImage
     },
     methods: {
         savePlaylistData(playlist) {
