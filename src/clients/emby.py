@@ -92,8 +92,8 @@ class Emby:
 
         # Modify your existing methods to use the new _get_request_with_retry and _post_request_with_retry methods
 
-    def _get_request(self, url, stream=False):
-        return self._get_request_with_retry(url, stream=stream)
+    def _get_request(self, url, stream=False, retries=5, delay=1):
+        return self._get_request_with_retry(url, stream=stream, retries=retries, delay=delay)
 
     def _post_request(self, url, data=None, files=None):
         return self._post_request_with_retry(url, data=data, files=files)
@@ -235,12 +235,12 @@ class Emby:
     def get_item_image(self, item_id):
         url = self._build_url(f'Items/{item_id}/Images/Primary')
         print(url)
-        response = self._get_request(url, stream=True)
+        response = self._get_request(url, stream=True, retries=1)
 
         if response.status_code == 200:
             # Assuming _get_request is using the requests library.
             # Use BytesIO to convert the response content into a file-like object so it can be opened by PIL
-            img = Image.open(BytesIO(response.content))
+            img = Image.open(BytesIO(response.content)).convert('RGBA')
             return img
         else:
             raise Exception(f"Failed to fetch the image for collection {item_id}. Status code: {response.status_code}")
@@ -309,6 +309,23 @@ class Emby:
         return items, len(items)
 
 
+    def get_all_trailers(self):
+        """
+        Retrieves all trailers from the Emby collection.
+        """
+        item_type = 'Trailer'
+        url = self._build_url(f'Users/{self.user_id}/Items',
+                              {
+                                  'IncludeItemTypes': item_type,
+                                  'Recursive': 'true',
+                                  'Fields': 'Title,Year,Type,Description'
+                              })
+        response = self._get_request(url)
+        return response.get('Items', [])
+    # def get_all_trailers(self):
+    #     url = self._build_url(f'Users/{self.user_id}/Items', {'IncludeItemTypes': 'Trailer'})
+    #     response = self._get_request(url)
+    #     return response.get('Items', [])
 
     def upload_image(self, id, image_path, imgType='Primary'):
         mime_type = guess_type(image_path)[0]

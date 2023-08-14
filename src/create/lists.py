@@ -2,7 +2,6 @@ import time
 
 from src.clients.radarr import RadarrInteractions
 from src.create.posters import PosterImageCreator
-from src.config import ConfigManager
 from datetime import datetime
 import logging
 import random

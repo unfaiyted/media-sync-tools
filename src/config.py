@@ -14,6 +14,7 @@ from pymongo import MongoClient
 
 
 class ConfigManager:
+    instance = None
     def __init__(self, config_path=None):
         load_dotenv()
         self.clients = {}
@@ -30,8 +31,9 @@ class ConfigManager:
         self.load_config()
 
 
-    def get_db(self, db_name='media-sync'):
-        client = MongoClient('localhost', 27017)
+    def get_db(self, db_name='media-sync-tools'):
+        mongodb_uri = f"mongodb://root:dragon@localhost:27017"
+        client = MongoClient(mongodb_uri)
         return client[db_name]
 
     def create_subdirectories(self):
@@ -212,5 +214,8 @@ class ConfigManager:
         self.clients[name] = tmdb_client
         return tmdb_client
 
-# Usage
-# config_manager = ConfigManager()
+    @staticmethod
+    def get_manager():
+        if ConfigManager.instance is None:
+            ConfigManager.instance = ConfigManager()
+        return ConfigManager.instance

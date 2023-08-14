@@ -1,8 +1,14 @@
+from io import BytesIO
+from PIL import Image
+
 import requests
 import time
 
+
+
 class TmdbClient:
     TMDB_API_URL = "https://api.themoviedb.org/3"
+    TMDB_IMAGE_URL = "https://image.tmdb.org/t/p/original"
     RETRY_MAX = 5
     RETRY_DELAY = 5  # Starts with 5 seconds
 
@@ -52,7 +58,32 @@ class TmdbClient:
         return self._request("GET", f"/discover/movie?{query_params}")
 
     # ... Add other methods as required ...
+    def get_movie_poster_path(self, movie_id):
+        """
+        Fetches the poster path for a movie using its ID.
+        :param movie_id: ID of the movie.
+        :return: poster path.
+        """
+        movie_details = self.get_movie_details(movie_id)
+        return movie_details.get('poster_path')
 
+    def get_movie_poster(self, movie_id):
+        """
+        Fetches the movie poster as an RGBA image.
+        :param movie_id: ID of the movie.
+        :return: PIL Image object in RGBA format.
+        """
+        poster_path = self.get_movie_poster_path(movie_id)
+        if not poster_path:
+            return None
+
+        response = requests.get(f"{self.TMDB_IMAGE_URL}{poster_path}", stream=True)
+        response.raise_for_status()
+        if response.status_code == 200:
+            image = Image.open(BytesIO(response.content)).convert("RGBA")
+            return image
+
+        return None
 # tmdb = TmdbClient("eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIwYzNjZjNlNzI2YjZkMzU2NmZiZTM4Yjc0YzIzOWU1YiIsInN1YiI6IjVhYjk0NDdjMGUwYTI2MzY0ZTAwNWRjZSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.Hacuw5YT8hWm7Ec5crZBTGQ1LTJalUKutcTFHCiWByk")
 #
 # # Fetch popular movies

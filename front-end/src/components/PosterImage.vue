@@ -3,7 +3,9 @@
         <!-- Search and Button -->
         <div class="controls">
             <input v-model="searchQuery" placeholder="Enter search term" class="search-input" />
+            <TextEffects/>
             <button @click="fetchImage" class="search-button">Create Poster</button>
+
         </div>
 
         <!-- Poster Display -->
@@ -88,10 +90,11 @@ import GradientColorPickers from "@/components/GradientPicker.vue";
 import BorderColorPicker from "@/components/BorderColorPicker.vue";
 import IconPicker from "@/components/IconPicker.vue";
 import DragDrop from "@/components/DragDrop.vue";
+import TextEffects from "@/components/TextEffects.vue";
 
 
 export default {
-    components: {DragDrop, BorderColorPicker, GradientColorPickers, IconPicker},
+    components: {TextEffects, DragDrop, BorderColorPicker, GradientColorPickers, IconPicker},
     data() {
         return {
             searchQuery: 'Hi!',
