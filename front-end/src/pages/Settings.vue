@@ -89,7 +89,7 @@ export default {
     }
   },
   methods: {
-      async updateClient() {
+      async update() {
       // Construct the client data object to update
 
               // Fetch the updated client configurations from the API after updating
@@ -174,7 +174,7 @@ export default {
               console.error('There was an error:', error);
           }
       },
-      async deleteClient(id) {
+      async delete(id) {
           // Call the FastAPI endpoint to delete a client
           try {
               const response = await fetch(`${API_URL}/config/client/${id}`, {

@@ -19,26 +19,26 @@ const routes: Array<RouteRecordRaw> = [
         },
         component: Admin,
     },
-    // {
-    //     path: '/settings',
-    //     name: 'Settings',
-    //     meta: {
-    //         title: 'Settings Page',
-    //         keepAlive: true,
-    //         requireAuth: false,
-    //     },
-    //     component: Settings,
-    // },
-    // {
-    //     path: '/about',
-    //     name: 'About',
-    //     meta: {
-    //         title: 'About Page',
-    //         keepAlive: true,
-    //         requireAuth: false,
-    //     },
-    //     component: About,
-    // },
+ /*   {
+        path: '/settings',
+        name: 'Settings',
+        meta: {
+            title: 'Settings Page',
+            keepAlive: true,
+            requireAuth: false,
+        },
+        component: Settings,
+    },*/
+    {
+        path: '/about',
+        name: 'About',
+        meta: {
+            title: 'About Page',
+            keepAlive: true,
+            requireAuth: false,
+        },
+        component: About,
+    },
     // {
     //     path: '/list',
     //     name: 'List',

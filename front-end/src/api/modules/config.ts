@@ -15,7 +15,7 @@ type Client = {
          label: string;
          type: ClientType;
          name: string;
-         [key: string]: any;
+
          // other fields unique to each client type
      }
 }

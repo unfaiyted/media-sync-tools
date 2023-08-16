@@ -1,110 +1,43 @@
 <template>
-    <div>
-        <!-- Create Client -->
-        <h2>Create Client</h2>
-<!--        <input v-model="client.clientId" placeholder="Client ID">-->
-        <input v-model="client.label" placeholder="Label">
-        <select v-model="client.type">
-            <!-- Assuming ClientType is an enum with values 'TypeA', 'TypeB', etc. -->
-            <option value="PLEX">Plex</option>
-            <option value="EMBY">Emby</option>
-            <!-- Add other types as needed -->
-        </select>
-        <input v-model="client.name" placeholder="Client Name">
-        <!-- For simplicity, I'm skipping LibraryClients and ConfigClient lists here.
-             You'd typically have other components or UI mechanisms to manage these. -->
+<!--        <ClientCreator />-->
 
-        <button @click="createClient">Add Client</button>
-
-        <!-- List Clients -->
-        <h2>Clients</h2>
-        <ul v-if="clients.length">
-            <li v-for="client in clients" :key="client.clientId">
-                {{ client.name }} ({{ client.clientId }}, {{ client.label }}, {{ client.type }})
-                <button @click="deleteClient(client.clientId)">Delete</button>
-            </li>
-        </ul>
-
-        <!-- Update Client (can be improved with a modal or separate component) -->
-        <h2>Update Client</h2>
-        <input v-model="updatedClient.clientId" type="hidden"/>
-        <input v-model="updatedClient.label" placeholder="Label">
-        <select v-model="updatedClient.type">
-            <option value="PLEX">Plex</option>
-            <option value="EMBY">Emby</option>
-            <!-- Add other types as needed -->
-        </select>
-        <input v-model="updatedClient.name" placeholder="Client Name">
-        <!-- Similarly, skipping LibraryClients and ConfigClient here -->
-
-        <button @click="updateClient">Update Client</button>
+<!--    <UserManagement />-->
+    <div v-if="config">
+        <ClientsConfig :config="config" />
     </div>
 </template>
 
 <script lang="ts">
-import axios from "axios";
-import {API_URL} from "@/utils/constants";
-import {Index} from "@/router";
-
-export default {
-    components: {Index},
+import ClientFieldManagement from "@/components/admin/ClientFieldManagement.vue";
+import ClientCreator from "@/components/admin/ClientManager.vue";
+import ClientsConfig from "@/components/config/ClientsConfig.vue";
+import UserManagement from "@/components/admin/UserManager.vue";
+import {Config} from "@/models";
+import {fetchConfig} from "@/api/configs";
+export default defineComponent({
+    components: {
+        ClientFieldManagement,
+        ClientsConfig,
+        UserManagement,
+        ClientCreator
+    },
     data() {
         return {
-            clients: [],
-            client: {
-                clientId: '',
-                label: '',
-                type: '',  // You'd set a default type here if needed
-                name: '',
-                LibraryClients: [],
-                ConfigClient: []
-            },
-            updatedClient: {
-                clientId: '',
-                label: '',
-                type: '',
-                name: '',
-                LibraryClients: [],
-                ConfigClient: []
-            }
-        };
+            config: {
+                configId: '4158646e-631e-462b-bf07-5b39cf2cc3ae'
+            } as Config,
+            configId: '4158646e-631e-462b-bf07-5b39cf2cc3ae'
+        }
     },
     async mounted() {
-        this.clients = await this.fetchClients();
+        this.config = await fetchConfig(this.configId);
+        console.log(this.config);
     },
-    methods: {
-        async fetchClients() {
-            try {
-                const response = await axios.get(`${API_URL}/client`);
-                return response.data;
-            } catch (error) {
-                console.error("Error fetching clients:", error);
-            }
-        },
-        async createClient() {
-            try {
-                await axios.post(`${API_URL}/client`, this.clients);
-                this.clients = await this.fetchClients();
-            } catch (error) {
-                console.error("Error creating client:", error);
-            }
-        },
-        async deleteClient(clientId: string) {
-            try {
-                await axios.delete(`${API_URL}/client/${clientId}`);
-                this.clients = await this.fetchClients();
-            } catch (error) {
-                console.error("Error deleting client:", error);
-            }
-        },
-        async updateClient() {
-            try {
-                await axios.put(`${API_URL}/client/${this.updatedClient.clientId}`, this.updatedClient);
-                this.clients = await this.fetchClients();
-            } catch (error) {
-                console.error("Error updating client:", error);
-            }
-        }
-    }
-};
+    methods: {}
+});
 </script>
+
+
+<style scoped>
+/* Add your custom styles here if needed */
+</style>

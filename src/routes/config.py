@@ -1,5 +1,7 @@
+from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException
-from motor.motor_asyncio import AsyncIOMotorDatabase
+from motor.motor_asyncio import AsyncIOMotorDatabase, AsyncIOMotorClient
 from bson import ObjectId
 from src.models import Config, ConfigClient, ClientField, ConfigClientFieldsValue
 from src.config import ConfigManager
@@ -17,7 +19,7 @@ config_collection = db["config"]
 #     type: str
 #
 # class Config(BaseModel):
-#     clients: dict = {}
+#     clients.ts: dict = {}
 #     libraries: dict = {}
 #     sync: dict = {}
 #     collections: dict = {}
@@ -26,10 +28,10 @@ config_collection = db["config"]
 # # Retrieve configuration
 # @router.get("/", response_model=Config)
 # async def read_config():
-#     clients = config_collection.find_one({"userId": "1"})
-#     print('clients',clients)
-#     if clients:
-#         return clients['config']
+#     clients.ts = config_collection.find_one({"userId": "1"})
+#     print('clients.ts',clients.ts)
+#     if clients.ts:
+#         return clients.ts['config']
 #     else:
 #         raise HTTPException(status_code=404, detail="Configuration not found")
 #
@@ -50,7 +52,7 @@ config_collection = db["config"]
 #     if existing_config is None:
 #         print("Creating new config")
 #         config_collection.insert_one({"userId": '1' ,"config": {
-#             "clients": {},
+#             "clients.ts": {},
 #             "libraries": {},
 #             "sync": {},
 #             "collections": {},
@@ -60,11 +62,11 @@ config_collection = db["config"]
 #
 #     if existing_config:
 #         print("Updating existing config")
-#         existing_clients = existing_config["config"]["clients"]
+#         existing_clients = existing_config["config"]["clients.ts"]
 #         updated_clients = updated_config.clientData
 #         merged_clients = {**existing_clients, **updated_clients}  # Merge the dictionaries
 #
-#         existing_config["config"]["clients"] = merged_clients  # Update the clients sub-object
+#         existing_config["config"]["clients.ts"] = merged_clients  # Update the clients.ts sub-object
 #
 #         config_collection.update_one({"userId": updated_config.userId}, {"$set": existing_config})
 #
@@ -90,7 +92,7 @@ config_collection = db["config"]
 #         raise HTTPException(status_code=400, detail="Configuration already exists")
 #     else:
 #         config_collection.insert_one({"userId": '1' ,"config": {
-#             "clients": {},
+#             "clients.ts": {},
 #             "libraries": {},
 #             "sync": {},
 #             "collections": {},
@@ -102,11 +104,11 @@ config_collection = db["config"]
 # async def delete_client(client_id: str):
 #     config = config_collection.find_one({"userId": "1"})  # Assuming you have only one document for the user
 #
-#     if "clients" in config["config"]:
-#         clients = config["config"]["clients"]
-#         if client_id in clients:
-#             del clients[client_id]
-#             config_collection.update_one({"userId": "1"}, {"$set": {"config.clients": clients}})
+#     if "clients.ts" in config["config"]:
+#         clients.ts = config["config"]["clients.ts"]
+#         if client_id in clients.ts:
+#             del clients.ts[client_id]
+#             config_collection.update_one({"userId": "1"}, {"$set": {"config.clients.ts": clients.ts}})
 #
 #             return {"message": "Client deleted successfully"}
 #
@@ -164,42 +166,61 @@ config = ConfigManager.get_manager()
 # CRUD operations for Config
 @router.post("/", response_model=Config)
 async def create_config(config_item: Config, db: AsyncIOMotorDatabase = Depends(config.get_db)):
-    if await db.configs.find_one({"configId": ObjectId(config_item.configId)}):
+    if await db.configs.find_one({"configId": config_item.configId}):
         raise HTTPException(status_code=400, detail="Config already exists")
     config_dict = config_item.dict()
     await db.configs.insert_one(config_dict)
     return config_dict
 
+#get all configs
+@router.get("/", response_model=List[Config])
+async def read_all_configs(db: AsyncIOMotorDatabase = Depends(config.get_db)):
+    configs = []
+    async for config_doc in db.configs.find({}):
+        # Create a Config instance from the retrieved document
+        configs.append(config_doc)
+    if configs is None:
+        raise HTTPException(status_code=404, detail="Config not found")
+    return configs
+
 @router.get("/{config_id}", response_model=Config)
 async def read_config(config_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
-    config_item = await db.configs.find_one({"configId": ObjectId(config_id)})
+    config_item = await db.configs.find_one({"configId": config_id})
     if config_item is None:
         raise HTTPException(status_code=404, detail="Config not found")
     return config_item
 
 @router.put("/{config_id}", response_model=Config)
 async def update_config(config_id: str, config_item: Config, db: AsyncIOMotorDatabase = Depends(config.get_db)):
-    existing_config = await db.configs.find_one({"configId": ObjectId(config_id)})
+    existing_config = await db.configs.find_one({"configId": config_id})
     if existing_config is None:
         raise HTTPException(status_code=404, detail="Config not found")
 
     config_dict = config_item.dict()
-    await db.configs.replace_one({"configId": ObjectId(config_id)}, config_dict)
+    await db.configs.replace_one({"configId": config_id}, config_dict)
     return config_dict
 
 @router.delete("/{config_id}", response_model=Config)
 async def delete_config(config_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
-    existing_config = await db.configs.find_one({"configId": ObjectId(config_id)})
+    existing_config = await db.configs.find_one({"configId": config_id})
     if existing_config is None:
         raise HTTPException(status_code=404, detail="Config not found")
-    await db.configs.delete_one({"configId": ObjectId(config_id)})
+    await db.configs.delete_one({"configId": config_id})
     return existing_config
 
 
+@router.get("/client/", response_model=List[ConfigClient])
+async def get_config_clients_by_config_id(configId: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+    print('configId', configId)
+    config_clients = await db.config_clients.find({"configId": configId}).to_list(length=1000)
+    print(config_clients)
+    if not config_clients:
+        raise HTTPException(status_code=404, detail="Config Clients not found")
+    return config_clients
 
 @router.post("/client/", response_model=ConfigClient)
 async def create_config_client(config_client: ConfigClient, db: AsyncIOMotorDatabase = Depends(config.get_db)):
-    if await db.config_clients.find_one({"configClientId": ObjectId(config_client.configClientId)}):
+    if await db.config_clients.find_one({"configClientId": config_client.configClientId}):
         raise HTTPException(status_code=400, detail="Config Client already exists")
     config_client_dict = config_client.dict()
     result = await db.config_clients.insert_one(config_client_dict)
@@ -207,33 +228,33 @@ async def create_config_client(config_client: ConfigClient, db: AsyncIOMotorData
 
 @router.get("/client/{config_client_id}", response_model=ConfigClient)
 async def read_config_client(config_client_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
-    config_client = await db.config_clients.find_one({"configClientId": ObjectId(config_client_id)})
+    config_client = await db.config_clients.find_one({"configClientId": config_client_id})
     if config_client is None:
         raise HTTPException(status_code=404, detail="Config Client not found")
     return config_client
 
 @router.put("/client/{config_client_id}", response_model=ConfigClient)
 async def update_config_client(config_client_id: str, config_client: ConfigClient, db: AsyncIOMotorDatabase = Depends(config.get_db)):
-    existing_config_client = await db.config_clients.find_one({"configClientId": ObjectId(config_client_id)})
+    existing_config_client = await db.config_clients.find_one({"configClientId": config_client_id})
     if existing_config_client is None:
         raise HTTPException(status_code=404, detail="Config Client not found")
 
     config_client_dict = config_client.dict()
-    await db.config_clients.replace_one({"configClientId": ObjectId(config_client_id)}, config_client_dict)
+    await db.config_clients.replace_one({"configClientId": config_client_id}, config_client_dict)
     return config_client_dict
 
 @router.delete("/client/{config_client_id}", response_model=ConfigClient)
 async def delete_config_client(config_client_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
-    existing_config_client = await db.config_clients.find_one({"configClientId": ObjectId(config_client_id)})
+    existing_config_client = await db.config_clients.find_one({"configClientId": config_client_id})
     if existing_config_client is None:
         raise HTTPException(status_code=404, detail="Config Client not found")
-    await db.config_clients.delete_one({"configClientId": ObjectId(config_client_id)})
+    await db.config_clients.delete_one({"configClientId": config_client_id})
     return existing_config_client
 
 
 @router.post("/client-fields-value/", response_model=ConfigClientFieldsValue)
 async def create_config_client_fields_value(value: ConfigClientFieldsValue, db: AsyncIOMotorDatabase = Depends(config.get_db)):
-    if await db.config_client_fields_values.find_one({"configClientFieldsId": ObjectId(value.configClientFieldsId)}):
+    if await db.config_client_fields_values.find_one({"configClientFieldsId": value.configClientFieldsId}):
         raise HTTPException(status_code=400, detail="Config Client Fields Value already exists")
     value_dict = value.dict()
     result = await db.config_client_fields_values.insert_one(value_dict)
@@ -241,25 +262,25 @@ async def create_config_client_fields_value(value: ConfigClientFieldsValue, db: 
 
 @router.get("/client-fields-value/{value_id}", response_model=ConfigClientFieldsValue)
 async def read_config_client_fields_value(value_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
-    value = await db.config_client_fields_values.find_one({"configClientFieldsId": ObjectId(value_id)})
+    value = await db.config_client_fields_values.find_one({"configClientFieldsId": value_id})
     if value is None:
         raise HTTPException(status_code=404, detail="Config Client Fields Value not found")
     return value
 
 @router.put("/client-fields-value/{value_id}", response_model=ConfigClientFieldsValue)
 async def update_config_client_fields_value(value_id: str, value: ConfigClientFieldsValue, db: AsyncIOMotorDatabase = Depends(config.get_db)):
-    existing_value = await db.config_client_fields_values.find_one({"configClientFieldsId": ObjectId(value_id)})
+    existing_value = await db.config_client_fields_values.find_one({"configClientFieldsId": value_id})
     if existing_value is None:
         raise HTTPException(status_code=404, detail="Config Client Fields Value not found")
 
     value_dict = value.dict()
-    await db.config_client_fields_values.replace_one({"configClientFieldsId": ObjectId(value_id)}, value_dict)
+    await db.config_client_fields_values.replace_one({"configClientFieldsId": value_id}, value_dict)
     return value_dict
 
 @router.delete("/client-fields-value/{value_id}", response_model=ConfigClientFieldsValue)
 async def delete_config_client_fields_value(value_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
-    existing_value = await db.config_client_fields_values.find_one({"configClientFieldsId": ObjectId(value_id)})
+    existing_value = await db.config_client_fields_values.find_one({"configClientFieldsId": value_id})
     if existing_value is None:
         raise HTTPException(status_code=404, detail="Config Client Fields Value not found")
-    await db.config_client_fields_values.delete_one({"configClientFieldsId": ObjectId(value_id)})
+    await db.config_client_fields_values.delete_one({"configClientFieldsId": value_id})
     return existing_value

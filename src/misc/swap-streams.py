@@ -12,16 +12,16 @@ from config import ConfigManager
 config = ConfigManager()
 plex = config.get_client('plex')
 
-# Get the list of clients
-response = requests.get(plex_server + '/clients', headers={'X-Plex-Token': plex_token})
+# Get the list of clients.ts
+response = requests.get(plex_server + '/clients.ts', headers={'X-Plex-Token': plex_token})
 
 # Parse the XML response
 root = ElementTree.fromstring(response.content)
 
-# Extract the clients
+# Extract the clients.ts
 clients = [server.attrib for server in root.iter('Server')]
 
-# Print all available clients
+# Print all available clients.ts
 for client in clients:
     print('Available client: ', client['name'])
 
@@ -66,7 +66,7 @@ for client in clients:
                     'session': session
                 }
 
-# Check if the source and target clients are found and playing videos
+# Check if the source and target clients.ts are found and playing videos
 if source_client and target_client:
     # Swap the streams
     print('Swapping streams');

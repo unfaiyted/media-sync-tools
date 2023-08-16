@@ -47,9 +47,9 @@ class ConfigManager:
         with open(config_file, 'r') as f:
             config_data = yaml.safe_load(f)
 
-        self.clients_details = config_data.get('clients', {})
+        self.clients_details = config_data.get('clients.ts', {})
 
-        self.add_clients(config_data.get('clients', {}))
+        self.add_clients(config_data.get('clients.ts', {}))
         self.add_library_data(config_data.get('libraries', {}))
         self.add_collection_data(config_data.get('collections', {}))
         self.add_playlist_data(config_data.get('playlists', {}))
@@ -157,7 +157,7 @@ class ConfigManager:
     # def add_portainer_client(self, name, server_url, username, password):
     #     print('Adding portainer client', server_url, username, password)
     #     portainer_client = Portainer(server_url, username, password)
-    #     self.clients[name] = portainer_client
+    #     self.clients.ts[name] = portainer_client
     #     return portainer_client
     #
     def add_trakt_client(self, name, username, client_id, client_secret):

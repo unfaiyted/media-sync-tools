@@ -1,7 +1,7 @@
 // database
 datasource db {
-    provider = "mongodb"
-    url      = env("DATABASE_URL") // This can be set in a .env file
+  provider = "mongodb"
+  url      = env("DATABASE_URL") // This can be set in a .env file
 }
 
 // datasource db {
@@ -11,166 +11,166 @@ datasource db {
 
 // generator
 generator client {
-    provider             = "prisma-client-py"
-    interface            = "sync"
-    recursive_type_depth = 5
+  provider             = "prisma-client-py"
+  interface            = "sync"
+  recursive_type_depth = 5
 }
 
 // data models
 
 model Config {
-    configId      String         @id @map("_id")
-    user          User           @relation(fields: [userId], references: [userId])
-    userId        String         @unique
-    clients       ConfigClient[]
-    sync          SyncOptions    @relation(fields: [syncOptionsId], references: [syncOptionsId])
-    syncOptionsId String         @unique
+  configId      String         @id @map("_id")
+  user          User           @relation(fields: [userId], references: [userId])
+  userId        String         @unique
+  clients       ConfigClient[]
+  sync          SyncOptions    @relation(fields: [syncOptionsId], references: [syncOptionsId])
+  syncOptionsId String         @unique
 }
 
 model SyncOptions {
-    syncOptionsId String  @id @map("_id")
-    configId      String  @unique
-    collections   Boolean
-    playlists     Boolean
-    lovedTracks   Boolean
-    topLists      Boolean
-    watched       Boolean
-    ratings       Boolean
-    relatedConfig Config?
+  syncOptionsId String  @id @map("_id")
+  configId      String  @unique
+  collections   Boolean
+  playlists     Boolean
+  lovedTracks   Boolean
+  topLists      Boolean
+  watched       Boolean
+  ratings       Boolean
+  relatedConfig Config?
 }
 
 enum ListType {
-    COLLECTION
-    PLAYLIST
-    // Add other types as needed
+  COLLECTION
+  PLAYLIST
+  // Add other types as needed
 }
 
 model ListTypeOptions {
-    listId          String   @id @map("_id")
-    type            ListType
-    sync            Boolean
-    primaryLibrary  String
-    updateImages    Boolean
-    deleteExisting  Boolean
-    deleteWatchlist Boolean
+  listId          String   @id @map("_id")
+  type            ListType
+  sync            Boolean
+  primaryLibrary  String
+  updateImages    Boolean
+  deleteExisting  Boolean
+  deleteWatchlist Boolean
 }
 
 enum Provider {
-    PROVIDER1
-    PROVIDER2
-    // Add other types as needed
+  PROVIDER1
+  PROVIDER2
+  // Add other types as needed
 }
 
 model Filter {
-    filterId   String   @id @map("_id")
-    provider   Provider
-    label      String
-    type       String
-    value      String
-    List       List?    @relation(fields: [listListId], references: [listId])
-    listListId String?
+  filterId   String   @id @map("_id")
+  provider   Provider
+  label      String
+  type       String
+  value      String
+  List       List?    @relation(fields: [listListId], references: [listId])
+  listListId String?
 }
 
 model List {
-    listId           String     @id @map("_id")
-    name             String
-    type             String
-    sortName         String
-    provider         String
-    filters          Filter[]
-    items            ListItem[]
-    includeLibraries Library[]
-    userId           String
-    user             User       @relation(fields: [userId], references: [userId])
+  listId           String     @id @map("_id")
+  name             String
+  type             String
+  sortName         String
+  provider         String
+  filters          Filter[]
+  items            ListItem[]
+  includeLibraries Library[]
+  userId           String
+  user             User       @relation(fields: [userId], references: [userId])
 }
 
 // Library example: 'Movies' or 'TV Shows'
 // name = 'Movies', 'TV Shows', 'Anime', etc.
-// clients = ['PLEX', 'JELLYFIN', 'EMBY']
+// clients.ts = ['PLEX', 'JELLYFIN', 'EMBY']
 model Library {
-    libraryId  String          @id @map("_id")
-    name       String
-    clients    LibraryClient[]
-    List       List?           @relation(fields: [listListId], references: [listId])
-    listListId String?
+  libraryId  String          @id @map("_id")
+  name       String
+  clients    LibraryClient[]
+  List       List?           @relation(fields: [listListId], references: [listId])
+  listListId String?
 }
 
 // library_name = 'Movies' or 'TV Shows' In client
 // client = 'PLEX' or 'JELLYFIN' or 'EMBY'
 model LibraryClient {
-    libraryClientId String  @id @map("_id")
-    library_name    String
-    client          Client  @relation(fields: [clientId], references: [clientId])
-    clientId        String
-    Library         Library @relation(fields: [libraryId], references: [libraryId])
-    libraryId       String
+  libraryClientId String  @id @map("_id")
+  library_name    String
+  client          Client  @relation(fields: [clientId], references: [clientId])
+  clientId        String
+  Library         Library @relation(fields: [libraryId], references: [libraryId])
+  libraryId       String
 }
 
 model ListItem {
-    itemId      String @id @map("_id")
-    listId      String
-    name        String
-    poster      String
-    description String
-    year        String
-    list        List   @relation(fields: [listId], references: [listId])
+  itemId      String @id @map("_id")
+  listId      String
+  name        String
+  poster      String
+  description String
+  year        String
+  list        List   @relation(fields: [listId], references: [listId])
 }
 
 // label = 'Plex 1', 'Plex 2', 'Jellyfin 1', etc.
 // type = 'PLEX', 'JELLYFIN', 'EMBY'
 // name = 'Plex', 'Jellyfin', 'Emby'
 model ConfigClient {
-    configClientId String                    @id @map("_id")
-    label          String
-    client         Client                    @relation(fields: [clientId], references: [clientId])
-    clientId       String
-    relatedConfig  Config                    @relation(fields: [configId], references: [configId])
-    configId       String
-    clientFields   ConfigClientFieldsValue[]
+  configClientId String                    @id @map("_id")
+  label          String
+  client         Client                    @relation(fields: [clientId], references: [clientId])
+  clientId       String
+  relatedConfig  Config                    @relation(fields: [configId], references: [configId])
+  configId       String
+  clientFields   ConfigClientFieldsValue[]
 }
 
 model ClientField {
-    clientFieldId            String                    @id @map("_id")
-    name                     String
-    default_value            String
-    ConfigClientFieldsValues ConfigClientFieldsValue[]
+  clientFieldId            String                    @id @map("_id")
+  name                     String
+  default_value            String
+  ConfigClientFieldsValues ConfigClientFieldsValue[]
 }
 
 model ConfigClientFieldsValue {
-    configClientFieldsId String       @id @map("_id")
-    clientField          ClientField  @relation(fields: [clientFieldId], references: [clientFieldId])
-    clientFieldId        String
-    configClient         ConfigClient @relation(fields: [configClientId], references: [configClientId])
-    configClientId       String
-    value                String
+  configClientFieldsId String       @id @map("_id")
+  clientField          ClientField  @relation(fields: [clientFieldId], references: [clientFieldId])
+  clientFieldId        String
+  configClient         ConfigClient @relation(fields: [configClientId], references: [configClientId])
+  configClientId       String
+  value                String
 }
 
 model Client {
-    clientId       String          @id @map("_id")
-    label          String
-    type           ClientType
-    name           String
-    LibraryClients LibraryClient[]
-    ConfigClient   ConfigClient[]
+  clientId       String          @id @map("_id")
+  label          String
+  type           ClientType
+  name           String
+  LibraryClients LibraryClient[]
+  ConfigClient   ConfigClient[]
 }
 
 model User {
-    userId        String  @id @map("_id")
-    email         String  @unique
-    name          String
-    password      String // Always hash passwords before storing them
-    lists         List[]
-    relatedConfig Config?
+  userId        String  @id @map("_id")
+  email         String  @unique
+  name          String
+  password      String // Always hash passwords before storing them
+  lists         List[]
+  relatedConfig Config?
 }
 
 enum ConfigType {
-    TYPE1
-    TYPE2
-    // Add other types as needed
+  TYPE1
+  TYPE2
+  // Add other types as needed
 }
 
 enum ClientType {
-    TYPE1
-    TYPE2
-    // Add other types as needed
+  TYPE1
+  TYPE2
+  // Add other types as needed
 }

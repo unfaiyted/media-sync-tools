@@ -1,6 +1,7 @@
 from enum import Enum
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from typing import List, Optional, ForwardRef
+from bson import ObjectId
 
 
 class ListType(str, Enum):
@@ -10,28 +11,30 @@ class ListType(str, Enum):
 
 
 class Provider(str, Enum):
-    PROVIDER1 = "PROVIDER1"
-    PROVIDER2 = "PROVIDER2"
+    OPENAI = "OPENAI"
+    MDB = "MDB"
+    TRAKT = "TRAKT"
     # ... other types ...
 
 
 class ClientType(str, Enum):
-    PLEX = 'PLEX'
-    EMBY = 'EMBY'
+    UNKNOWN = 'UNKNOWN'
+    MEDIA_SERVER = 'MEDIA_SERVER'
+    LIST_PROVIDER = 'LIST_PROVIDER'
+    UTILITY = 'UTILITY'
     # ... other types ...
 
 
 class Config(BaseModel):
-    configId: str
-    user: ForwardRef('User')
+    configId: str = None
+    user: Optional[ForwardRef('User')]
     userId: str
-    clients: List[ForwardRef('ConfigClient')]
-    sync: ForwardRef('SyncOptions')
-    syncOptionsId: str
+    clients: Optional[List[ForwardRef('ConfigClient')]]
+    sync: Optional[ForwardRef('SyncOptions')]
 
 
 class SyncOptions(BaseModel):
-    syncOptionsId: str
+    syncOptionsId: str = None
     configId: str
     collections: bool
     playlists: bool
@@ -39,11 +42,11 @@ class SyncOptions(BaseModel):
     topLists: bool
     watched: bool
     ratings: bool
-    relatedConfig: Optional[Config]
+    relatedConfig: Optional[ForwardRef('Config')]
 
 
 class ListTypeOptions(BaseModel):
-    listId: str
+    listId: str = None
     type: ListType
     sync: bool
     primaryLibrary: str
@@ -53,7 +56,7 @@ class ListTypeOptions(BaseModel):
 
 
 class Filter(BaseModel):
-    filterId: str
+    filterId: str = None
     provider: Provider
     label: str
     type: str
@@ -63,12 +66,12 @@ class Filter(BaseModel):
 
 
 class MediaList(BaseModel):
-    listId: str
+    listId: str = None
     name: str
     type: str
     sortName: str
     provider: str
-    filters: List[Filter]
+    filters: List[ForwardRef('Filter')]
     items: List[ForwardRef('ListItem')]
     includeLibraries: List[ForwardRef('Library')]
     userId: str
@@ -76,14 +79,14 @@ class MediaList(BaseModel):
 
 
 class Library(BaseModel):
-    libraryId: str
+    libraryId: str = None
     name: str
     clients: List[ForwardRef('LibraryClient')]
-    List: Optional[List]
+    List: Optional[ForwardRef('MediaList')]
 
 
 class LibraryClient(BaseModel):
-    libraryClientId: str
+    libraryClientId: str = None
     library_name: str
     client: ForwardRef('Client')
     clientId: str
@@ -91,7 +94,7 @@ class LibraryClient(BaseModel):
 
 
 class ListItem(BaseModel):
-    itemId: str
+    itemId: str = None
     listId: str
     name: str
     poster: str
@@ -101,36 +104,44 @@ class ListItem(BaseModel):
 
 
 class ConfigClient(BaseModel):
-    configClientId: str
+    configClientId: str = None
     label: str
-    client: ForwardRef('Client')
+    client: Optional[ForwardRef('Client')]
     clientId: str
-    relatedConfig: Config
+    relatedConfig: Optional[Config]
     configId: str
-    clientFields: List[ForwardRef('ConfigClientFieldsValue')]
+    clientFields: Optional[List[ForwardRef('ConfigClientFieldsValue')]]
 
 
 class ClientField(BaseModel):
-    clientFieldId: str
+    clientFieldId: str = None
+    clientId: str
     name: str
-    default_value: str
-    ConfigClientFieldsValues: List[ForwardRef('ConfigClientFieldsValue')]
+    defaultValue: Optional[str] = ''
+    ConfigClientFieldsValues: Optional[List[ForwardRef('ConfigClientFieldsValue')]]
 
 
 class ConfigClientFieldsValue(BaseModel):
-    configClientFieldsId: str
+    configClientFieldsId: str = None
     clientField: ClientField
     configClientId: str
     value: str
 
 
 class Client(BaseModel):
-    clientId: str
+    clientId: Optional[str]
     label: str
     type: ClientType
     name: str
-    LibraryClients: List[LibraryClient]
-    ConfigClient: List[ConfigClient]
+    LibraryClients: Optional[List[ForwardRef('LibraryClient')]]
+    ConfigClient: Optional[List[ForwardRef('ConfigClient')]]
+
+    @validator('clientId', pre=True, always=True)
+    def validate_object_id(cls, value):
+        id = value.__str__()
+        if id is not None and not isinstance(id, str):
+             raise ValueError(f"Invalid ObjectId: {id}")
+        return str(value) if isinstance(value, ObjectId) else value
 
 
 class User(BaseModel):
@@ -138,7 +149,7 @@ class User(BaseModel):
     email: str
     name: str
     password: str  # Remember to hash passwords before storing
-    lists: List[List]
+    lists: Optional[List[ForwardRef('MediaList')]]
     relatedConfig: Optional[Config]
 
 
@@ -150,5 +161,6 @@ ListItem.update_forward_refs()
 Library.update_forward_refs()
 LibraryClient.update_forward_refs()
 Client.update_forward_refs()
+ClientField.update_forward_refs()
 User.update_forward_refs()
 ConfigClientFieldsValue.update_forward_refs()

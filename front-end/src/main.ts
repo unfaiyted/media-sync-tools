@@ -7,7 +7,7 @@ import { router } from './router';
 import { i18n } from './i18n';
 import { updateTheme } from './utils/theme';
 
-// import 'uno.css';
+import 'uno.css';
 // import '@/assets/styles/index.scss';
 // If you want to use ElMessage, import it.
 // import 'element-plus/theme-chalk/src/message.scss';
@@ -15,10 +15,10 @@ import { updateTheme } from './utils/theme';
 import '@/assets/styles/tailwind.css';
 async function main() {
     // Start mock server
-    if (import.meta.env.DEV || import.meta.env.VITE_IS_VERCEL) {
+    /*if (import.meta.env.DEV || import.meta.env.VITE_IS_VERCEL) {
         const { worker } = await import('./mocks/index');
         worker.start({ onUnhandledRequest: 'bypass' });
-    }
+    }*/
 
     const app = createApp(App);
 
