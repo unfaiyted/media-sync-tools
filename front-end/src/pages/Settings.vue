@@ -6,14 +6,15 @@
       <button @click="showModal = true" class="bg-blue-500 text-white px-4 py-2 rounded shadow mb-4">Add Client</button>
 
     <!-- List of Added Clients -->
-      <div v-for="config in clientsConfig" :key="config.id" class="bg-white p-4 rounded shadow-lg mb-4">
-          <h3 class="text-lg font-semibold">{{ config.clientName }} - {{ config.name }}</h3>
+      <div v-for="(config, key) in clientsConfig" :key="key" class="bg-white p-4 rounded shadow-lg mb-4">
+          <h3 class="text-lg font-semibold">{{ config.label || key }} - {{ config.name }}</h3>
           <ul>
-              <li v-for="(value, key) in config.fields" :key="key">{{ key }}: {{ value }}</li>
+              <li v-for="(value, field) in config" :key="field">{{ field }}: {{ value }}</li>
           </ul>
           <button @click="updateClient(config)" class="mt-2 bg-blue-500 text-white px-4 py-2 rounded shadow">Update</button>
-          <button @click="deleteClient(config.id)" class="mt-2 bg-red-500 text-white px-4 py-2 rounded shadow">Delete</button>
+          <button @click="deleteClient(key)" class="mt-2 bg-red-500 text-white px-4 py-2 rounded shadow">Delete</button>
       </div>
+
       <!-- Modal for Adding Clients -->
 
       <div v-if="showModal" class="fixed top-0 left-0 w-full h-full flex items-center justify-center">
@@ -46,11 +47,21 @@
     </div>
 
     <!-- ... (rest of your settings) -->
+
+
+  <LibraryConfig />
   </div>
+
+
 </template>
 
 <script>
+    import LibraryConfig from "@/components/config/LibrariesConfig.vue";
+    import {API_URL} from "@/utils/constants";
 export default {
+   components: {
+       LibraryConfig
+   },
   data() {
     return {
       showModal: false,
@@ -77,18 +88,18 @@ export default {
     }
   },
   methods: {
-      async updateClient(config) {
+      async updateClient() {
       // Construct the client data object to update
 
               // Fetch the updated client configurations from the API after updating
               try {
-                  const response = await fetch('http://localhost:8000/config', {
+                  const response = await fetch(`${API_URL}/config`, {
                       method: 'GET',
                   });
 
                   if (response.ok) {
                       const updatedConfigs = await response.json();
-                      this.clientsConfig = updatedConfigs;
+                      this.clientsConfig = updatedConfigs.clients;
                   } else {
                       console.error('Failed to fetch updated client configurations');
                   }
@@ -125,7 +136,7 @@ export default {
         };
 
         try {
-            const response = await fetch('http://localhost:8000/config', {
+            const response = await fetch(`${API_URL}/config`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -135,6 +146,7 @@ export default {
 
             if (response.ok) {
                 console.log('Client configuration updated successfully');
+                this.fetchClientConfigs();
             } else {
                 console.error('Failed to update client configuration');
             }
@@ -146,12 +158,14 @@ export default {
     },
       async fetchClientConfigs() {
           try {
-              const response = await fetch('http://localhost:8000/config', {
+              const response = await fetch(`${API_URL}/config`, {
                   method: 'GET',
               });
 
               if (response.ok) {
-                  this.clientsConfig = await response.json();
+                  const config = (await response.json())
+                  this.clientsConfig = config.clients;
+                    console.log('fetch', this.clientsConfig)
               } else {
                   console.error('Failed to fetch client configurations');
               }
@@ -162,18 +176,19 @@ export default {
       async deleteClient(id) {
           // Call the FastAPI endpoint to delete a client
           try {
-              const response = await fetch(`http://localhost:8000/config/clients/${id}`, {
+              const response = await fetch(`${API_URL}/config/client/${id}`, {
                   method: 'DELETE',
               });
 
               if (response.ok) {
-                  this.clientsConfig = this.clientsConfig.filter(client => client.id !== id);
+                  await this.fetchClientConfigs();
               } else {
                   console.error('Failed to delete client');
               }
           } catch (error) {
               console.error('There was an error:', error);
           }
+                  await this.fetchClientConfigs();
       }
   },
     mounted() {

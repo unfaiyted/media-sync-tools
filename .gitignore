@@ -56,3 +56,16 @@ config/*
 
 
 
+
+# Dependency directories
+/node_modules/
+/dist/
+
+# Compiled TypeScript
+/src/**/*.js
+/src/**/*.js.map
+/src/**/*.d.ts
+
+# ESLint and Prettier cache directories
+/node_modules/.cache/
+/node_modules/.eslintcache

@@ -7,6 +7,20 @@
       <excludeFolder url="file://$MODULE_DIR$/venv" />
       <excludeFolder url="file://$MODULE_DIR$/venv/bin" />
       <excludeFolder url="file://$MODULE_DIR$/venv/lib" />
+      <excludeFolder url="file://$MODULE_DIR$/config/Anime" />
+      <excludeFolder url="file://$MODULE_DIR$/config/Movies" />
+      <excludeFolder url="file://$MODULE_DIR$/config/TV Shows" />
+      <excludeFolder url="file://$MODULE_DIR$/config/collections" />
+      <excludeFolder url="file://$MODULE_DIR$/config/data" />
+      <excludeFolder url="file://$MODULE_DIR$/config/libraries" />
+      <excludeFolder url="file://$MODULE_DIR$/config/logs" />
+      <excludeFolder url="file://$MODULE_DIR$/config/playlists" />
+      <excludeFolder url="file://$MODULE_DIR$/config/resources" />
+      <excludeFolder url="file://$MODULE_DIR$/config/uploads" />
+      <excludeFolder url="file://$MODULE_DIR$/src/resources/Collections/Alien " />
+      <excludeFolder url="file://$MODULE_DIR$/src/resources/Collections/Rocky " />
+      <excludeFolder url="file://$MODULE_DIR$/src/resources/Collections/V" />
+      <excludeFolder url="file://$MODULE_DIR$/front-end-old/.idea" />
     </content>
     <orderEntry type="jdk" jdkName="Python 3.10 (plex-emby-sync-tools)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />

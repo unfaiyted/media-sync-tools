@@ -1,36 +1,64 @@
 
 <template>
-  <div id="app" class="bg-gray-200 min-h-screen">
-    <Header />
-    <div class="flex">
-      <Sidebar />
-      <router-view class="flex-grow bg-gray-100" />
+    <div id="app" class="bg-gray-200 min-h-screen">
+        <Header />
+        <div class="flex">
+            <Sidebar />
+            <router-view class="flex-grow bg-gray-100" />
+        </div>
     </div>
-  </div>
 </template>
 
-<script>
-import Sidebar from "./components/ui/SidebarView"
-import Header from "./components/ui/HeaderView"
-// import PlaylistEditor from "./components/ListEditor.vue";
-// import PosterImage from "./components/PosterImage.vue";
-// import EndpointTrigger from "@/components/EndpointTrigger.vue";
 
-export default {
-    name: "App",
-    components: {
-      // EndpointTrigger,
-      Sidebar,
-      Header
-      /*PlaylistEditor*/
-      // PosterImage
-    },
-    methods: {
-        savePlaylistData(playlist) {
-            // Send the playlist data to the backend API or perform any other action
-            console.log(playlist);
-            alert("Playlist data saved successfully!");
-        },
-    },
-};
+<script lang="ts" setup>
+import { useTimeAgo } from '@vueuse/core';
+import { useUserStore } from '@/store/user';
+import ReloadPrompt from '@/pwa/ReloadPrompt.vue';
+import ServiceWorker from './components/ServiceWorker.vue';
+import Sidebar from "./components/ui/Sidebar.vue"
+import Header from "./components/ui/Header.vue"
+const userStore = useUserStore();
+
+userStore.initUser();
+
+const date = '__DATE__';
+const timeAgo = useTimeAgo(date);
 </script>
+
+
+<!--<template>-->
+<!--    <el-container>-->
+<!--        <el-header>-->
+<!--            <Header />-->
+<!--        </el-header>-->
+<!--        <el-main class="main">-->
+<!--            <RouterView />-->
+<!--            <br />-->
+<!--            <ServiceWorker />-->
+<!--            <br />-->
+<!--            <div>Built at: {{ date }} ({{ timeAgo }})</div>-->
+<!--        </el-main>-->
+<!--        <el-footer>-->
+<!--            <Footer />-->
+<!--        </el-footer>-->
+<!--    </el-container>-->
+<!--    <ReloadPrompt />-->
+<!--</template>-->
+<!--<style lang="scss">-->
+<!--#app {-->
+<!--    font-family: Avenir, Helvetica, Arial, sans-serif;-->
+
+<!--    -webkit-font-smoothing: antialiased;-->
+<!--    -moz-osx-font-smoothing: grayscale;-->
+<!--    text-align: center;-->
+<!--    line-height: 150%;-->
+<!--}-->
+
+<!--.main {-->
+<!--    min-height: 500px;-->
+<!--}-->
+
+<!--.sw-msg {-->
+<!--    margin-top: 20px;-->
+<!--}-->
+<!--</style>-->

@@ -12,7 +12,8 @@ from pyarr import RadarrAPI
 from src.clients.mdblist import MDBListClient
 from pymongo import MongoClient
 
-
+import motor.motor_asyncio
+import motor
 class ConfigManager:
     instance = None
     def __init__(self, config_path=None):
@@ -30,11 +31,10 @@ class ConfigManager:
         self.db = self.get_db()
         self.load_config()
 
-
-    def get_db(self, db_name='media-sync-tools'):
-        mongodb_uri = f"mongodb://root:dragon@localhost:27017"
-        client = MongoClient(mongodb_uri)
-        return client[db_name]
+    def get_db(self) -> motor.motor_asyncio.AsyncIOMotorDatabase:
+        client = motor.motor_asyncio.AsyncIOMotorClient("mongodb://root:dragon@localhost:27017/sync-tools-db?authSource=admin")
+        database = client['sync-tools-db']
+        return database
 
     def create_subdirectories(self):
         subdirectories = ['logs', 'collections', 'playlists', 'resources', 'libraries']

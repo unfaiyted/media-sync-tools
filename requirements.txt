@@ -67,3 +67,15 @@ wsproto==1.2.0
 yarl==1.9.2
 
 pymongo~=4.4.1
+
+prisma~=0.9.1
+dnspython~=2.4.2
+httpcore~=0.17.3
+httpx~=0.24.1
+pip~=23.1.2
+wheel~=0.38.4
+Jinja2~=3.1.2
+setuptools~=65.5.1
+packaging~=23.1
+
+motor~=3.2.0

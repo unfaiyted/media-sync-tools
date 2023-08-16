@@ -22,6 +22,8 @@
 </template>
 
 <script>
+import {API_URL} from "@/utils/constants";
+
 export default {
     data() {
         return {
@@ -54,7 +56,7 @@ export default {
             formData.append('file', file);
 
             try {
-                const response = await fetch("http://localhost:8000/poster/upload-file/", {
+                const response = await fetch(`${API_URL}/poster/upload-file/`, {
                     method: 'POST',
                     body: formData,
                 });
@@ -69,7 +71,7 @@ export default {
         },
         async fetchFileList() {
             try {
-                const response = await fetch("http://localhost:8000/uploads/filenames/");
+                const response = await fetch(`${API_URL}/uploads/filenames/`);
                 const data = await response.json();
                 this.uploadedFiles = data.files;
             } catch (error) {

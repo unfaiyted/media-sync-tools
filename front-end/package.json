@@ -1,50 +1,94 @@
 {
-  "name": "front-end",
-  "version": "0.1.0",
+  "name": "vue-ts-starter",
   "private": true,
+  "version": "1.0.0",
   "scripts": {
-    "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "lint": "eslint --ext .js,.ts,.vue --fix src",
+    "prettier": "prettier --write --ignore-unknown '**/*'",
+    "stylelint": "stylelint --fix 'src/**/*.{scss,less,css}'",
+    "commit": "git-cz",
+    "release": "npx bumpp --push --tag --commit 'release: v'",
+    "postinstall": "npx msw init public --save",
+    "prepare": "husky install"
   },
   "dependencies": {
-    "autoprefixer": "^10.4.15",
-    "core-js": "^3.8.3",
-    "lodash": "^4.17.21",
-    "postcss": "^8.4.27",
+    "@element-plus/icons-vue": "^2.1.0",
+    "@unocss/reset": "^0.53.1",
+    "@vueuse/core": "^10.1.2",
+    "@vueuse/integrations": "^10.1.2",
+    "axios": "^1.4.0",
+    "element-plus": "^2.3.6",
+    "pinia": "^2.1.3",
+    "universal-cookie": "^4.0.4",
+    "vue3-colorpicker": "^2.2.2",
+    "vue": "^3.3.4",
     "tailwindcss": "^3.3.3",
-    "vue": "^3.2.13",
+    "postcss": "^8.4.27",
+    "autoprefixer": "^10.4.15",
+    "vue-i18n": "^9.2.2",
     "vue-color": "^2.8.1",
-    "vue-router": "^4.2.4",
-    "vue3-colorpicker": "^2.2.2"
+    "vue-router": "^4.2.2",
+    "workbox-core": "^7.0.0",
+    "workbox-precaching": "^7.0.0",
+    "workbox-routing": "^7.0.0",
+    "workbox-window": "^7.0.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.12.16",
-    "@babel/eslint-parser": "^7.12.16",
-    "@vue/cli-plugin-babel": "~5.0.0",
-    "@vue/cli-plugin-eslint": "~5.0.0",
-    "@vue/cli-service": "~5.0.0",
-    "eslint": "^7.32.0",
-    "eslint-plugin-vue": "^8.0.3"
+    "@commitlint/cli": "^17.6.5",
+    "@commitlint/config-conventional": "^17.6.5",
+    "@iconify-json/carbon": "^1.1.18",
+    "@intlify/unplugin-vue-i18n": "^0.11.0",
+    "@rollup/plugin-replace": "^5.0.2",
+    "@types/node": "^20.3.1",
+    "@typescript-eslint/eslint-plugin": "^5.59.11",
+    "@typescript-eslint/parser": "^5.59.11",
+    "@vitejs/plugin-vue": "^4.2.3",
+    "autoprefixer": "^10.4.14",
+    "bumpp": "^9.1.1",
+    "commitizen": "^4.3.0",
+    "commitlint-config-cz": "^0.13.3",
+    "cz-conventional-changelog": "^3.3.0",
+    "cz-customizable": "^7.0.0",
+    "eslint": "^8.42.0",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "eslint-plugin-vue": "^9.14.1",
+    "husky": "^8.0.3",
+    "lint-staged": "^13.2.2",
+    "msw": "^1.2.2",
+    "postcss": "^8.4.24",
+    "postcss-scss": "^4.0.6",
+    "prettier": "^2.8.8",
+    "rollup": "^3.25.1",
+    "sass": "^1.63.3",
+    "standard-version": "^9.5.0",
+    "tailwindcss": "^3.3.2",
+    "typescript": "^4.9.5",
+    "unocss": "^0.53.1",
+    "unplugin-auto-import": "^0.16.4",
+    "unplugin-vue-components": "^0.25.1",
+    "unplugin-vue-macros": "^2.3.0",
+    "vite": "^4.3.9",
+    "vite-plugin-html": "^3.2.0",
+    "vite-plugin-pwa": "^0.16.4",
+    "vue-tsc": "^1.6.5"
   },
-  "eslintConfig": {
-    "root": true,
-    "env": {
-      "node": true
+  "config": {
+    "commitizen": {
+      "path": "node_modules/cz-customizable"
     },
-    "extends": [
-      "plugin:vue/vue3-essential",
-      "eslint:recommended"
-    ],
-    "parserOptions": {
-      "parser": "@babel/eslint-parser"
-    },
-    "rules": {}
+    "cz-customizable": {
+      "config": "./.cz-config.js"
+    }
   },
-  "browserslist": [
-    "> 1%",
-    "last 2 versions",
-    "not dead",
-    "not ie 11"
-  ]
+  "engines": {
+    "node": ">=16.16.0"
+  },
+  "packageManager": "pnpm@8.6.2",
+  "msw": {
+    "workerDirectory": "public"
+  }
 }

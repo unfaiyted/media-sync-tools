@@ -91,6 +91,7 @@ import BorderColorPicker from "@/components/BorderColorPicker.vue";
 import IconPicker from "@/components/IconPicker.vue";
 import DragDrop from "@/components/DragDrop.vue";
 import TextEffects from "@/components/TextEffects.vue";
+import {API_URL} from "@/utils/constants";
 
 
 export default {
@@ -153,7 +154,7 @@ export default {
 
                 console.log(request)
 
-                const response = await fetch('http://localhost:8000/poster/create', {
+                const response = await fetch(`${API_URL}/poster/create`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

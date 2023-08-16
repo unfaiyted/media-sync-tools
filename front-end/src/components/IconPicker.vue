@@ -9,6 +9,8 @@
 </template>
 
 <script>
+import {API_URL} from "@/utils/constants";
+
 export default {
     data() {
         return {
@@ -31,7 +33,7 @@ export default {
         async fetchFiles() {
             try {
                 // Call our API endpoint (you may need to adjust the URL or add params if needed)
-                const response = await fetch("http://localhost:8000/icons/filenames");
+                const response = await fetch(`${API_URL}/icons/filenames`);
                 const data = await response.json();
                 this.files = data.filenames;
             } catch (error) {

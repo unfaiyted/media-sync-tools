@@ -10,6 +10,7 @@
 
 <script>
 import { ref } from 'vue';
+import {API_URL} from "@/utils/constants";
 
 export default {
     name: 'EndpointTrigger',
@@ -35,7 +36,7 @@ export default {
         const triggerEndpoint = async (endpoint) => {
             loadingEndpoint.value = endpoint;
             try {
-                let response = await fetch(`http://localhost:8000/${endpoint}`);
+                let response = await fetch(`${API_URL}/${endpoint}`);
                 let data = await response.json();
                 responseMessage.value = data.message;
             } catch (error) {
