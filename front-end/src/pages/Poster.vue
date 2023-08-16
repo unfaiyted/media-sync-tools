@@ -6,7 +6,7 @@
   </div>
 </template>
 
-<script>
+<script lang="ts">
 // import PlaylistEditor from "./components/ListEditor.vue";
 import PosterImage from "@/components/PosterImage.vue";
 // import EndpointTrigger from "@/components/EndpointTrigger.vue";

@@ -55,9 +55,10 @@
 
 </template>
 
-<script>
-    import LibraryConfig from "@/components/config/LibrariesConfig.vue";
-    import {API_URL} from "@/utils/constants";
+<script lang="ts">
+import LibraryConfig from "@/components/config/LibrariesConfig.vue";
+import {API_URL} from "@/utils/constants";
+
 export default {
    components: {
        LibraryConfig

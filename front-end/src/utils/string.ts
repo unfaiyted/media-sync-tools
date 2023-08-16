@@ -1,4 +1,4 @@
-export function parseRGB(rgbString) {
+export function parseRGB(rgbString: string) : Array<number> {
     const matches = rgbString.match(/\d+/g); // match all groups of digits in the string
 
     if (matches && matches.length === 3) {

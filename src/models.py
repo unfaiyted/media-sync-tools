@@ -16,8 +16,8 @@ class Provider(str, Enum):
 
 
 class ClientType(str, Enum):
-    TYPE1 = "TYPE1"
-    TYPE2 = "TYPE2"
+    PLEX = 'PLEX'
+    EMBY = 'EMBY'
     # ... other types ...
 
 

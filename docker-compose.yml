@@ -1,15 +1,23 @@
 version: '3'
 
 services:
-    sync-tools:
-        container_name: sync-tools
-        image: plex-emby-sync-tools:test
-        ports:
-            - 8080:80
-        volumes:
-            - ./config:/config
-            - ./src:/src # Only needed if you want to edit the code
-        restart: unless-stopped
+    frontend:
+            build:
+                context: ./front-end
+                dockerfile: Dockerfile
+            ports:
+                - "8080:80"
+            restart: unless-stopped
+    backend:
+            build:
+                context: ./
+                dockerfile: Dockerfile  # Specify the Dockerfile for your Python FastAPI backend
+            ports:
+                - "8000:8000"  # Adjust the port as needed for your FastAPI app
+            volumes:
+                - ./config:/config
+                - ./src:/src # Only needed if you want to edit the code
+            restart: unless-stopped
     mongodb:
         container_name: mongodb
         image: mongo:latest
@@ -20,6 +28,7 @@ services:
             - ./config/data/db:/data/db
         ports:
             - "27017:27017"
+        restart: unless-stopped
     mongo-express:
         container_name: mongo-express
         image: mongo-express:latest
@@ -31,4 +40,4 @@ services:
             - "8081:8081"
         depends_on:
             - mongodb
-
+        restart: unless-stopped

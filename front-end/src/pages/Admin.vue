@@ -2,12 +2,12 @@
     <div>
         <!-- Create Client -->
         <h2>Create Client</h2>
-        <input v-model="client.clientId" placeholder="Client ID">
+<!--        <input v-model="client.clientId" placeholder="Client ID">-->
         <input v-model="client.label" placeholder="Label">
         <select v-model="client.type">
             <!-- Assuming ClientType is an enum with values 'TypeA', 'TypeB', etc. -->
-            <option value="TypeA">TypeA</option>
-            <option value="TypeB">TypeB</option>
+            <option value="PLEX">Plex</option>
+            <option value="EMBY">Emby</option>
             <!-- Add other types as needed -->
         </select>
         <input v-model="client.name" placeholder="Client Name">
@@ -27,11 +27,11 @@
 
         <!-- Update Client (can be improved with a modal or separate component) -->
         <h2>Update Client</h2>
-        <input v-model="updatedClient.clientId" placeholder="Client ID">
+        <input v-model="updatedClient.clientId" type="hidden"/>
         <input v-model="updatedClient.label" placeholder="Label">
         <select v-model="updatedClient.type">
-            <option value="TypeA">TypeA</option>
-            <option value="TypeB">TypeB</option>
+            <option value="PLEX">Plex</option>
+            <option value="EMBY">Emby</option>
             <!-- Add other types as needed -->
         </select>
         <input v-model="updatedClient.name" placeholder="Client Name">
@@ -41,11 +41,13 @@
     </div>
 </template>
 
-<script>
+<script lang="ts">
 import axios from "axios";
 import {API_URL} from "@/utils/constants";
+import {Index} from "@/router";
 
 export default {
+    components: {Index},
     data() {
         return {
             clients: [],
@@ -73,7 +75,7 @@ export default {
     methods: {
         async fetchClients() {
             try {
-                const response = await axios.get(`${API_URL}/clients`);
+                const response = await axios.get(`${API_URL}/client`);
                 return response.data;
             } catch (error) {
                 console.error("Error fetching clients:", error);
@@ -81,15 +83,15 @@ export default {
         },
         async createClient() {
             try {
-                await axios.post(`${API_URL}/clients`, this.client);
+                await axios.post(`${API_URL}/client`, this.clients);
                 this.clients = await this.fetchClients();
             } catch (error) {
                 console.error("Error creating client:", error);
             }
         },
-        async deleteClient(clientId) {
+        async deleteClient(clientId: string) {
             try {
-                await axios.delete(`${API_URL}/clients/${clientId}`);
+                await axios.delete(`${API_URL}/client/${clientId}`);
                 this.clients = await this.fetchClients();
             } catch (error) {
                 console.error("Error deleting client:", error);
@@ -97,7 +99,7 @@ export default {
         },
         async updateClient() {
             try {
-                await axios.put(`${API_URL}/clients/${this.updatedClient.clientId}`, this.updatedClient);
+                await axios.put(`${API_URL}/client/${this.updatedClient.clientId}`, this.updatedClient);
                 this.clients = await this.fetchClients();
             } catch (error) {
                 console.error("Error updating client:", error);
