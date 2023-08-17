@@ -17,11 +17,29 @@ class Provider(str, Enum):
     # ... other types ...
 
 
+class MediaType(str, Enum):
+    MOVIE = "MOVIE"
+    EPISODE = "EPISODE"
+    UNKNOWN = "UNKNOWN"
+    SEASON = "SEASON"
+    SHOW = "SHOW"
+    # ... other types ...
+
+
 class ClientType(str, Enum):
     UNKNOWN = 'UNKNOWN'
     MEDIA_SERVER = 'MEDIA_SERVER'
     LIST_PROVIDER = 'LIST_PROVIDER'
     UTILITY = 'UTILITY'
+    # ... other types ...
+
+
+class FilterType(str, Enum):
+    UNKNOWN = 'UNKNOWN'
+    STRING = 'STRING'
+    NUMBER = 'NUMBER'
+    BOOLEAN = 'BOOLEAN'
+    DATE = 'DATE'
     # ... other types ...
 
 
@@ -57,7 +75,8 @@ class ListTypeOptions(BaseModel):
 
 class Filter(BaseModel):
     filterId: str = None
-    provider: Provider
+    filterTypeId: str
+    mediaListId: str
     label: str
     type: str
     value: str
@@ -65,42 +84,59 @@ class Filter(BaseModel):
     listListId: Optional[str]
 
 
+class FilterTypes(BaseModel):
+    filterTypeId: str = None
+    clientId: str
+    name: str
+    label: str
+    type: FilterType
+
+
 class MediaList(BaseModel):
     listId: str = None
     name: str
-    type: str
+    type: ListType
     sortName: str
-    provider: str
-    filters: List[ForwardRef('Filter')]
-    items: List[ForwardRef('ListItem')]
-    includeLibraries: List[ForwardRef('Library')]
+    configClientId: str  # client provider
+    filters: Optional[List[ForwardRef('Filter')]]
+    items: Optional[List[ForwardRef('MediaListItem')]]
+    includeLibraries: Optional[ForwardRef('Library')]
     userId: str
-    user: ForwardRef('User')
+    user: Optional[ForwardRef('User')]
 
 
 class Library(BaseModel):
     libraryId: str = None
     name: str
-    clients: List[ForwardRef('LibraryClient')]
+    clients: Optional[List[ForwardRef('LibraryClient')]]
     List: Optional[ForwardRef('MediaList')]
 
 
 class LibraryClient(BaseModel):
-    libraryClientId: str = None
-    library_name: str
-    client: ForwardRef('Client')
+    libraryClientId: Optional[str] = None
+    libraryId: str
+    libraryName: str
+    client: Optional[ForwardRef('Client')]
     clientId: str
-    Library: Library
+    Library: Optional[ForwardRef('Library')]
 
 
-class ListItem(BaseModel):
+class MediaListItem(BaseModel):
     itemId: str = None
     listId: str
     name: str
-    poster: str
-    description: str
+    poster: Optional[str]
+    description: Optional[str]
     year: str
-    list: List
+    releaseDate: Optional[str]
+    dateAdded: Optional[str]
+    sourceId: Optional[str]
+    imdbId: Optional[str]
+    tvdbId: Optional[str]
+    tmdbId: Optional[str]
+    traktId: Optional[str]
+    aniList: Optional[str]
+    type: MediaType
 
 
 class ConfigClient(BaseModel):
@@ -122,8 +158,9 @@ class ClientField(BaseModel):
 
 
 class ConfigClientFieldsValue(BaseModel):
-    configClientFieldsId: str = None
-    clientField: ClientField
+    configClientFieldValueId: Optional[str] = None
+    configClientFieldId: str
+    clientField: Optional[ForwardRef('ClientField')]
     configClientId: str
     value: str
 
@@ -140,7 +177,7 @@ class Client(BaseModel):
     def validate_object_id(cls, value):
         id = value.__str__()
         if id is not None and not isinstance(id, str):
-             raise ValueError(f"Invalid ObjectId: {id}")
+            raise ValueError(f"Invalid ObjectId: {id}")
         return str(value) if isinstance(value, ObjectId) else value
 
 
@@ -157,7 +194,7 @@ class User(BaseModel):
 Config.update_forward_refs()
 ConfigClient.update_forward_refs()
 MediaList.update_forward_refs()
-ListItem.update_forward_refs()
+MediaListItem.update_forward_refs()
 Library.update_forward_refs()
 LibraryClient.update_forward_refs()
 Client.update_forward_refs()

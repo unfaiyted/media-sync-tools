@@ -72,16 +72,16 @@ model Filter {
 }
 
 model List {
-  listId           String     @id @map("_id")
+  listId           String          @id @map("_id")
   name             String
   type             String
   sortName         String
   provider         String
   filters          Filter[]
-  items            ListItem[]
+  items            MediaListItem[]
   includeLibraries Library[]
   userId           String
-  user             User       @relation(fields: [userId], references: [userId])
+  user             User            @relation(fields: [userId], references: [userId])
 }
 
 // Library example: 'Movies' or 'TV Shows'

@@ -23,5 +23,36 @@
       <h2 class="text-lg font-semibold mb-4">Recently Added Movies</h2>
       <!-- Movie list, potentially a component iterating over the recent movies -->
     </div>
+
+      <SyncOptions :config="config"/>
+
+
   </div>
 </template>
+<script  lang="ts">
+import SyncOptions from "@/components/config/SyncOptions.vue";
+import {Config} from "@/models";
+import {fetchConfig} from "@/api/configs";
+
+
+export default defineComponent({
+    components: {
+        SyncOptions
+    },
+    data() {
+        return {
+            config: {
+                configId: '4158646e-631e-462b-bf07-5b39cf2cc3ae'
+            } as Config,
+            configId: '4158646e-631e-462b-bf07-5b39cf2cc3ae'
+        }
+    },
+    async mounted() {
+        this.config = await fetchConfig(this.configId);
+        console.log(this.config);
+    },
+    methods: {}
+});
+
+
+</script>

@@ -270,6 +270,7 @@ class ListBuilder:
         print(f'Creating {self.type} - {self.title}')
         if self.type == 'Collection':
             self.print_list()
+            self
             new_list = self.emby.create_collection(self.title, self._get_media_type_for_emby(), self.sort_title)
         elif self.type == 'Playlist':
             self.print_list()

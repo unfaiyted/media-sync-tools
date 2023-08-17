@@ -1,6 +1,6 @@
 // ... other imports
 import axios from "axios";
-import {Config, ConfigClient} from "@/models";
+import {Config, ConfigClient, SyncOptions} from "@/models";
 import { generateGuid } from "@/utils/numbers";
 import {apiClient} from "@/api/index";
 
@@ -46,12 +46,23 @@ export const fetchConfigClient = async (configClientId: string) => {
     return await apiClient.get(`/config/client/${configClientId}`);
 }
 
-export const fetchConfigClientByConfigId = async (configId: string | undefined) => {
+
+
+export const fetchConfigClientsByConfigId = async (configId: string | undefined) => {
     if(!configId) {
         console.error("Config ID is blank");
         return;
     }
     return (await apiClient.get(`/config/client/?configId=${configId}`)).data;
+}
+
+
+export const fetchClientFieldValuesByClientId = async (clientConfigId: string | undefined) => {
+    if(!clientConfigId) {
+        console.error("Client ID is blank");
+        return {};
+    }
+    return (await apiClient.get(`/config/client-fields-value/?configClientId=${clientConfigId}`)).data;
 }
 
 export const updateConfigClient = async (updatedConfigClient: ConfigClient) => {
@@ -65,3 +76,13 @@ export const deleteConfigClient = async (configClientId: string | undefined) => 
     }
     return await apiClient.delete(`/config/client/${configClientId}`);
 }
+
+// Fetch Field Values for a Given configId
+export const fetchFieldsValueByConfigId = async (configId: string | undefined) => {
+    if(!configId) {
+        console.error("Config ID is blank");
+        return;
+    }
+    return (await apiClient.get(`/config/client-fields-value/config/${configId}`)).data;
+}
+

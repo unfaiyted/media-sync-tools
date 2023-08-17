@@ -5,6 +5,7 @@ export enum ListType {
 }
 
 export  enum Provider {
+    UNKNOWN = "UNKNOWN",
     OPENAI = "OPENAI",
     MDB = "MDB",
     TRAKT = "TRAKT",
@@ -17,6 +18,23 @@ export enum ClientType {
     LIST_PROVIDER = 'LIST_PROVIDER',
     UTILITY = 'UTILITY'
     // ... other types ...
+}
+
+export enum FilterType {
+    UNKNOWN = 'UNKNOWN',
+    TEXT = 'TEXT',
+    NUMBER = 'NUMBER',
+    BOOLEAN = 'BOOLEAN',
+    DATE = 'DATE',
+    // ... other types ...
+}
+
+export enum MediaType {
+    UNKNOWN = 'UNKNOWN',
+    MOVIE = 'MOVIE',
+    EPISODE = 'EPISODE',
+    SEASON = 'SEASON',
+    SHOW = 'SHOW',
 }
 
 export interface Config {
@@ -51,49 +69,64 @@ export interface ListTypeOptions {
 
 export interface Filter {
     filterId?: string;
-    provider: Provider;
-    label: string;
-    type: string;
+    mediaListId: string;
+    filterTypeId: string;
     value: string;
-    List?: MediaList;
-    listListId?: string;
+}
+
+export interface FilterTypes {
+    filterTypeId: string;
+    clientId: string;
+    label: string;
+    name: string;
+    type: FilterType;
 }
 
 export interface MediaList {
     listId?: string;
     name: string;
-    type: string;
+    type: ListType;
     sortName: string;
-    provider: string;
-    filters: Filter[];
-    items: ListItem[];
-    includeLibraries: Library[];
+    configClientId: string;
+    filters?: Filter[];
+    items?: MediaListItem[];
+    includeLibraries?: Library[];
     userId: string;
-    user: User;
+    user?: User;
 }
 
 export interface Library {
     libraryId?: string;
     name: string;
-    clients: LibraryClient[];
+    clients?: LibraryClient[];
     List?: MediaList;
 }
 
 export interface LibraryClient {
     libraryClientId?: string;
-    library_name: string;
-    client: Client;
+    libraryId: string;
+    libraryName: string;
+    client?: Client;
     clientId: string;
-    Library: Library;
+    Library?: Library;
 }
 
-export interface ListItem {
+export interface MediaListItem {
     itemId?: string;
     listId: string;
     name: string;
-    poster: string;
-    description: string;
+    poster?: string;
+    description?: string;
     year: string;
+    sourceId?: string;
+    releaseDate?: string;
+    dateAdded?: string;
+    imdbId?: string;
+    tvdbId?: string;
+    tmdbId?: string;
+    traktId?: string;
+    aniList?: string;
+    type: MediaType;
     list: any[]; // Adjust this type accordingly
 }
 
@@ -116,10 +149,11 @@ export interface ClientField {
 }
 
 export interface ConfigClientFieldsValue {
-    configClientFieldsId?: string;
-    clientField: ClientField;
-    configClientId: string;
-    value: string;
+    configClientFieldValueId?: string; // This is the ID of the value, not the field
+    configClientFieldId?: string; // This is the ID of the field, not the value (ClientField)
+    clientField?: ClientField; // This is the field object
+    configClientId: string; // This is the ID of the client config (ConfigClient)
+    value: string; // This is the value of the field
 }
 
 export interface Client {

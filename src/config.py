@@ -47,9 +47,9 @@ class ConfigManager:
         with open(config_file, 'r') as f:
             config_data = yaml.safe_load(f)
 
-        self.clients_details = config_data.get('clients.ts', {})
+        self.clients_details = config_data.get('clients', {})
 
-        self.add_clients(config_data.get('clients.ts', {}))
+        self.add_clients(config_data.get('clients', {}))
         self.add_library_data(config_data.get('libraries', {}))
         self.add_collection_data(config_data.get('collections', {}))
         self.add_playlist_data(config_data.get('playlists', {}))

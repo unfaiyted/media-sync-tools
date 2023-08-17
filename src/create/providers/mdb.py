@@ -1,3 +1,6 @@
+import uuid
+
+from src.models import MediaList, MediaListItem, MediaType, ListType
 
 
 class ListProviderResult:
@@ -25,11 +28,46 @@ class MdbProvider:
 
         list = self.client.get_list_information(list_id=self.id)[0]
         list_items = self.client.get_list_items(list['id'])
+        db = self.config.get_db()
+
+
+        print('LIST    sss',list)
+        # print('List Items', list_items)
+
+        media_list = MediaList(
+            listId=str(uuid.uuid4()),
+            name=list['name'],
+            type=ListType.COLLECTION,
+            sortName=list['name'],
+            configClientId='MDBLIST',
+            userId="APPUSERID"
+        )
+
+        print(media_list)
+
+        db.media_lists.insert_one(media_list.dict())
 
         primary_list = []
 
         for item in list_items:
-            print('-------------', item['id'], item['imdb_id'], item['tvdb_id'], item['language'], item['release_year'], item['rank'], item['spoken_language'])
+            print('-------------', item)
+
+
+            media_list_item = MediaListItem(
+                itemId=str(uuid.uuid4()),
+                sourceId=item['id'],
+                listId=media_list.listId,
+                name=item['title'],
+                # poster=item['poster'],
+                type=MediaType.MOVIE if item['mediatype'] == 'movie' else MediaType.SHOW,
+                year=item['release_year'],
+                dateAdded='DATE TIME NOW',
+                imdbId=item['imdb_id'],
+                tvdbId=item['tvdb_id']
+            )
+
+            db.media_list_items.insert_one(media_list_item.dict())
+
             try:
                 # TODO: Replace with OmniClient
                 emby_search = self.config.get_client('emby').get_media(external_id='imdb.'+item['imdb_id'])

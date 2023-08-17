@@ -1,5 +1,4 @@
 import time
-
 from src.clients.radarr import RadarrInteractions
 from src.create.posters import PosterImageCreator
 from datetime import datetime

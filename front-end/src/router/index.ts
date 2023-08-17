@@ -17,9 +17,9 @@ const routes: Array<RouteRecordRaw> = [
             keepAlive: true,
             requireAuth: false,
         },
-        component: Admin,
+        component: Dashboard
     },
- /*   {
+    {
         path: '/settings',
         name: 'Settings',
         meta: {
@@ -28,7 +28,7 @@ const routes: Array<RouteRecordRaw> = [
             requireAuth: false,
         },
         component: Settings,
-    },*/
+    },
     {
         path: '/about',
         name: 'About',
@@ -39,46 +39,46 @@ const routes: Array<RouteRecordRaw> = [
         },
         component: About,
     },
-    // {
-    //     path: '/list',
-    //     name: 'List',
-    //     meta: {
-    //         title: 'List Page',
-    //         keepAlive: true,
-    //         requireAuth: false,
-    //     },
-    //     component: MediaList,
-    // },
-    // {
-    //     path: '/tools',
-    //     name: 'Tools',
-    //     meta: {
-    //         title: 'Tools Page',
-    //         keepAlive: true,
-    //         requireAuth: false,
-    //     },
-    //     component: Tools,
-    // },
-    // {
-    //     path: '/poster',
-    //     name: 'Poster',
-    //     meta: {
-    //         title: 'Poster Page',
-    //         keepAlive: true,
-    //         requireAuth: false,
-    //     },
-    //     component: Poster,
-    // },
-    // {
-    //    path: '/admin',
-    //      name: 'Admin',
-    //         meta: {
-    //             title: 'Admin Page',
-    //             keepAlive: true,
-    //             requireAuth: false,
-    //         },
-    //         component: Admin,
-    // }
+     {
+         path: '/list',
+         name: 'List',
+         meta: {
+             title: 'List Page',
+             keepAlive: true,
+             requireAuth: false,
+         },
+         component: MediaList,
+     },
+     {
+         path: '/tools',
+         name: 'Tools',
+         meta: {
+             title: 'Tools Page',
+             keepAlive: true,
+             requireAuth: false,
+         },
+         component: Tools,
+     },
+    {
+        path: '/poster',
+        name: 'Poster',
+        meta: {
+            title: 'Poster Page',
+            keepAlive: true,
+            requireAuth: false,
+        },
+        component: Poster,
+    },
+     {
+        path: '/admin',
+          name: 'Admin',
+             meta: {
+                 title: 'Admin Page',
+                 keepAlive: true,
+                 requireAuth: false,
+             },
+             component: Admin,
+     }
 ];
 
 export default routes;
@@ -87,11 +87,11 @@ const router = createRouter({
     routes,
 });
 
-router.beforeEach(async (to, from) => {
-    const token = getToken();
-    if (!token && to.name !== 'Index') {
-        return { name: 'Index' };
-    }
-});
+// router.beforeEach(async (to, from) => {
+//     const token = getToken();
+//     if (!token && to.name !== 'Index') {
+//         return { name: 'Index' };
+//     }
+// });
 
 export { router };

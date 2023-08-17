@@ -3,7 +3,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase, AsyncIOMotorClient
 from bson import ObjectId
-from src.models import Config, ConfigClient, ClientField, ConfigClientFieldsValue
+from src.models import Config, ConfigClient, ClientField, ConfigClientFieldsValue, Filter
 from src.config import ConfigManager
 
 router = APIRouter()
@@ -253,12 +253,38 @@ async def delete_config_client(config_client_id: str, db: AsyncIOMotorDatabase =
 
 
 @router.post("/client-fields-value/", response_model=ConfigClientFieldsValue)
-async def create_config_client_fields_value(value: ConfigClientFieldsValue, db: AsyncIOMotorDatabase = Depends(config.get_db)):
-    if await db.config_client_fields_values.find_one({"configClientFieldsId": value.configClientFieldsId}):
-        raise HTTPException(status_code=400, detail="Config Client Fields Value already exists")
-    value_dict = value.dict()
-    result = await db.config_client_fields_values.insert_one(value_dict)
+async def create_config_client_fields_value(fieldValue: ConfigClientFieldsValue, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+
+    # if await db.config_client_fields_values.find_one({"configClientFieldValueId": fieldValue.configClientFieldValueId}):
+    #     raise HTTPException(status_code=400, detail="Config Client Fields Value already exists")
+
+    result = await db.config_client_fields_values.find_one({"configClientId": fieldValue.configClientId,
+                                                            "configClientFieldId": fieldValue.configClientFieldId})
+    if(result is not None):
+        fieldValue.configClientFieldValueId = fieldValue.configClientId
+        value_dict = fieldValue.dict()
+
+        await db.config_client_fields_values.replace_one({"configClientId": fieldValue.configClientId,
+                                                          "configClientFieldId": fieldValue.configClientFieldId}, value_dict)
+
+        return value_dict
+
+    value_dict = fieldValue.dict()
+    await db.config_client_fields_values.insert_one(value_dict)
     return value_dict
+
+
+# Get all field values for a given configClientId
+@router.get("/client-fields-value/", response_model=List[ConfigClientFieldsValue])
+async def read_all_config_client_fields_values_by_config_client_id(configClientId: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+    values = []
+    async for value_doc in db.config_client_fields_values.find({"configClientId": configClientId}):
+        # Create a ConfigClientFieldsValue instance from the retrieved document
+        values.append(value_doc)
+    if values is None:
+        raise HTTPException(status_code=404, detail="Config Client Fields Value not found")
+    return values
+
 
 @router.get("/client-fields-value/{value_id}", response_model=ConfigClientFieldsValue)
 async def read_config_client_fields_value(value_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
@@ -284,3 +310,60 @@ async def delete_config_client_fields_value(value_id: str, db: AsyncIOMotorDatab
         raise HTTPException(status_code=404, detail="Config Client Fields Value not found")
     await db.config_client_fields_values.delete_one({"configClientFieldsId": value_id})
     return existing_value
+
+# Fetch Field Values for a Given configId
+@router.get("/client-fields-value/config/{config_id}", response_model=List[ConfigClientFieldsValue])
+async def read_all_config_client_fields_values_by_config_id(config_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+    values = []
+    async for value_doc in db.config_client_fields_values.find({"configId": config_id}):
+        # Create a ConfigClientFieldsValue instance from the retrieved document
+        values.append(value_doc)
+    if values is None:
+        raise HTTPException(status_code=404, detail="Config Client Fields Value not found")
+    return values
+
+
+@router.post("/filter/", response_model=Filter)
+async def create_filter(filter_item: Filter, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+    if await db.filters.find_one({"filterId": filter_item.filterId}):
+        raise HTTPException(status_code=400, detail="Filter already exists")
+    filter_dict = filter_item.dict()
+    await db.filters.insert_one(filter_dict)
+    return filter_dict
+
+@router.get("/filter/{filter_id}", response_model=Filter)
+async def read_filter(filter_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+    filter_item = await db.filters.find_one({"filterId": filter_id})
+    if filter_item is None:
+        raise HTTPException(status_code=404, detail="Filter not found")
+    return filter_item
+
+@router.put("/filter/{filter_id}", response_model=Filter)
+async def update_filter(filter_id: str, filter_item: Filter, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+    existing_filter = await db.filters.find_one({"filterId": filter_id})
+    if existing_filter is None:
+        raise HTTPException(status_code=404, detail="Filter not found")
+
+    filter_dict = filter_item.dict()
+    await db.filters.replace_one({"filterId": filter_id}, filter_dict)
+    return filter_dict
+
+@router.delete("/filter/{filter_id}", response_model=Filter)
+async def delete_filter(filter_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+    existing_filter = await db.filters.find_one({"filterId": filter_id})
+    if existing_filter is None:
+        raise HTTPException(status_code=404, detail="Filter not found")
+    await db.filters.delete_one({"filterId": filter_id})
+    return existing_filter
+
+
+# Get all filters by Media ListId
+@router.get("/filter/list/", response_model=List[Filter])
+async def read_all_filters_by_list_id(mediaListId: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+    filters = []
+    async for filter_doc in db.filters.find({"mediaListId": mediaListId}):
+        # Create a Client instance from the retrieved document
+        filters.append(filter_doc)
+    if filters is None:
+        raise HTTPException(status_code=404, detail="Filter not found")
+    return filters

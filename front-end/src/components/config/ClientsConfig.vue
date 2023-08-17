@@ -13,12 +13,10 @@
             </select>
         </div>
 
-
         <!-- Add other input fields here for other properties of ConfigClient -->
         <button @click="createConfigClient" class="btn btn-primary">Add Config Client</button>
 
         <!-- List Config Clients -->
-        <!-- For this demo, I'm assuming you will fetch a list of Config Clients and store it in a variable named configClients -->
         <h2 class="text-lg font-semibold mt-8 mb-4">Config Clients</h2>
         <ul v-if="configClients.length">
             <li v-for="config in configClients" :key="config.configClientId" class="mb-2">
@@ -29,7 +27,6 @@
         </ul>
 
         <!-- Update Config Client Modal -->
-        <!-- It's essentially similar to the one you provided for ClientField with some names changed -->
         <transition name="modal" enter-active-class="transition-opacity ease-out duration-300" leave-active-class="transition-opacity ease-in duration-300">
             <div v-if="showEditModal" class="fixed inset-0 flex items-center justify-center">
                 <div class="modal-overlay absolute inset-0 bg-gray-900 opacity-75" @click="closeEditModal"></div>
@@ -47,10 +44,8 @@
                                @input="handleInputChange(field)"
                                :id="field.name"
                                class="input"
-                               :placeholder="field.defaultValue || 'Enter value'">
+                               :placeholder="getDefaultValue(field)">
                     </div>
-
-
                     <div class="flex justify-end">
                         <button @click="updateConfigClient" class="btn btn-primary">Update</button>
                         <button @click="closeEditModal" class="btn btn-secondary ml-2">Cancel</button>
@@ -64,8 +59,19 @@
 <script lang="ts">
 import { defineComponent, ref } from 'vue';
 import {Client as MediaClient, ClientField, Config, ConfigClient, ConfigClientFieldsValue} from "@/models";
-import { createConfigClient, deleteConfigClient, fetchConfigClientByConfigId, updateConfigClient } from "@/api/configs";
-import {fetchClientFieldByClientId, fetchClients} from "@/api/clients";
+import {
+    createConfigClient,
+    deleteConfigClient,
+    fetchClientFieldValuesByClientId,
+    fetchConfigClientsByConfigId, fetchFieldsValueByConfigId,
+    updateConfigClient
+} from "@/api/configs";
+import {fetchClientFieldByClientId, fetchClients, updateConfigClientFieldsValue} from "@/api/clients";
+
+
+type EditingFieldsType = {
+    [key: string]: string;
+};
 
 export default defineComponent({
     props: {
@@ -86,24 +92,31 @@ export default defineComponent({
             clientFields: [] as ClientField[],
             possibleClients: [] as MediaClient[],
             editingFields: {
-                name: ""
-            }
+            } as EditingFieldsType,
+            defaultValues: {
+            } as EditingFieldsType,
+            configClientFieldValues: [] as ConfigClientFieldsValue[]
         };
     },
     async mounted() {
         // Fetching all configClients for this demo. Adjust as necessary.
 
         this.possibleClients = await fetchClients(); // Fetch the list of clients when the component mounts
-        this.configClients = await fetchConfigClientByConfigId(this.config.configId);
-
+        this.configClients = await fetchConfigClientsByConfigId(this.config.configId);
+        this.configClientFieldValues = await fetchFieldsValueByConfigId(this.config.configId);
         console.log(this.possibleClients);
     },
     methods: {
          async handleInputChange(field: ClientField) {
+             if(this.editingConfigClient.configClientId === undefined) {
+                 console.error("Config client ID is undefined");
+                 return;
+             }
+
             const dataToUpdate: ConfigClientFieldsValue = {
-                configClientFieldsId: field.clientFieldId , // you should have some logic or data property to know the ID
+                configClientFieldId:  field.clientFieldId, // you should have some logic or data property to know the ID
                 clientField: field,
-                configClientId: (this.config.configId) ? this.config.configId : '', // fill this in based on your component data
+                configClientId:  this.editingConfigClient.configClientId, // fill this in based on your component data
                 value: this.editingFields[field.name]
             };
 
@@ -128,7 +141,7 @@ export default defineComponent({
                 configId: this.config.configId
             }
             await createConfigClient(this.newConfigClient);
-            this.configClients = await fetchConfigClientByConfigId(this.config.configId);
+            this.configClients = await fetchConfigClientsByConfigId(this.config.configId);
         },
         async updateConfigClient() {
             const config = await updateConfigClient(this.editingConfigClient);
@@ -145,7 +158,41 @@ export default defineComponent({
         async openEditModal(config: ConfigClient) {
             this.editingConfigClient = { ...config };
             this.clientFields = await fetchClientFieldByClientId(config.clientId);
+
+            this.defaultValues = await this.fetchDefaultValues();
+            // Here, fetch the field values for the given config client
+            this.configClientFieldValues = await fetchFieldsValueByConfigId(config.configClientId);
+
+            // Now, map the fetched values to the editingFields and defaultValues
+            for (const valueObj of this.configClientFieldValues) {
+                if (valueObj.clientField) {
+                    this.editingFields[valueObj.clientField.name] = valueObj.value;
+                    this.defaultValues[valueObj.clientField.name] = valueObj.value;
+                }
+            }
             this.showEditModal = true;
+        },
+        async fetchDefaultValues() {
+            for (const field of this.clientFields) {
+                console.log("Fetching default value for field:", field)
+                const fieldValues = await fetchClientFieldValuesByClientId(this.editingConfigClient.configClientId); // Assuming you have a function to fetch the field value
+                console.log("Fetched value:", fieldValues)
+                const value = fieldValues.filter((val: ConfigClientFieldsValue) => val.configClientFieldId === field.clientFieldId)[0];
+                console.log("Value:", value);
+                try{
+                    this.defaultValues[field.clientFieldId] = value.value || ''; // Store the fetched value in the defaultValues data property
+                } catch (error) {
+                    console.log("Error fetching default value:", error);
+                }
+            }
+            return this.defaultValues;
+        },
+        getDefaultValue(field: ClientField): string | undefined {
+             if(field.clientFieldId === undefined) {
+                 console.error("Client field ID is undefined");
+                 return;
+             }
+            return this.defaultValues[field.clientFieldId] || field.defaultValue || 'Enter value';
         },
         closeEditModal() {
             this.showEditModal = false;

@@ -154,7 +154,7 @@ export default {
 
                 console.log(request)
 
-                const response = await fetch(`${API_URL}/poster/create`, {
+                const response = await fetch(`${API_URL}/image/poster/create`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

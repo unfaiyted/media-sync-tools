@@ -1,17 +1,24 @@
 <template>
-<!--        <ClientCreator />-->
+        <ClientManager />
 
-<!--    <UserManagement />-->
-    <div v-if="config">
-        <ClientsConfig :config="config" />
-    </div>
+    <UserManagement />
+
+
+
+
+
+
+<!--    <ListEditor />-->
 </template>
 
 <script lang="ts">
 import ClientFieldManagement from "@/components/admin/ClientFieldManagement.vue";
-import ClientCreator from "@/components/admin/ClientManager.vue";
+import ClientManager from "@/components/admin/ClientManager.vue";
 import ClientsConfig from "@/components/config/ClientsConfig.vue";
 import UserManagement from "@/components/admin/UserManager.vue";
+import LibraryManager from "@/components/config/LibraryManager.vue";
+import ListEditor from "@/components/ListEditor.vue";
+import SyncOptions from "@/components/config/SyncOptions.vue";
 import {Config} from "@/models";
 import {fetchConfig} from "@/api/configs";
 export default defineComponent({
@@ -19,7 +26,10 @@ export default defineComponent({
         ClientFieldManagement,
         ClientsConfig,
         UserManagement,
-        ClientCreator
+        ListEditor,
+        ClientManager,
+       SyncOptions,
+        LibraryManager
     },
     data() {
         return {

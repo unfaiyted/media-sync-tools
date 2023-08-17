@@ -1,7 +1,7 @@
 <template>
     <div class="p-6">
         <!-- Create & Update User -->
-        <h2 class="text-lg font-semibold mb-4" v-if="!editingUser">Create User</h2>
+        <h2 class="text-lg font-semibold mb-4" v-if="!editingUser">User Manager</h2>
         <h2 class="text-lg font-semibold mb-4" v-else>Update User</h2>
 
         <div class="mb-4">

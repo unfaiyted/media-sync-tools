@@ -1,7 +1,7 @@
 <template>
     <div class="p-6">
         <!-- Create Client -->
-        <h2 class="text-lg font-semibold mb-4">Create Client</h2>
+        <h2 class="text-lg font-semibold mb-4">Client Manager</h2>
         <div class="mb-4">
             <input v-model="client.label" class="input" placeholder="Label">
         </div>
@@ -50,6 +50,7 @@
                     </div>
 
                     <ClientFieldManagement :client="updatedClient"/>
+                    <ClientFilterManagement :client="updatedClient"/>
                     <div class="flex justify-end">
                         <button @click="update" class="btn btn-primary">Update</button>
                         <button @click="closeEditModal" class="btn btn-secondary ml-2">Cancel</button>
@@ -69,6 +70,7 @@
 import axios from "axios";
 import {API_URL} from "@/utils/constants";
 import ClientFieldManagement from "@/components/admin/ClientFieldManagement.vue";
+import ClientFilterManagement from "@/components/admin/ClientFilterManagement.vue";
 import {generateGuid} from "@/utils/numbers";
 import {Client, ClientType} from "@/models";
 import {createClient, deleteClient, fetchClients, updateClient} from "@/api/clients";
@@ -77,7 +79,8 @@ import ClientsConfig from "@/components/config/ClientsConfig.vue";
 export default defineComponent({
     components: {
         ClientFieldManagement,
-        ClientsConfig
+        ClientsConfig,
+        ClientFilterManagement
     },
     data() {
         return {
