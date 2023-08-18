@@ -38,6 +38,19 @@ async def read_client(client_id: str, db: AsyncIOMotorDatabase = Depends(config.
     return client
 
 
+# Get all clients by type
+@router.get("/type/{client_type}", response_model=List[Client])
+async def read_all_clients_by_type(client_type: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+    clients = []
+    async for client_doc in db.clients.find({"type": client_type}):
+        # Create a Client instance from the retrieved document
+        clients.append(client_doc)
+    if clients is None:
+        raise HTTPException(status_code=404, detail="Client not found")
+    return clients
+
+
+
 @router.put("/{client_id}", response_model=Client)
 async def update_client(client_id: str, client: Client, db: AsyncIOMotorDatabase = Depends(config.get_db)):
     existing_client = await db.clients.find_one({"clientId": client_id})

@@ -3,6 +3,7 @@ import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 import Dashboard from '@/pages/Dashboard.vue'
 import Settings from '@/pages/Settings.vue'
 import About from '@/pages/About.vue'
+import UserLists from '@/pages/UserLists.vue'
 import MediaList from '@/pages/List.vue'
 import Tools from '@/pages/Tools.vue'
 import Poster from '@/pages/Poster.vue'
@@ -40,7 +41,17 @@ const routes: Array<RouteRecordRaw> = [
         component: About,
     },
      {
-         path: '/list',
+         path: '/lists',
+         name: 'Lists',
+         meta: {
+             title: 'List Page',
+             keepAlive: true,
+             requireAuth: false,
+         },
+         component: UserLists,
+     },
+      {
+         path: '/list/:listId',
          name: 'List',
          meta: {
              title: 'List Page',

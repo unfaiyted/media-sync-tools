@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 from pydantic import BaseModel, validator
 from typing import List, Optional, ForwardRef
@@ -104,8 +105,23 @@ class MediaList(BaseModel):
     includeLibraries: Optional[ForwardRef('Library')]
     creatorId: str
     creator: Optional[ForwardRef('User')]
-    options: MediaListOptions
 
+class MediaListItem(BaseModel):
+    mediaItemId: str = None
+    mediaListId: str
+    sourceId: Optional[str]
+    name: str
+    poster: Optional[str]
+    description: Optional[str]
+    year: str
+    releaseDate: Optional[str]
+    dateAdded: Optional[datetime]
+    imdbId: Optional[str]
+    tvdbId: Optional[str]
+    tmdbId: Optional[str]
+    traktId: Optional[str]
+    aniList: Optional[str]
+    type: MediaType
 
 
 class Library(BaseModel):
@@ -124,22 +140,7 @@ class LibraryClient(BaseModel):
     Library: Optional[ForwardRef('Library')]
 
 
-class MediaListItem(BaseModel):
-    mediaItemId: str = None
-    mediaListId: str
-    name: str
-    poster: Optional[str]
-    description: Optional[str]
-    year: str
-    releaseDate: Optional[str]
-    dateAdded: Optional[str]
-    sourceId: Optional[str]
-    imdbId: Optional[str]
-    tvdbId: Optional[str]
-    tmdbId: Optional[str]
-    traktId: Optional[str]
-    aniList: Optional[str]
-    type: MediaType
+
 
 
 class ConfigClient(BaseModel):

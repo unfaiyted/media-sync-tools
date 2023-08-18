@@ -32,3 +32,10 @@ export const triggerSyncOption = async (key :string ): Promise<SyncOptions> => {
     const response = await apiClient.get(`/sync/${key}`, { timeout:0});
     return response.data;
 }
+
+// sync list to client
+export const syncListToClient = async (clientId: string, listId: string): Promise<SyncOptions> => {
+    const response = await apiClient.get(`/sync/list/${listId}/client/${clientId}`, { timeout:0});
+
+    return response.data;
+}

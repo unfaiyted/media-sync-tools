@@ -1,6 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from src.models import SyncOptions
+from src.models import SyncOptions, MediaList
 from src.config import ConfigManager
 from src.create.toplists import sync_top_lists
 from src.sync.watchlist import sync_watchlist
@@ -98,6 +98,20 @@ async def handle_trakt():
 
 
 
+# Sync list to ConfiguredClient
+@router.get('/list/{list_id}/client/{client_id}', response_model=MediaList)
+async def sync_list_to_client(list_id: str, client_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+    list_item = await db.media_lists.find_one({"mediaListId": list_id})
+    if list_item is None:
+        raise HTTPException(status_code=404, detail="List not found")
+
+    client = config.get_client(client_id)
+
+    # TODO: implement logic to get list and sync to client
+    print('Syncing list to client', list_item, client)
+
+    if client is None:
+        raise HTTPException(status_code=404, detail="Client not found")
 
 
 # CRUD operations for SyncOptions

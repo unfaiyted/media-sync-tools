@@ -1,3 +1,4 @@
+
 export enum ListType {
     COLLECTION = "COLLECTION",
     PLAYLIST = "PLAYLIST",
@@ -67,11 +68,30 @@ export interface MediaList {
     items?: MediaListItem[];
     userId: string;
     user?: User;
-    options: MediaListOptions
+}
+
+export interface MediaListItem {
+    mediaItemId?: string;
+    mediaListId: string;
+    name: string;
+    poster?: string;
+    description?: string;
+    year: string;
+    sourceId?: string;
+    releaseDate?: string;
+    dateAdded?: Date;
+    imdbId?: string;
+    tvdbId?: string;
+    tmdbId?: string;
+    traktId?: string;
+    aniList?: string;
+    type: MediaType;
+    list: any[]; // Adjust this type accordingly
 }
 
 export interface MediaListOptions {
     mediaListOptionsId: string;
+    mediaListId: string;
     sync: boolean;
     updateImages: boolean;
     configClientId: string;
@@ -80,11 +100,6 @@ export interface MediaListOptions {
     deleteWatchlist: boolean;
 }
 
-export interface MediaListOptions {
-    mediaListId?: string;
-    type: ListType;
-    configId: string;
-}
 
 export interface Filter {
     filterId?: string;
@@ -119,24 +134,7 @@ export interface LibraryClient {
     Library?: Library;
 }
 
-export interface MediaListItem {
-    itemId?: string;
-    listId: string;
-    name: string;
-    poster?: string;
-    description?: string;
-    year: string;
-    sourceId?: string;
-    releaseDate?: string;
-    dateAdded?: string;
-    imdbId?: string;
-    tvdbId?: string;
-    tmdbId?: string;
-    traktId?: string;
-    aniList?: string;
-    type: MediaType;
-    list: any[]; // Adjust this type accordingly
-}
+
 
 export interface ConfigClient {
     configClientId?: string;

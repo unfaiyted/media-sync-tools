@@ -39,7 +39,7 @@ export default defineComponent({
                 { to: '/poster', text: 'Posters', icon: DocumentTextIcon },
                 { to: '/settings', text: 'Settings', icon: CogIcon },
                 { to: '/provider', text: 'Provider Lists', icon: TvIcon },
-                { to: '/list', text: 'Media Lists', icon: TvIcon },
+                { to: '/lists', text: 'Media Lists', icon: TvIcon },
                 { to: '/users', text: 'Users', icon: UserIcon},
                 {
                     text: 'Admin',

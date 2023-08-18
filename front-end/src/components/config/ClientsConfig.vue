@@ -1,7 +1,7 @@
 <template>
     <div class="p-6">
         <!-- Create Config Client -->
-           <h2 class="text-lg font-semibold mb-4">Create Client Instance</h2>
+           <h2 class="text-lg font-semibold mb-4">Create Provider Instance</h2>
         <div class="mb-4">
             <input v-model="newConfigClient.label" class="input" placeholder="Label">
         </div>

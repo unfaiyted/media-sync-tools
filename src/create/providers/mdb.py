@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from src.models import MediaList, MediaListItem, MediaType, MediaListType
 
@@ -30,22 +31,21 @@ class MdbProvider:
         list_items = self.client.get_list_items(list['id'])
         db = self.config.get_db()
 
-
-        print('LIST    sss',list)
+        # print('LIST    sss',list)
         # print('List Items', list_items)
 
         media_list = MediaList(
-            listId=str(uuid.uuid4()),
+            mediaListId=str(uuid.uuid4()),
             name=list['name'],
             type=MediaListType.COLLECTION,
             sortName=list['name'],
-            configClientId='MDBLIST',
-            userId="APPUSERID"
+            clientId='MDBLIST',
+            creatorId="APPUSERID"
         )
 
-        print(media_list)
 
         db.media_lists.insert_one(media_list.dict())
+        print(media_list)
 
         primary_list = []
 
@@ -54,14 +54,14 @@ class MdbProvider:
 
 
             media_list_item = MediaListItem(
-                itemId=str(uuid.uuid4()),
+                mediaItemId=str(uuid.uuid4()),
+                mediaListId=media_list.mediaListId,
                 sourceId=item['id'],
-                listId=media_list.listId,
                 name=item['title'],
                 # poster=item['poster'],
                 type=MediaType.MOVIE if item['mediatype'] == 'movie' else MediaType.SHOW,
                 year=item['release_year'],
-                dateAdded='DATE TIME NOW',
+                dateAdded=datetime.now(),
                 imdbId=item['imdb_id'],
                 tvdbId=item['tvdb_id']
             )

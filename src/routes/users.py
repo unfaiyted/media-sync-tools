@@ -1,4 +1,3 @@
-from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
@@ -57,7 +56,7 @@ async def read_all_users(db: AsyncIOMotorDatabase = Depends(config.get_db)):
 
 @router.get("/{user_id}", response_model=User)
 async def read_user(user_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
-    user = await db.users.find_one({"userId": ObjectId(user_id)})
+    user = await db.users.find_one({"userId": user_id})
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
     return user
@@ -65,12 +64,12 @@ async def read_user(user_id: str, db: AsyncIOMotorDatabase = Depends(config.get_
 
 @router.put("/{user_id}", response_model=User)
 async def update_user(user_id: str, user: User, db: AsyncIOMotorDatabase = Depends(config.get_db)):
-    existing_user = await db.users.find_one({"userId": ObjectId(user_id)})
+    existing_user = await db.users.find_one({"userId": user_id})
     if existing_user is None:
         raise HTTPException(status_code=404, detail="User not found")
 
     user_dict = user.dict()
-    await db.users.replace_one({"userId": ObjectId(user_id)}, user_dict)
+    await db.users.replace_one({"userId": user_id}, user_dict)
     return user_dict
 
 

@@ -6,8 +6,9 @@
 
             <!-- Button to trigger popup -->
             <button @click="showOptionsPopup = true" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300">
-                Configure Options
+              +
             </button>
+
         </div>
 
         <table class="min-w-full bg-white rounded-lg shadow-md">
@@ -19,14 +20,19 @@
                 <th class="py-2 px-4">Sort Name</th>
                 <th class="py-2 px-4">Client ID</th>
                 <!-- Add other headers as needed -->
+
             </tr>
             </thead>
             <tbody>
-            <tr v-for="item in mediaList.items" :key="item.itemId" class="hover:bg-gray-100">
+            <tr v-for="item in mediaList.items" :key="item.itemId"
+                class="hover:bg-gray-100"
+                @contextmenu.prevent="handleRightClick($event, item)"
+
+            >
                 <td class="py-2 px-4">
                     <input type="checkbox">
                 </td>
-                <td class="py-2 px-4">{{ item.name }}</td>
+                <td class="py-2 px-4">{{ item.name }} ({{ item.year || item.releaseDate}})</td>
                 <td class="py-2 px-4">{{ item.type }}</td>
                 <td class="py-2 px-4">{{ mediaList.sortName }}</td>
                 <td class="py-2 px-4">{{ mediaList.clientId }}</td>
@@ -35,7 +41,12 @@
             </tbody>
         </table>
 
-
+      <ContextMenu
+          :event="contextMenuEvent"
+          :items="contextMenuItems"
+          ref="contextMenu"
+      />
+      <MediaListOptionsPopup ref="requestModal" />
 
         <!-- Popup for Media List Options -->
         <transition name="fade">
@@ -68,31 +79,83 @@
 
 <script lang="ts">
 import { defineComponent, ref } from 'vue';
+import {MediaListItem, MediaListOptions} from "@/models";
+import ContextMenu from "@/components/ui/ContextMenu.vue";
+import {deleteMediaList, deleteMediaListItem} from "@/api/lists";
+import {useRouter} from "vue-router";
+import MediaListOptionsPopup from "@/components/list/MediaListOptionsPopup.vue";
+const router = useRouter();
 
 export default defineComponent({
-    name: 'MediaListView',
+    name: 'MediaList',
+  components: {MediaListOptionsPopup, ContextMenu},
     props: {
         mediaList: {
-            type: Object,
+            type: Object as () => MediaList,
             required: true
-        },
+        } ,
         mediaListOptions: {
-            type: Object,
+            type: Object as () => MediaListOptions,
             required: true
         }
     },
     setup(props) {
         const showOptionsPopup = ref(false);
+      const contextMenuEvent = ref<Event | null>(null); // Store the event that triggers the context menu
+      const selectedItem = ref<MediaListItem | null>(null);  // Store the selected list item for context operations
+      const requestModal = ref<InstanceType<typeof MediaListOptionsPopup> | null>(null);
 
-        function updateOptions() {
+      function updateOptions() {
             // Handle logic to update the MediaList options
             console.log("Updated options:", props.mediaListOptions);
             showOptionsPopup.value = false;
         }
 
+        function handleRightClick(event: Event, item: MediaListItem) {
+          event.preventDefault();
+          contextMenuEvent.value = event;
+          selectedItem.value = item; // Store the selected list item for context operations
+        }
+
+
+      const contextMenuItems = [
+        {
+          label: 'Edit',
+          action: async () => {
+            // router.push(`/list/${selectedItem.value.mediaListId}/edit`);
+          }
+        },
+        {
+          label: 'Delete',
+          action: async () => {
+            console.log("Deleting item:", selectedItem.value);
+            await deleteMediaListItem(selectedItem.value.mediaItemId);
+          }
+        },
+        {
+          label: 'Copy to list',
+          action: async () => {
+            console.log("Copying item to list:", selectedItem.value);
+          }
+        },
+        {
+          label: 'Add to Sonarr / Radarr',
+          action: async () => {
+            // Todo: Implement this and have it check what type and if its a movie vs tv show and then add it to the correct agent
+            console.log("Adding item to Sonarr / Radarr:", selectedItem.value);
+            requestModal.value?.openModal(selectedItem.value);
+          }
+        },
+
+      ];
+
         return {
-            showOptionsPopup,
-            updateOptions
+          showOptionsPopup,
+          updateOptions,
+          requestModal,
+          contextMenuItems,
+          contextMenuEvent,
+          handleRightClick,
         };
     }
 });

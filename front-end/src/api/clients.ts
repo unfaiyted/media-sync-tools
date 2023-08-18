@@ -1,5 +1,4 @@
-import axios from "axios";
-import {Client, ClientField, ConfigClientFieldsValue, FilterTypes} from "@/models";
+import {Client, ClientField, ClientType, ConfigClientFieldsValue, FilterTypes} from "@/models";
 import { generateGuid } from "@/utils/numbers";
 import {apiClient} from "@/api/index";
 
@@ -22,6 +21,10 @@ export const updateClient = async (updatedClient: Client) => {
 }
 // ... other imports
 
+export const fetchClientsByType = async (clientType: ClientType) => {
+    return (await apiClient.get(`/client/type/${clientType}`)).data;
+}
+
 export const createClientField = async (clientField: ClientField) => {
     clientField.clientFieldId = generateGuid();
     console.log("clientField", clientField);
@@ -39,8 +42,6 @@ export const fetchClientFieldByClientId = async (clientId: string | undefined) =
     }
     return (await apiClient.get(`/client/field/client/${clientId}`)).data;
 }
-
-
 
 export const updateClientField = async (updatedClientField: ClientField) => {
     return (await apiClient.put(`/client/field/${updatedClientField.clientFieldId}`, updatedClientField)).data;
