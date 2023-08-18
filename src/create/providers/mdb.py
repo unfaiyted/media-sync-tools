@@ -1,6 +1,6 @@
 import uuid
 
-from src.models import MediaList, MediaListItem, MediaType, ListType
+from src.models import MediaList, MediaListItem, MediaType, MediaListType
 
 
 class ListProviderResult:
@@ -37,7 +37,7 @@ class MdbProvider:
         media_list = MediaList(
             listId=str(uuid.uuid4()),
             name=list['name'],
-            type=ListType.COLLECTION,
+            type=MediaListType.COLLECTION,
             sortName=list['name'],
             configClientId='MDBLIST',
             userId="APPUSERID"

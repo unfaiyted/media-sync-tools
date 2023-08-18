@@ -4,7 +4,7 @@ from typing import List, Optional, ForwardRef
 from bson import ObjectId
 
 
-class ListType(str, Enum):
+class MediaListType(str, Enum):
     COLLECTION = "COLLECTION"
     PLAYLIST = "PLAYLIST"
     # ... other types ...
@@ -63,16 +63,6 @@ class SyncOptions(BaseModel):
     relatedConfig: Optional[ForwardRef('Config')]
 
 
-class ListTypeOptions(BaseModel):
-    listId: str = None
-    type: ListType
-    sync: bool
-    primaryLibrary: str
-    updateImages: bool
-    deleteExisting: bool
-    deleteWatchlist: bool
-
-
 class Filter(BaseModel):
     filterId: str = None
     filterTypeId: str
@@ -92,24 +82,37 @@ class FilterTypes(BaseModel):
     type: FilterType
 
 
+class MediaListOptions(BaseModel):
+    mediaListOptionsId: str
+    mediaListId: str
+    sync: bool
+    configClientId: str
+    updateImages: bool
+    includeLibraries: Optional[List[ForwardRef('Library')]]
+    deleteExisting: bool
+    deleteWatchlist: bool
+
+
 class MediaList(BaseModel):
-    listId: str = None
+    mediaListId: str = None
     name: str
-    type: ListType
+    type: MediaListType
     sortName: str
-    configClientId: str  # client provider
+    clientId: str  # client provider
     filters: Optional[List[ForwardRef('Filter')]]
     items: Optional[List[ForwardRef('MediaListItem')]]
     includeLibraries: Optional[ForwardRef('Library')]
-    userId: str
-    user: Optional[ForwardRef('User')]
+    creatorId: str
+    creator: Optional[ForwardRef('User')]
+    options: MediaListOptions
+
 
 
 class Library(BaseModel):
     libraryId: str = None
     name: str
     clients: Optional[List[ForwardRef('LibraryClient')]]
-    List: Optional[ForwardRef('MediaList')]
+    Lists: Optional[ForwardRef('MediaList')]
 
 
 class LibraryClient(BaseModel):
@@ -122,8 +125,8 @@ class LibraryClient(BaseModel):
 
 
 class MediaListItem(BaseModel):
-    itemId: str = None
-    listId: str
+    mediaItemId: str = None
+    mediaListId: str
     name: str
     poster: Optional[str]
     description: Optional[str]
@@ -195,6 +198,7 @@ Config.update_forward_refs()
 ConfigClient.update_forward_refs()
 MediaList.update_forward_refs()
 MediaListItem.update_forward_refs()
+MediaListOptions.update_forward_refs()
 Library.update_forward_refs()
 LibraryClient.update_forward_refs()
 Client.update_forward_refs()

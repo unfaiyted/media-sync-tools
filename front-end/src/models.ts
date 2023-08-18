@@ -57,14 +57,33 @@ export interface SyncOptions {
     relatedConfig?: Config;
 }
 
-export interface ListTypeOptions {
-    listId?: string;
+export interface MediaList {
+    mediaListId?: string;
+    name: string;
     type: ListType;
+    sortName: string;
+    clientId: string;
+    filters?: Filter[];
+    items?: MediaListItem[];
+    userId: string;
+    user?: User;
+    options: MediaListOptions
+}
+
+export interface MediaListOptions {
+    mediaListOptionsId: string;
     sync: boolean;
-    primaryLibrary: string;
     updateImages: boolean;
+    configClientId: string;
+    includeLibraries?: Library[];
     deleteExisting: boolean;
     deleteWatchlist: boolean;
+}
+
+export interface MediaListOptions {
+    mediaListId?: string;
+    type: ListType;
+    configId: string;
 }
 
 export interface Filter {
@@ -82,18 +101,7 @@ export interface FilterTypes {
     type: FilterType;
 }
 
-export interface MediaList {
-    listId?: string;
-    name: string;
-    type: ListType;
-    sortName: string;
-    configClientId: string;
-    filters?: Filter[];
-    items?: MediaListItem[];
-    includeLibraries?: Library[];
-    userId: string;
-    user?: User;
-}
+
 
 export interface Library {
     libraryId?: string;

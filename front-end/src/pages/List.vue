@@ -1,32 +1,17 @@
 <template>
   <div class="bg-gray-100 p-6">
-    <h1 class="text-2xl font-semibold mb-4">List Viewer</h1>
 
-    <!-- Search and Fetch Section -->
-    <div class="mb-4 flex items-center">
-      <label for="idType" class="mr-2">ID Type:</label>
-      <select v-model="selectedIdType" id="idType" class="border p-2 rounded w-40 mr-4">
-        <option v-for="type in idTypes" :key="type">{{ type }}</option>
-      </select>
-
-      <label for="idSearch" class="mr-2">ID:</label>
-      <input v-model="searchId" id="idSearch" type="text" class="border p-2 rounded w-40 mr-4">
-
-      <button @click="fetchList" class="bg-blue-500 text-white px-4 py-2 rounded">Fetch</button>
-    </div>
-
-    <!-- List Table -->
-    <table class="min-w-full bg-white border rounded shadow">
-      <!-- ... rest of the table ... -->
-    </table>
-
+        <MediaListView :media-list="mediaList" :media-list-options="mediaListOptions"/>
     <!-- ... rest of the code ... -->
   </div>
 </template>
 
 <script lang="ts">
-export default {
-  props: {
+import MediaListView from "@/components/list/MediaList.vue";
+import {MediaListOptions, MediaList} from "@/models";
+export default defineComponent({
+    components: {MediaListView},
+    props: {
     items: {
       type: Array,
       default: () => []
@@ -34,41 +19,128 @@ export default {
   },
   data() {
     return {
-      selectedIdType: '',
-      localItems: [...this.items], // Initialize localItems with items prop
-      searchId: '',
-      idTypes: ['emby', 'plex', 'trakt', 'imdb'],
-      // ... other data properties ...
+        selectedIdType: '',
+        searchId: '',
+        mediaList: {
+            mediaListId: "ml12345",
+            name: "Favorite Movies",
+            type: "MOVIES", // assuming ListType has a value "MOVIES"
+            sortName: "Favorites",
+            clientId: "cl12345",
+            filters: [
+                {
+                    // Add the structure of the Filter here
+                    filterId: "f12345",
+                    filterType: "Genre",
+                    filterValue: "Action"
+                }
+            ],
+            items: [
+                {
+                    itemId: "i12345",
+                    listId: "l12345",
+                    name: "Inception",
+                    poster: "path_to_inception_poster.jpg",
+                    description: "A movie about dreams within dreams.",
+                    year: "2010",
+                    sourceId: "s12345",
+                    releaseDate: "2010-07-16",
+                    dateAdded: "2021-08-17",
+                    imdbId: "tt1375666",
+                    tvdbId: "tv12345",
+                    tmdbId: "tm12345",
+                    traktId: "tr12345",
+                    aniList: "a12345",
+                    type: "MOVIE" // assuming MediaType has a value "MOVIE"
+                },
+                {
+                    itemId: "i12345",
+                    listId: "l12345",
+                    name: "Inception",
+                    poster: "path_to_inception_poster.jpg",
+                    description: "A movie about dreams within dreams.",
+                    year: "2010",
+                    sourceId: "s12345",
+                    releaseDate: "2010-07-16",
+                    dateAdded: "2021-08-17",
+                    imdbId: "tt1375666",
+                    tvdbId: "tv12345",
+                    tmdbId: "tm12345",
+                    traktId: "tr12345",
+                    aniList: "a12345",
+                    type: "MOVIE" // assuming MediaType has a value "MOVIE"
+                },
+                {
+                    itemId: "i12345",
+                    listId: "l12345",
+                    name: "Inception",
+                    poster: "path_to_inception_poster.jpg",
+                    description: "A movie about dreams within dreams.",
+                    year: "2010",
+                    sourceId: "s12345",
+                    releaseDate: "2010-07-16",
+                    dateAdded: "2021-08-17",
+                    imdbId: "tt1375666",
+                    tvdbId: "tv12345",
+                    tmdbId: "tm12345",
+                    traktId: "tr12345",
+                    aniList: "a12345",
+                    type: "MOVIE" // assuming MediaType has a value "MOVIE"
+                },
+                // ... add more items as required
+            ],
+            userId: "u12345",
+            user: {
+                userId: "u12345",
+                username: "john_doe",
+                email: "john.doe@example.com"
+                // ... add more user fields as required
+            },
+            options: {
+                mediaListOptionsId: "mlo12345",
+                sync: true,
+                updateImages: false,
+                configClientId: "cc12345",
+                includeLibraries: [
+                    {
+                        // Add the structure of the Library here
+                        libraryId: "lib12345",
+                        libraryName: "Default Library"
+                    }
+                ],
+                deleteExisting: false,
+                deleteWatchlist: true
+            }
+        },
+        mediaListOptions:{
+            mediaListId: "ml12345",
+            type: "MOVIES", // assuming ListType has a value "MOVIES"
+            configId: "c12345",
+            sync: true,
+            updateImages: true,
+            configClientId: "cc12345",
+            includeLibraries: [
+                {
+                    libraryId: "lib12345",
+                    libraryName: "Default Library"
+                }
+            ],
+            deleteExisting: false,
+            deleteWatchlist: true
+        }
+
+
+
+
+
     };
   },
   watch: {
     // Watch for changes to the items prop and update localItems when it changes
-    items(newItems) {
-      this.localItems = [...newItems];
-    }
+    // items(newItems) {
+    //   this.localItems = [...newItems];
+    // }
   },
   methods: {
-    async fetchList() {
-      if (this.selectedIdType && this.searchId) {
-        const apiUrl = `http://localhost:3000/lists/${this.selectedIdType}/${this.searchId}`;
-
-        try {
-          const response = await fetch(apiUrl);
-          const data = await response.json();
-
-          if (data && data.items) {
-            this.localItems = data.items; // Use localItems here
-          } else {
-            console.error('No list data returned');
-          }
-        } catch (error) {
-          console.error('Error fetching list:', error);
-        }
-      } else {
-        alert('Please select an ID Type and enter an ID.');
-      }
-    },
-    // ... other methods ...
-  }
-}
+  }});
 </script>
