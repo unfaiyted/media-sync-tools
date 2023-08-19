@@ -38,6 +38,15 @@ export enum MediaType {
     SHOW = 'SHOW',
 }
 
+
+export enum FieldType {
+    STRING = 'STRING',
+    BOOLEAN = 'BOOLEAN',
+    NUMBER = 'NUMBER',
+    PASSWORD = 'PASSWORD'
+
+}
+
 export interface Config {
     configId?: string;
     user: User;
@@ -150,7 +159,8 @@ export interface ClientField {
     clientFieldId?: string;
     clientId: string;
     name: string;
-    defaultValue?: string;
+    placeholderValue?: string;
+    type: FieldType;
     ConfigClientFieldsValues?: ConfigClientFieldsValue[];
 }
 

@@ -43,6 +43,11 @@ class FilterType(str, Enum):
     DATE = 'DATE'
     # ... other types ...
 
+class FieldType(str, Enum):
+    STRING = 'STRING'
+    BOOLEAN = 'BOOLEAN'
+    NUMBER = 'NUMBER'
+    PASSWORD = 'PASSWORD'  # For sensitive data like passwords or API keys
 
 class Config(BaseModel):
     configId: str = None
@@ -157,7 +162,8 @@ class ClientField(BaseModel):
     clientFieldId: str = None
     clientId: str
     name: str
-    defaultValue: Optional[str] = ''
+    placeholderValue: Optional[str] = ''
+    type: FieldType
     ConfigClientFieldsValues: Optional[List[ForwardRef('ConfigClientFieldsValue')]]
 
 

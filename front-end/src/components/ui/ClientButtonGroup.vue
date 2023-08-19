@@ -1,21 +1,31 @@
 <template>
-  <div>
-    <!-- Dropdown filter for ClientType -->
-<!--    <select v-model="selectedClientType" @change="fetchClients">
-      <option v-for="type in clientTypes" :key="type" :value="type">{{ type }}</option>
-    </select>-->
+    <div>
+        <!-- Loading indicator -->
+        <div v-if="loading">
+            Loading clients...
+        </div>
 
-    <!-- Display the clients as buttons -->
-    <div v-if="clients.length">
-      <button v-for="client in clients" :key="client.clientId" class="m-2 bg-blue-500 text-white rounded px-4 py-2">
-        {{ client.label }}
-      </button>
+        <!-- Content to show when not loading -->
+        <div v-else>
+            <!-- Dropdown filter for ClientType -->
+            <!-- Uncomment the select if needed -->
+            <!-- <select v-model="selectedClientType" @change="fetchClients">
+              <option v-for="type in clientTypes" :key="type" :value="type">{{ type }}</option>
+            </select> -->
+
+            <!-- Display the clients as buttons -->
+            <div v-if="clients.length">
+                <button v-for="client in clients" :key="client.clientId" class="m-2 bg-blue-500 text-white rounded px-4 py-2">
+                    {{ client.label }}
+                </button>
+            </div>
+            <div v-else>
+                No clients found.
+            </div>
+        </div>
     </div>
-    <div v-else>
-      No clients found.
-    </div>
-  </div>
 </template>
+
 
 <script lang="ts">
 import { defineComponent, ref, onMounted } from 'vue';
@@ -47,9 +57,9 @@ export default defineComponent({
 
     fetchClients()
 
-    // watch(() => props.type, async (newType) => {
-    //   clients.value = await fetchClientsByType(newType as ClientType);
-    // }, { immediate: true });
+    watch(() => props.type, async (newType) => {
+      clients.value = await fetchClientsByType(newType as ClientType);
+    }, { immediate: true });
     // Fetch clients initially when component mounts
     onMounted(fetchClients);
 

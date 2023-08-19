@@ -38,7 +38,7 @@ async def create_user(user: User, db: AsyncIOMotorDatabase = Depends(config.get_
             "relatedConfig": None
         }
 
-    await db.syncOptions.insert_one(sync_dict)
+    await db.sync_options.insert_one(sync_dict)
 
     return user_dict
 
