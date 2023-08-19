@@ -32,16 +32,16 @@
     </div>
 
     <!-- Border Options -->
-    <media-poster-border-options v-if="options.enabled" v-model="options.border" />
+<!--    <media-poster-border-options v-if="options.enabled" v-model="options.border" />-->
 
     <!-- Shadow Options -->
-    <media-poster-shadow-options v-if="options.enabled" v-model="options.shadow" />
+<!--    <media-poster-shadow-options v-if="options.enabled" v-model="options.shadow" />-->
   </div>
 </template>
 
 <script lang="ts">
 import { ref, defineComponent, watch } from 'vue';
-import { MediaPosterTextOptions } from '../../models'; // Import your models here
+import { MediaPosterTextOptions } from '@/models'; // Import your models here
 import MediaPosterBorderOptions from './MediaPosterBorderOptions.vue'; // Assuming you have separate components for each option
 import MediaPosterShadowOptions from './MediaPosterShadowOptions.vue';
 
@@ -67,4 +67,4 @@ setup(props) {
   };
 },
 });
-</scriptt>
+</script>

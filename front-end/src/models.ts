@@ -191,14 +191,14 @@ export interface User {
 }
 
 
-interface MediaPosterBorderOptions {
+export interface MediaPosterBorderOptions {
     enabled: boolean;
     width: number;
     height: number;
     color?: [number, number, number];
 }
 
-interface MediaPosterGradientOptions {
+export interface MediaPosterGradientOptions {
     enabled: boolean;
     colors?: [number, number, number][];
     opacity: number;
@@ -206,7 +206,7 @@ interface MediaPosterGradientOptions {
     angle: number;
 }
 
-interface MediaPosterShadowOptions {
+export interface MediaPosterShadowOptions {
     enabled: boolean;
     color?: [number, number, number];
     offset: number;
@@ -214,7 +214,7 @@ interface MediaPosterShadowOptions {
     transparency: number;
 }
 
-interface MediaPosterTextOptions {
+export interface MediaPosterTextOptions {
     enabled: boolean;
     text?: string;
     position: [number, number];
@@ -223,7 +223,7 @@ interface MediaPosterTextOptions {
     shadow?: MediaPosterShadowOptions;
 }
 
-interface MediaPosterBackground {
+export interface MediaPosterBackground {
     enabled: boolean;
     url?: string;
     color?: [number, number, number];
@@ -234,7 +234,7 @@ interface MediaPosterBackground {
     shadow?: MediaPosterShadowOptions;
 }
 
-interface MediaPosterOverlayOptions {
+export interface MediaPosterOverlayOptions {
     enabled: boolean;
     text?: string;
     position: string;
@@ -246,7 +246,7 @@ interface MediaPosterOverlayOptions {
     shadow?: MediaPosterShadowOptions;
 }
 
-interface MediaPoster {
+export interface MediaPoster {
     mediaPosterID?: string;
     mediaItemId: string;
     url: string;

@@ -97,11 +97,9 @@ clients_data = {
 # as well as the clients_data
 import asyncio
 import uuid
-import motor.motor_asyncio
 
 from typing import Optional
 from src.config import ConfigManager
-from src.models import ClientType, FieldType
 
 # ... [keep your clients_data unchanged] ...
 
@@ -132,7 +130,7 @@ class DatabaseInitializer:
 
     async def create_default_config(self, user):
         default_config = {
-            "configId": str(uuid.uuid4()),
+            "configId": 'APP-DEFAULT-CONFIG',
             "userId": user['userId'],
             "clients": [],
             "sync": None
