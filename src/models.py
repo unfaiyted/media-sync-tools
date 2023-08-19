@@ -1,7 +1,9 @@
 from datetime import datetime
 from enum import Enum
+
+from PIL.Image import Image
 from pydantic import BaseModel, validator
-from typing import List, Optional, ForwardRef
+from typing import List, Optional, ForwardRef, Tuple
 from bson import ObjectId
 
 
@@ -43,11 +45,13 @@ class FilterType(str, Enum):
     DATE = 'DATE'
     # ... other types ...
 
+
 class FieldType(str, Enum):
     STRING = 'STRING'
     BOOLEAN = 'BOOLEAN'
     NUMBER = 'NUMBER'
     PASSWORD = 'PASSWORD'  # For sensitive data like passwords or API keys
+
 
 class Config(BaseModel):
     configId: str = None
@@ -109,7 +113,9 @@ class MediaList(BaseModel):
     items: Optional[List[ForwardRef('MediaListItem')]]
     includeLibraries: Optional[ForwardRef('Library')]
     creatorId: str
+    createdAt: datetime
     creator: Optional[ForwardRef('User')]
+
 
 class MediaListItem(BaseModel):
     mediaItemId: str = None
@@ -143,9 +149,6 @@ class LibraryClient(BaseModel):
     client: Optional[ForwardRef('Client')]
     clientId: str
     Library: Optional[ForwardRef('Library')]
-
-
-
 
 
 class ConfigClient(BaseModel):
@@ -198,6 +201,75 @@ class User(BaseModel):
     password: str  # Remember to hash passwords before storing
     lists: Optional[List[ForwardRef('MediaList')]]
     relatedConfig: Optional[Config]
+
+
+class MediaPosterBorderOptions(BaseModel):
+    enabled: bool = False
+    width: int = 4
+    height: int = 4
+    color: Optional[Tuple[int, int, int]] = None
+
+
+class MediaPosterGradientOptions(BaseModel):
+    enabled: bool = False
+    colors: Optional[List[Tuple[int, int, int]]] = None
+    opacity: float = 0.5
+    type: str = 'linear'
+    angle: int = -160
+
+
+class MediaPosterShadowOptions(BaseModel):
+    enabled: bool = False
+    color: Optional[Tuple[int, int, int]] = None
+    offset: int = 5
+    blur: int = 3
+    transparency: int = 100
+
+
+class MediaPosterTextOptions(BaseModel):
+    enabled: bool = False
+    text: Optional[str] = None
+    position: Tuple[int, int] = (0, 0)
+    color: Optional[Tuple[int, int, int]] = None
+    border: Optional[MediaPosterBorderOptions] = None
+    shadow: Optional[MediaPosterShadowOptions] = None
+
+class MediaPosterBackground(BaseModel):
+    enabled: bool = False
+    url: Optional[str] = None
+    # image: Optional[Image] = None
+    color: Optional[Tuple[int, int, int]] = None
+    position: Tuple[int, int] = (0, 0)
+    size: Tuple[int, int] = (0, 0)
+    opacity: float = 1.0
+    border: Optional[MediaPosterBorderOptions] = None
+    shadow: Optional[MediaPosterShadowOptions] = None
+
+class MediaPosterOverlayOptions(BaseModel):
+    enabled: bool = False
+    text: Optional[str] = None
+    position: str = 'bottom-left'
+    textColor: Optional[Tuple[int, int, int]] = (255, 255, 255)
+    backgroundColor: Optional[Tuple[int, int, int]] = (100, 100, 100)
+    transparency: int = 100
+    cornerRadius: int = 5
+    border: Optional[MediaPosterBorderOptions] = None
+    shadow: Optional[MediaPosterShadowOptions] = None
+
+
+class MediaPoster(BaseModel):
+    mediaPosterID: Optional[str] = None
+    mediaItemId: str
+    url: str
+    width: int
+    height: int
+    type: str
+    border: Optional[MediaPosterBorderOptions]
+    text: Optional[MediaPosterTextOptions]
+    gradient: Optional[MediaPosterGradientOptions]
+    background: Optional[MediaPosterBackground]
+    overlays: Optional[List[MediaPosterOverlayOptions]]
+    mediaItem: Optional[str]
 
 
 # Update the forward references

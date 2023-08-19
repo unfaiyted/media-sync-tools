@@ -1,3 +1,5 @@
+from src.create.providers.emby import EmbyProvider
+from src.create.providers.plex import PlexProvider
 from src.create.providers.tmdb import TMDBProvider
 from src.create.providers.trakt import TraktProvider
 from src.create.posters import PosterImageCreator
@@ -214,25 +216,24 @@ class ListBuilder:
 
     def _get_media_list_from_provider(self):
 
-        if self.provider == 'self':
-            print(f'Using media list')
+        provider_mapping = {
+            'self': (lambda: print('Using media list')),
+            'ai': (lambda: AiProvider(self.media_types, self.description, self._process_filters('ai'), self.limit)),
+            'mdb': (lambda: MdbProvider(self.config, self.filters)),
+            'trakt': (lambda: TraktProvider(self.config, self.filters)),
+            'tmdb': (lambda: TMDBProvider(self.config, self.filters)),
+            'plex': (lambda: PlexProvider(self.config, self.filters)),
+            'emby': (lambda: EmbyProvider(self.config, self.filters))
+        }
 
-        if self.provider == 'ai':
-            print(f'Using AI list')
-            self.media_list = AiProvider(self.media_types, self.description, self._process_filters('ai'),
-                                         self.limit).get_list()
-
-        if self.provider == 'mdb':
-            print(f'Using MDB list')
-            self.media_list = MdbProvider(self.config, self.filters).get_list()
-
-        if self.provider == 'trakt':
-            print('Using Trakt list')
-            self.media_list = TraktProvider(self.config, self.filters).get_list()
-
-        if self.provider == 'tmdb':
-            print('Using TMDB list')
-            self.media_list = TMDBProvider(self.config, self.filters).get_list()
+        if self.provider in provider_mapping:
+            if self.provider != 'self':
+                print(f'Using {self.provider.capitalize()} list')
+                self.media_list = provider_mapping[self.provider]().get_list()
+            else:
+                provider_mapping[self.provider]()  # Only prints a message for 'self'
+        else:
+            raise ValueError(f"Unknown provider: {self.provider}")
 
         return self.media_list
 
@@ -241,8 +242,7 @@ class ListBuilder:
             print('Poster disabled')
             return None
 
-
-        bg_color =  self.poster['bg_color'] if self.poster['bg_color'] is None else 'olive-darkolive'
+        bg_color = self.poster['bg_color'] if self.poster['bg_color'] is None else 'olive-darkolive'
 
         width, height = 400, 600
         start, end = (233, 0, 4), (88, 76, 76)
@@ -300,7 +300,6 @@ class ListBuilder:
         for media in media_list:
             self.emby.add_item_to_collection(self.new_list_id, media['Id'])
             print(f'Added {media["Name"]} to {self.title}')
-
 
         print('Completed list creation')
         return media_list

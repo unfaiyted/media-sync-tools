@@ -43,7 +43,7 @@
       </div>
 
       <div class="flex justify-end">
-        <button @click="sendSync" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 mr-2">Request</button>
+        <button @click="doAction" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 mr-2">Request</button>
         <button @click="closeModal" class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">Cancel</button>
       </div>
     </div>
@@ -61,7 +61,7 @@ export default defineComponent({
     const isOpen = ref(false);
     const mediaListItem = ref<MediaListItem>();
 
-    const sendSync = () => {
+    const doAction = () => {
       // Implement the sync logic here
       console.log("Request Sent!");
 
@@ -83,7 +83,7 @@ export default defineComponent({
       isOpen,
       openModal,
       mediaListItem,
-      sendSync,
+      doAction,
       closeModal
     };
   }

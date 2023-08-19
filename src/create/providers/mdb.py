@@ -40,6 +40,7 @@ class MdbProvider:
             type=MediaListType.COLLECTION,
             sortName=list['name'],
             clientId='MDBLIST',
+            createdAt=datetime.now(),
             creatorId="APPUSERID"
         )
 

@@ -42,9 +42,9 @@ export default defineComponent({
     data() {
         return {
             config: {
-                configId: '4158646e-631e-462b-bf07-5b39cf2cc3ae'
+                configId: '6feccde2-65e4-4577-a237-099a1c908afb'
             } as Config,
-            configId: '4158646e-631e-462b-bf07-5b39cf2cc3ae'
+            configId: '6feccde2-65e4-4577-a237-099a1c908afb'
         }
     },
     async mounted() {

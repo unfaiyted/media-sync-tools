@@ -11,6 +11,7 @@ from src.create.posters import PosterImageCreator
 
 from enum import Enum
 
+
 class EmbyLibraryItemType(Enum):
     AUDIO = "Audio"
     VIDEO = "Video"
@@ -30,7 +31,6 @@ class EmbyLibraryItemType(Enum):
     BOOK = "Book"
 
 
-
 class EmbyImageType(Enum):
     PRIMARY = "Primary"
     ART = "Art"
@@ -43,7 +43,6 @@ class EmbyImageType(Enum):
     SCREENSHOT = "Screenshot"
     MENU = "Menu"
     CHAPTER = "Chapter"
-
 
 
 class Emby:
@@ -77,6 +76,7 @@ class Emby:
                     print(f"Retrying in {delay} seconds...")
                     time.sleep(delay)
         raise Exception(f"Failed to make the request after {retries} attempts.")
+
     def _post_request_with_retry(self, url, data=None, files=None, retries=5, delay=1):
         for attempt in range(retries):
             try:
@@ -138,7 +138,6 @@ class Emby:
 
         return playlist
 
-
     def update_item_sort_name(self, item_id, sort_name):
         emby_watchlist_metadata = self.get_item_metadata(item_id)
 
@@ -176,15 +175,39 @@ class Emby:
         return next((item for item in collections if item.get('Name') == name), None)
 
     def get_collection(self, collection_id):
-        url = self._build_url(f'users/{self.user_id}/items/{collection_id}')
+        return self.get_list(collection_id)
+
+    def get_list(self, list_id):
+        url = self._build_url(f'users/{self.user_id}/items/{list_id}')
         response = self._get_request(url)
         return response
 
     def get_collection_items(self, collection_id):
-        url = self._build_url(f'users/{self.user_id}/items/{collection_id}/children')
+        return self.get_list_items(collection_id)
+
+    def get_items_from_parent(self, parent_id, image_type_limit=1,
+                              fields='BasicSyncInfo,CanDelete,Container,PrimaryImageAspectRatio,ProductionYear,ExternalUrls,Status,EndDate,ProviderIds',
+                              enable_total_record_count=True):
+        params = {
+            'ParentId': parent_id,
+            'ImageTypeLimit': image_type_limit,
+            'Fields': fields,
+            'EnableTotalRecordCount': enable_total_record_count,
+        }
+
+        url = self._build_url(f'Users/{self.user_id}/Items', params=params)
         response = self._get_request(url)
         items = response.get('Items', [])
         total_count = response.get('TotalRecordCount', 0)
+        print(items, total_count)
+        return items, total_count
+
+    def get_list_items(self, list_id):
+        url = self._build_url(f'users/{self.user_id}/items/{list_id}/children')
+        response = self._get_request(url)
+        items = response.get('Items', [])
+        total_count = response.get('TotalRecordCount', 0)
+        print(items, total_count)
         return items, total_count
 
     def get_seasons(self, series_id):
@@ -230,7 +253,6 @@ class Emby:
         url = self._build_url(f'Playlists/{playlist_id}/Items/Delete', {'Ids': item_id})
         response = self._post_request(url)
         return response
-
 
     def get_item_image(self, item_id):
         url = self._build_url(f'Items/{item_id}/Images/Primary')
@@ -308,7 +330,6 @@ class Emby:
         items = response.get('Items', [])
         return items, len(items)
 
-
     def get_all_trailers(self):
         """
         Retrieves all trailers from the Emby collection.
@@ -322,6 +343,7 @@ class Emby:
                               })
         response = self._get_request(url)
         return response.get('Items', [])
+
     # def get_all_trailers(self):
     #     url = self._build_url(f'Users/{self.user_id}/Items', {'IncludeItemTypes': 'Trailer'})
     #     response = self._get_request(url)

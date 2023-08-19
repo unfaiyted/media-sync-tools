@@ -1,6 +1,10 @@
 <template>
     <div class="p-6 bg-gray-100 min-h-screen">
         <!-- Table for Media List Details -->
+        <!-- View Mode Toggle -->
+
+
+
         <div class="flex justify-between items-center mb-4">
             <h1 class="text-lg font-semibold">{{ mediaList.name }}</h1>
 
@@ -8,10 +12,16 @@
             <button @click="showOptionsPopup = true" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300">
               +
             </button>
-
+          <div class="mb-4">
+            <label class="mr-4">View Mode:</label>
+            <input type="radio" id="table" value="table" v-model="viewMode">
+            <label for="table" class="mr-4">Table</label>
+            <input type="radio" id="poster" value="poster" v-model="viewMode">
+            <label for="poster">Poster</label>
+          </div>
         </div>
 
-        <table class="min-w-full bg-white rounded-lg shadow-md">
+      <table v-if="viewMode === 'table'" class="min-w-full bg-white rounded-lg shadow-md">
             <thead>
             <tr class="text-gray-600 text-left">
                 <th class="py-2 px-4">Select</th>
@@ -32,6 +42,9 @@
                 <td class="py-2 px-4">
                     <input type="checkbox">
                 </td>
+                <td class="py-2 px-4">
+                  <img :src="item.poster" :alt="item.name" class="max-w-full h-20 mb-2">
+                </td>
                 <td class="py-2 px-4">{{ item.name }} ({{ item.year || item.releaseDate}})</td>
                 <td class="py-2 px-4">{{ item.type }}</td>
                 <td class="py-2 px-4">{{ mediaList.sortName }}</td>
@@ -40,6 +53,18 @@
             </tr>
             </tbody>
         </table>
+
+
+      <!-- Poster View -->
+      <div v-else-if="viewMode === 'poster'" class="flex flex-wrap">
+        <div v-for="item in mediaList.items" :key="item.itemId"
+             class="w-1/6 p-4 flex flex-col items-center"
+             @contextmenu.prevent="handleRightClick($event, item)"
+        >
+          <img :src="item.poster" :alt="item.name" class="max-w-full h-auto mb-2">
+          <span class="text-center">{{ item.name }} ({{ item.year || item.releaseDate }})</span>
+        </div>
+      </div>
 
       <ContextMenu
           :event="contextMenuEvent"
@@ -104,6 +129,7 @@ export default defineComponent({
       const contextMenuEvent = ref<Event | null>(null); // Store the event that triggers the context menu
       const selectedItem = ref<MediaListItem | null>(null);  // Store the selected list item for context operations
       const requestModal = ref<InstanceType<typeof MediaListOptionsPopup> | null>(null);
+      const viewMode = ref('table'); // Default view mode
 
       function updateOptions() {
             // Handle logic to update the MediaList options
@@ -139,6 +165,26 @@ export default defineComponent({
           }
         },
         {
+           label: 'Create Poster',
+          action: async () => {
+            console.log("Update Poster list:", selectedItem.value);
+          }
+        },
+        {
+          label: 'Get Provider Poster',
+          action: async () => {
+            console.log("Get Provider Poster:", selectedItem.value);
+          }
+        },
+        {
+          label: 'IMDB',
+          action: async () => {
+            console.log("Navigating to IMDB:", selectedItem.value);
+            //TODO: add check for imdb for this label
+            window.open(`https://www.imdb.com/title/${selectedItem.value?.imdbId}`, '_blank');
+          }
+        },
+        {
           label: 'Add to Sonarr / Radarr',
           action: async () => {
             // Todo: Implement this and have it check what type and if its a movie vs tv show and then add it to the correct agent
@@ -153,6 +199,7 @@ export default defineComponent({
           showOptionsPopup,
           updateOptions,
           requestModal,
+          viewMode,
           contextMenuItems,
           contextMenuEvent,
           handleRightClick,

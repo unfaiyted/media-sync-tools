@@ -1,12 +1,8 @@
 <template>
     <div>
         <!-- Loading indicator -->
-        <div v-if="loading">
-            Loading clients...
-        </div>
 
         <!-- Content to show when not loading -->
-        <div v-else>
             <!-- Dropdown filter for ClientType -->
             <!-- Uncomment the select if needed -->
             <!-- <select v-model="selectedClientType" @change="fetchClients">
@@ -14,21 +10,25 @@
             </select> -->
 
             <!-- Display the clients as buttons -->
-            <div v-if="clients.length">
-                <button v-for="client in clients" :key="client.clientId" class="m-2 bg-blue-500 text-white rounded px-4 py-2">
-                    {{ client.label }}
-                </button>
+            <div v-if="!loading" :class="buttonContainerClass">
+              <button
+                  v-for="client in clients"
+                  :key="client.clientId"
+                  :class="getButtonClass(client.clientId)"
+                  @click="toggleButton(client.clientId)"
+              >
+                {{ client.label }}
+              </button>
             </div>
-            <div v-else>
+<!--            <div v-else>
                 No clients found.
-            </div>
+            </div>-->
         </div>
-    </div>
 </template>
 
 
 <script lang="ts">
-import { defineComponent, ref, onMounted } from 'vue';
+import { defineComponent, ref, onBeforeMount } from 'vue';
 import {  fetchClientsByType } from '@/api/clients';
 import {ClientType} from "@/models"; // Adjust the path accordingly
 
@@ -36,37 +36,83 @@ export default defineComponent({
   name: 'ClientButtonGroup',
   props: {
     type: {
-      type: String,
+      type: String as () => ClientType,
       default: ClientType.UNKNOWN
+    } ,
+    blockStyle: {
+      type: Boolean,
+      default: true
+    },
+    maxWidth: {
+      type: String,
+      default: 'max-w-md'
     }
   },
-  setup(props) {
+  setup(props, context) {
     const clients = ref<Client[]>([]);
     const selectedClientType = ref<ClientType>(ClientType.UNKNOWN);
     const clientTypes = Object.values(ClientType);
+    const loading = ref(true);
+    const toggledClients = ref<Record<string, boolean>>({}); // Store which clients are toggled
+
+    const toggleButton = (clientId: string) => {
+      toggledClients.value[clientId] = !toggledClients.value[clientId];
+      context.emit('update:toggledClients', toggledClients.value); // Notify parent of the change
+    };
+
+    const getButtonClass = (clientId: string) => {
+      return {
+        'm-2': !props.blockStyle,
+        'w-full border-t first:border-t-0': props.blockStyle,
+        'bg-blue-500 text-white rounded px-4 py-2': toggledClients.value[clientId],
+        'bg-gray-400 text-white rounded px-4 py-2': !toggledClients.value[clientId]
+      };
+    };
+
+    // If the list of clients changes, ensure each has an entry in toggledClients (default to false)
+    watchEffect(() => {
+      clients.value.forEach(client => {
+        if (toggledClients.value[client.clientId] === undefined) {
+          toggledClients.value[client.clientId] = false;
+        }
+      });
+    });
+
+
+    const buttonClass = computed(() => ({
+      'm-2': !props.blockStyle,
+      'w-full border-t first:border-t-0': props.blockStyle,
+      'bg-blue-500 text-white rounded px-4 py-2': true
+    }));
+
+    const buttonContainerClass = computed(() => ({
+      'flex flex-wrap': true,
+      [props.maxWidth]: true
+    }));
 
     const fetchClients = async () => {
       try {
-        clients.value = await fetchClientsByType(selectedClientType.value);
-        console.log(clients.value)
+        clients.value = await fetchClientsByType(props.type);
+        console.log('got clients', clients.value, props.type)
       } catch (error) {
         console.error("Error fetching clients:", error);
       }
+      loading.value = false;
+      console.log('Not Loading')
     };
 
+    onBeforeMount(fetchClients)
 
-    fetchClients()
-
-    watch(() => props.type, async (newType) => {
-      clients.value = await fetchClientsByType(newType as ClientType);
-    }, { immediate: true });
-    // Fetch clients initially when component mounts
-    onMounted(fetchClients);
 
     return {
       clients,
       selectedClientType,
+      loading,
       clientTypes,
+      buttonClass,
+      toggleButton,
+      getButtonClass,
+      buttonContainerClass,
       fetchClients
     };
   }

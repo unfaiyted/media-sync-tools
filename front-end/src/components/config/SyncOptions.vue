@@ -75,7 +75,7 @@ input:checked + .slider:before {
 <script lang="ts">
 import { ref, onMounted } from 'vue';
 import {Config, SyncOptions} from '@/models';
-import {fetchSyncOptions, triggerSyncOption, updateSyncOption} from '@/api/sync';
+import {fetchSyncOptionsByConfigId, triggerSyncOption, updateSyncOption} from '@/api/sync';
 import {camelCaseToWords} from "@/utils/string";
 export default defineComponent({
     props: {
@@ -95,7 +95,7 @@ export default defineComponent({
             }
 
             try {
-                const options = await fetchSyncOptions(props.config.configId);
+                const options = await fetchSyncOptionsByConfigId(props.config.configId);
                 syncOptions.value = options;
                 booleanOptionKeys.value = Object.keys(options).filter(key => typeof options[key] === 'boolean');
             } catch (error) {

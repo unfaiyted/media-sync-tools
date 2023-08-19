@@ -1,5 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
+from src.create import ListBuilder
 from src.models import SyncOptions, MediaList
 from src.config import ConfigManager
 from src.create.toplists import sync_top_lists
@@ -97,6 +98,40 @@ async def handle_trakt():
         return JSONResponse(status_code=500, content={"message": str(e)})
 
 
+@router.get('/ratings')
+async def handle_ratings():
+    try:
+
+        # Create new list with listBuilder
+        details = {
+            'name': 'Emby Provider Test',
+            'description': 'This is a test.',  # assuming the description might be optional
+            'provider': 'emby',
+            'filters': [{
+                            'type': 'list_id',
+                            'value': 168737
+                            }],
+            'include': ['Movies'],  # assuming lists are for movies only, adjust if necessary
+            'options': {
+                            'add_prev_watched': False,
+                            'add_missing_to_library': False,
+                            'limit': 100,  # adjust as necessary
+                            'sort': 'rank',  # adjust as necessary
+                            'poster': {
+                            'enabled': True,
+                            }
+                               }
+        }
+
+        # Here, I'm assuming you want to process movie lists only. Adjust this if lists can be for other media types too.
+        list_builder = ListBuilder(config, list=details)
+        list_builder.build()
+
+
+
+        return JSONResponse(status_code=200, content={"message": "Test completed", })
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": str(e)})
 
 # Sync list to ConfiguredClient
 @router.get('/list/{list_id}/client/{client_id}', response_model=MediaList)
@@ -155,3 +190,4 @@ async def delete_sync_options(sync_options_id: str, db: AsyncIOMotorDatabase = D
         raise HTTPException(status_code=404, detail="SyncOption not found")
     await db.sync_options.delete_one({"syncOptionsId": sync_options_id})
     return existing_sync_option
+

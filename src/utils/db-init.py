@@ -6,7 +6,7 @@ from pymongo import MongoClient
 from typing import Optional
 
 from src.config import ConfigManager
-from src.models import ClientType, Config, FieldType
+from src.models import ClientType, Config, FieldType, ClientField, SyncOptions, User
 
 # Provided clients and their fields
 clients_data = {
@@ -71,7 +71,7 @@ clients_data = {
     },
     "radarr": {
         "label": "Radarr",
-        "type": ClientType.MEDIA_SERVER,
+        "type": ClientType.UTILITY,
         "fields": {
             "server_url": {"placeholderValue": "http://example.com:port", "type": FieldType.STRING},
             "api_key": {"placeholderValue": "xxxxxxxxxxxx", "type": FieldType.PASSWORD},
@@ -81,7 +81,7 @@ clients_data = {
     },
     "sonarr": {
         "label": "Sonarr",
-        "type": ClientType.MEDIA_SERVER,
+        "type": ClientType.UTILITY,
         "fields": {
             "server_url": {"placeholderValue": "http://example.com:port", "type": FieldType.STRING},
             "api_key": {"placeholderValue": "xxxxxxxxxxxx", "type": FieldType.PASSWORD},
@@ -123,7 +123,8 @@ class DatabaseInitializer:
             "name": "Admin",
             "password": "hashed_password",
         }
-        await self.users.insert_one(admin_user)
+        admin = User(**admin_user)
+        await self.users.insert_one(admin.dict())
         return admin_user
 
     async def get_config(self) -> Optional[dict]:
@@ -153,7 +154,9 @@ class DatabaseInitializer:
             "watched": False,
             "ratings": False
         }
-        await self.sync_options.insert_one(sync_options)
+
+        sync = SyncOptions(**sync_options)
+        await self.sync_options.insert_one(sync.dict())
         return sync_options
 
     async def run(self):
@@ -175,8 +178,11 @@ class DatabaseInitializer:
             client_field_entries = []
 
             for key, client_info in clients_data.items():
+
+                clientId = str(uuid.uuid4())
+
                 client_entry = {
-                    "_id": key,
+                    "clientId": clientId,
                     "label": client_info['label'],
                     "type": client_info['type'],
                     "name": key.upper()
@@ -185,12 +191,14 @@ class DatabaseInitializer:
 
                 for field_name, field_info in client_info['fields'].items():
                     client_field_entry = {
-                        "clientFieldId": f"{key}_{field_name}",
-                        "clientId": key,
+                        "clientFieldId": str(uuid.uuid4()),
+                        "clientId": clientId,
                         "name": field_name,
+                        "type": field_info['type'],
                         "placeholderValue": field_info['placeholderValue']
                     }
-                    client_field_entries.append(client_field_entry)
+                    client = ClientField(**client_field_entry)
+                    client_field_entries.append(client.dict())
 
             await self.db.clients.insert_many(client_entries)
             await self.db.client_fields.insert_many(client_field_entries)

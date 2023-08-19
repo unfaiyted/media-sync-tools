@@ -71,6 +71,7 @@ export interface MediaList {
     mediaListId?: string;
     name: string;
     type: ListType;
+    createdAt: Date;
     sortName: string;
     clientId: string;
     filters?: Filter[];
@@ -161,7 +162,6 @@ export interface ClientField {
     name: string;
     placeholderValue?: string;
     type: FieldType;
-    ConfigClientFieldsValues?: ConfigClientFieldsValue[];
 }
 
 export interface ConfigClientFieldsValue {
@@ -188,4 +188,75 @@ export interface User {
     password: string; // Remember to hash passwords before storing
     lists?: MediaList[];
     relatedConfig?: Config;
+}
+
+
+interface MediaPosterBorderOptions {
+    enabled: boolean;
+    width: number;
+    height: number;
+    color?: [number, number, number];
+}
+
+interface MediaPosterGradientOptions {
+    enabled: boolean;
+    colors?: [number, number, number][];
+    opacity: number;
+    type: string;
+    angle: number;
+}
+
+interface MediaPosterShadowOptions {
+    enabled: boolean;
+    color?: [number, number, number];
+    offset: number;
+    blur: number;
+    transparency: number;
+}
+
+interface MediaPosterTextOptions {
+    enabled: boolean;
+    text?: string;
+    position: [number, number];
+    color?: [number, number, number];
+    border?: MediaPosterBorderOptions;
+    shadow?: MediaPosterShadowOptions;
+}
+
+interface MediaPosterBackground {
+    enabled: boolean;
+    url?: string;
+    color?: [number, number, number];
+    position: [number, number];
+    size: [number, number];
+    opacity: number;
+    border?: MediaPosterBorderOptions;
+    shadow?: MediaPosterShadowOptions;
+}
+
+interface MediaPosterOverlayOptions {
+    enabled: boolean;
+    text?: string;
+    position: string;
+    textColor?: [number, number, number];
+    backgroundColor?: [number, number, number];
+    transparency: number;
+    cornerRadius: number;
+    border?: MediaPosterBorderOptions;
+    shadow?: MediaPosterShadowOptions;
+}
+
+interface MediaPoster {
+    mediaPosterID?: string;
+    mediaItemId: string;
+    url: string;
+    width: number;
+    height: number;
+    type: string;
+    border?: MediaPosterBorderOptions;
+    text?: MediaPosterTextOptions;
+    gradient?: MediaPosterGradientOptions;
+    background?: MediaPosterBackground;
+    overlays?: MediaPosterOverlayOptions[];
+    mediaItem?: string;
 }
