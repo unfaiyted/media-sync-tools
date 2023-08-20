@@ -207,3 +207,4 @@ loop = asyncio.get_event_loop()
 config_setup = ConfigManager.get_manager()
 dbinit = DatabaseInitializer(config=config_setup)
 loop.run_until_complete(dbinit.run())
+

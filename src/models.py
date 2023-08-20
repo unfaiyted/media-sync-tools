@@ -229,25 +229,34 @@ class MediaPosterShadowOptions(BaseModel):
 class MediaPosterTextOptions(BaseModel):
     enabled: bool = False
     text: Optional[str] = None
+    font: Optional[str] = None
     position: Tuple[int, int] = (0, 0)
     color: Optional[Tuple[int, int, int]] = None
     border: Optional[MediaPosterBorderOptions] = None
     shadow: Optional[MediaPosterShadowOptions] = None
+
 
 class MediaPosterBackground(BaseModel):
     enabled: bool = False
     url: Optional[str] = None
     # image: Optional[Image] = None
     color: Optional[Tuple[int, int, int]] = None
-    position: Tuple[int, int] = (0, 0)
-    size: Tuple[int, int] = (0, 0)
+    position: Optional[Tuple[int, int]] = (0, 0)
     opacity: float = 1.0
     border: Optional[MediaPosterBorderOptions] = None
     shadow: Optional[MediaPosterShadowOptions] = None
 
+
+class MediaPosterIconOptions(BaseModel):
+    enabled: bool = False
+    path: Optional[str] = None
+    position: Tuple[int, int] = (0, 0)
+    size: Tuple[int, int] = (100, 100)
+
 class MediaPosterOverlayOptions(BaseModel):
     enabled: bool = False
     text: Optional[str] = None
+    icon: Optional[str] = None
     position: str = 'bottom-left'
     textColor: Optional[Tuple[int, int, int]] = (255, 255, 255)
     backgroundColor: Optional[Tuple[int, int, int]] = (100, 100, 100)
@@ -257,19 +266,45 @@ class MediaPosterOverlayOptions(BaseModel):
     shadow: Optional[MediaPosterShadowOptions] = None
 
 
+class MediaImageType(str, Enum):
+    UNKNOWN = 'UNKNOWN'
+    POSTER = 'POSTER'
+    BACKGROUND = 'BACKGROUND'
+    BANNER = 'BANNER'
+    LOGO = 'LOGO'
+    THUMB = 'THUMB'
+    CLEARART = 'CLEARART'
+    DISCART = 'DISCART'
+
+
+class IconPosition(str, Enum):
+        LEFT = 'LEFT',
+        MIDDLE = 'MIDDLE',
+        RIGHT = 'RIGHT',
+        TOP = 'TOP',
+        BOTTOM = 'BOTTOM'
+
 class MediaPoster(BaseModel):
     mediaPosterID: Optional[str] = None
-    mediaItemId: str
-    url: str
+    mediaItemId: Optional[str] = None
+    url: Optional[str] = None
     width: int
     height: int
-    type: str
+    type: MediaImageType
     border: Optional[MediaPosterBorderOptions]
     text: Optional[MediaPosterTextOptions]
     gradient: Optional[MediaPosterGradientOptions]
     background: Optional[MediaPosterBackground]
     overlays: Optional[List[MediaPosterOverlayOptions]]
+    icon: Optional[MediaPosterIconOptions]
     mediaItem: Optional[str]
+
+class MediaPosterIconOptions(BaseModel):
+    enabled: bool = False
+    path: Optional[str] = None
+    position: Tuple[int, int] = (0, 0)
+    size: Tuple[int, int] = (100, 100)
+
 
 
 # Update the forward references

@@ -1,5 +1,7 @@
 <template>
-  <div>
+  <div class="p-4 border rounded shadow">
+    <h3 class="text-xl mb-4 font-semibold">Text Options</h3>
+
     <!-- Enabled Checkbox -->
     <label class="mb-2 flex items-center">
       <input type="checkbox" v-model="options.enabled" class="mr-2">
@@ -32,15 +34,16 @@
     </div>
 
     <!-- Border Options -->
-<!--    <media-poster-border-options v-if="options.enabled" v-model="options.border" />-->
+    <media-poster-border-options v-if="options.enabled" v-model="options.border"  :value="options.border"/>
 
     <!-- Shadow Options -->
-<!--    <media-poster-shadow-options v-if="options.enabled" v-model="options.shadow" />-->
+    <media-poster-shadow-options v-if="options.enabled" v-model="options.shadow" />
+
   </div>
 </template>
 
 <script lang="ts">
-import { ref, defineComponent, watch } from 'vue';
+import { ref, defineComponent, watch, PropType } from 'vue';
 import { MediaPosterTextOptions } from '@/models'; // Import your models here
 import MediaPosterBorderOptions from './MediaPosterBorderOptions.vue'; // Assuming you have separate components for each option
 import MediaPosterShadowOptions from './MediaPosterShadowOptions.vue';
@@ -49,22 +52,26 @@ export default defineComponent({
   name: 'MediaPosterTextOptions',
   components: { MediaPosterBorderOptions, MediaPosterShadowOptions },
   props: {
-    value: { type: Object as () => MediaPosterTextOptions, required: true },
-},
-setup(props) {
-  const options = ref(props.value);
+    value: { type: Object as PropType<MediaPosterTextOptions>, required: true },
+  },
+  setup(props) {
+    const options = ref(props.value);
 
-  // Watch for changes in the props and update the local options
-  watch(
-      () => props.value,
-      (newValue) => {
-        options.value = newValue;
-      }
-  );
+    // Watch for changes in the props and update the local options
+    watch(
+        () => props.value,
+        (newValue) => {
+          options.value = newValue;
+        }
+    );
 
-  return {
-    options,
-  };
-},
+    return {
+      options,
+    };
+  },
 });
 </script>
+
+<style scoped>
+/* Optional additional styling */
+</style>

@@ -69,7 +69,6 @@ class EmbyProvider:
                 poster=poster_url  # Set the full poster URL
             )
 
-
             db.media_list_items.insert_one(media_list_item.dict())
 
             # Adjust the logic below based on how Emby's client class methods and responses are structured.

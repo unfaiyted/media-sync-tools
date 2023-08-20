@@ -47,6 +47,17 @@ export enum FieldType {
 
 }
 
+export enum MediaImageType {
+    UNKNOWN = 'UNKNOWN',
+    POSTER = 'POSTER',
+    BACKGROUND = 'BACKGROUND',
+    BANNER = 'BANNER',
+    LOGO = 'LOGO',
+    THUMB = 'THUMB',
+    CLEARART = 'CLEARART',
+    DISCART = 'DISCART',
+}
+
 export interface Config {
     configId?: string;
     user: User;
@@ -223,16 +234,17 @@ export interface MediaPosterTextOptions {
     shadow?: MediaPosterShadowOptions;
 }
 
-export interface MediaPosterBackground {
+export interface MediaPosterBackgroundOptions {
     enabled: boolean;
     url?: string;
     color?: [number, number, number];
-    position: [number, number];
-    size: [number, number];
+    position?: [number, number];
+    size?: [number, number];
     opacity: number;
     border?: MediaPosterBorderOptions;
     shadow?: MediaPosterShadowOptions;
 }
+
 
 export interface MediaPosterOverlayOptions {
     enabled: boolean;
@@ -242,21 +254,40 @@ export interface MediaPosterOverlayOptions {
     backgroundColor?: [number, number, number];
     transparency: number;
     cornerRadius: number;
+    icon?: MediaPosterIconOptions;
     border?: MediaPosterBorderOptions;
     shadow?: MediaPosterShadowOptions;
 }
 
 export interface MediaPoster {
     mediaPosterID?: string;
-    mediaItemId: string;
-    url: string;
+    mediaItemId?: string;
+    url?: string;
     width: number;
     height: number;
-    type: string;
+    type: MediaImageType;
     border?: MediaPosterBorderOptions;
     text?: MediaPosterTextOptions;
     gradient?: MediaPosterGradientOptions;
-    background?: MediaPosterBackground;
+    background?: MediaPosterBackgroundOptions;
+    icon?: MediaPosterIconOptions;
     overlays?: MediaPosterOverlayOptions[];
     mediaItem?: string;
+}
+
+
+export enum IconPosition {
+    LEFT = 'LEFT',
+    MIDDLE = 'MIDDLE',
+    RIGHT = 'RIGHT',
+    TOP = 'TOP',
+    BOTTOM = 'BOTTOM'
+}
+
+
+export interface MediaPosterIconOptions {
+    enabled: boolean;
+    path?: string;
+    position: IconPosition;
+    size: [number, number];
 }
