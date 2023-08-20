@@ -67,6 +67,19 @@ class TmdbClient:
         movie_details = self.get_movie_details(movie_id)
         return movie_details.get('poster_path')
 
+    def get_movie_by_name_and_year(self, name, year):
+        """
+        Search for a movie by its name and year of release.
+
+        :param name: Name of the movie.
+        :param year: Year of release.
+        :return: JSON response containing the search results.
+        """
+        endpoint = f"/search/movie?query={name}&primary_release_year={year}"
+        return self._request("GET", endpoint)
+
+
+
     def get_movie_poster(self, movie_id):
         """
         Fetches the movie poster as an RGBA image.

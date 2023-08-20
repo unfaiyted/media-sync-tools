@@ -29,7 +29,8 @@
 
 <script lang="ts">
 import { defineComponent, ref, onBeforeMount } from 'vue';
-import {  fetchClientsByType } from '@/api/clients';
+import {  fetchClientsByType,  } from '@/api/clients';
+import { fetchConfigClientsByConfigId } from '@/api/configs'
 import {ClientType} from "@/models"; // Adjust the path accordingly
 
 export default defineComponent({
@@ -38,11 +39,15 @@ export default defineComponent({
     type: {
       type: String as () => ClientType,
       default: ClientType.UNKNOWN
-    } ,
+    },
     blockStyle: {
       type: Boolean,
       default: true
     },
+      isConfig: {
+        type: Boolean,
+          default: true
+      },
     maxWidth: {
       type: String,
       default: 'max-w-md'
@@ -63,8 +68,8 @@ export default defineComponent({
     const getButtonClass = (clientId: string) => {
       return {
         'm-2': !props.blockStyle,
-        'w-full border-t first:border-t-0': props.blockStyle,
-        'bg-blue-500 text-white rounded px-4 py-2': toggledClients.value[clientId],
+        'w-full border-t border-t-0 w-[125px]': props.blockStyle,
+        'bg-blue-500 text-white rounded px-4 py-2 ': toggledClients.value[clientId],
         'bg-gray-400 text-white rounded px-4 py-2': !toggledClients.value[clientId]
       };
     };
@@ -81,7 +86,7 @@ export default defineComponent({
 
     const buttonClass = computed(() => ({
       'm-2': !props.blockStyle,
-      'w-full border-t first:border-t-0': props.blockStyle,
+      'w-full border-t first:border-t-0 border-0': props.blockStyle,
       'bg-blue-500 text-white rounded px-4 py-2': true
     }));
 
@@ -100,6 +105,18 @@ export default defineComponent({
       loading.value = false;
       console.log('Not Loading')
     };
+
+
+    const fetchConfigClients = async () => {
+       try {
+        clients.value = await fetchConfigClientsByType(props.type);
+        console.log('got clients', clients.value, props.type)
+      } catch (error) {
+        console.error("Error fetching clients:", error);
+      }
+      loading.value = false;
+      console.log('Not Loading')
+    }
 
     onBeforeMount(fetchClients)
 

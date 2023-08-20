@@ -14,22 +14,33 @@ class EmbyProvider:
         self.listType = listType
 
         if filters is not None:
-            self.id = filters[0].get('value', None)
+            self.id, self.library_name = self.parse_filters(filters)
 
+
+    def parse_filters(self, filters):
+        id_filter = next((f for f in filters if f['name'] == 'id'), None)
+        library_filter = next((f for f in filters if f['name'] == 'library'), None)
+
+        id_value = id_filter.get('value', None) if id_filter else None
+        library_name = library_filter.get('value', None) if library_filter else None
+
+        return id_value, library_name
     def get_list(self):
-        if self.id is None:
-            print('No list id provided. Cannot get list.')
+        if self.id is None and self.library_name is None:
+            print('No filter provided. Cannot get list.')
             return None
 
-        # The logic to retrieve the list and list items from Emby.
-        # This might be different from MDB, so adjust accordingly.
+        elif(self.library_name is not None):
+            self.id = self.client.get_library(self.library_name)
+
+        if(self.id is not None):
+            list_items, list_items_count = self.client.get_items_from_parent(self.id)
+
         list = self.client.get_list(list_id=self.id)
         print('LIST:', list)
-        list_items, list_items_count = self.client.get_items_from_parent(self.id)
+
         # print('LIST ITEMS:', list_items)
         db = self.config.get_db()
-
-
         media_list = MediaList(
             mediaListId=str(uuid.uuid4()),
             name=list['Name'],

@@ -1,7 +1,7 @@
 from fastapi import FastAPI, UploadFile, File
 import sys
 import os
-from src.routes import images, sync, utils, config, client, lists, users, library
+from src.routes import poster, images, sync, utils, config, client, lists, users, library
 # Get the absolute path of the 'src' folder
 src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'src'))
 
@@ -33,6 +33,7 @@ app.include_router(config.router, prefix="/config", tags=["config"])
 app.include_router(client.router, prefix="/client", tags=["client"])
 app.include_router(users.router, prefix="/user", tags=["users"])
 app.include_router(library.router, prefix="/library", tags=["library"])
+app.include_router(poster.router, prefix="/poster", tags=["poster"])
 # app.include_router(filter.router, prefix="/filter", tags=["filter"])
 
 # app.include_router(collections.router, prefix="/collection", tags=["collections"])

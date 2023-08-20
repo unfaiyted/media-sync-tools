@@ -202,6 +202,25 @@ class Emby:
         print(items, total_count)
         return items, total_count
 
+
+    def get_libraries(self):
+        url = self._build_url(f'Users/{self.user_id}/views')
+        response = self._get_request(url)
+        return response.get('Items', [])
+
+    def get_library(self, library_id):
+        libraries = self.get_libraries()
+        library = next((item for item in libraries if item.get('Id') == library_id), None)
+        return library
+
+
+    def get_items_from_library(self, library_name):
+        libraries = self.get_libraries()
+        library = next((item for item in libraries if item.get('Name') == library_name), None)
+        if library:
+            return self.get_items_from_parent(library['Id'])
+        return None, 0
+
     def get_list_items(self, list_id):
         url = self._build_url(f'users/{self.user_id}/items/{list_id}/children')
         response = self._get_request(url)

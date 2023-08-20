@@ -38,7 +38,7 @@ export default defineComponent({
                 { to: '/', text: 'Dashboard', icon: LinkIcon },
                 { to: '/poster', text: 'Posters', icon: DocumentTextIcon },
                 { to: '/settings', text: 'Settings', icon: CogIcon },
-                { to: '/provider', text: 'Provider Lists', icon: TvIcon },
+                { to: '/providers', text: 'Provider Lists', icon: TvIcon },
                 { to: '/lists', text: 'Media Lists', icon: TvIcon },
                 { to: '/users', text: 'Users', icon: UserIcon},
                 {

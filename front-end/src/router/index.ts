@@ -8,6 +8,7 @@ import MediaList from '@/pages/List.vue'
 import Tools from '@/pages/Tools.vue'
 import Poster from '@/pages/Poster.vue'
 import Admin from '@/pages/Admin.vue'
+import Providers from '@/pages/Providers.vue'
 
 const routes: Array<RouteRecordRaw> = [
     {
@@ -40,15 +41,25 @@ const routes: Array<RouteRecordRaw> = [
         },
         component: About,
     },
-     {
+      {
          path: '/lists',
          name: 'Lists',
+         meta: {
+             title: 'Lists Page',
+             keepAlive: true,
+             requireAuth: false,
+         },
+         component: UserLists,
+     },
+    {
+         path: '/providers',
+         name: 'Provider Lists',
          meta: {
              title: 'List Page',
              keepAlive: true,
              requireAuth: false,
          },
-         component: UserLists,
+         component: Providers,
      },
       {
          path: '/list/:listId',

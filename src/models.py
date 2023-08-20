@@ -135,9 +135,23 @@ class MediaListItem(BaseModel):
     type: MediaType
 
 
+
+class LibraryType(str, Enum):
+    UNKNOWN = 'UNKNOWN'
+    MOVIES = 'MOVIES'
+    SHOWS = 'SHOWS'
+    MUSIC = 'MUSIC'
+    GAMES = 'GAMES'
+    BOOKS = 'BOOKS'
+    AUDIOBOOKS = 'AUDIOBOOKS'
+    ANIME = 'ANIME'
+
+    # ... other types ...
+
 class Library(BaseModel):
     libraryId: str = None
     name: str
+    type: LibraryType
     clients: Optional[List[ForwardRef('LibraryClient')]]
     Lists: Optional[ForwardRef('MediaList')]
 
@@ -148,6 +162,7 @@ class LibraryClient(BaseModel):
     libraryName: str
     client: Optional[ForwardRef('Client')]
     clientId: str
+    mediaListId: Optional[str]
     Library: Optional[ForwardRef('Library')]
 
 
@@ -304,6 +319,15 @@ class MediaPosterIconOptions(BaseModel):
     path: Optional[str] = None
     position: Tuple[int, int] = (0, 0)
     size: Tuple[int, int] = (100, 100)
+
+
+class ProviderPoster(BaseModel):
+    providerPosterId: Optional[str] = None
+    providerId: str
+    url: str
+    width: int
+    height: int
+    type: MediaImageType
 
 
 

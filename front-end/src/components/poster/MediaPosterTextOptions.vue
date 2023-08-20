@@ -38,7 +38,6 @@
 
     <!-- Shadow Options -->
     <media-poster-shadow-options v-if="options.enabled" v-model="options.shadow" />
-
   </div>
 </template>
 

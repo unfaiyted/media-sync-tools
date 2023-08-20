@@ -138,10 +138,22 @@ export interface FilterTypes {
 }
 
 
+export enum LibraryType {
+    UNKNOWN = 'UNKNOWN',
+    MOVIES = 'MOVIES',
+    SHOWS = 'SHOWS',
+    MUSIC = 'MUSIC',
+    BOOKS = 'BOOKS',
+    GAMES = 'GAMES',
+    AUDIOBOOKS = 'AUDIOBOOKS',
+    ANIME = 'ANIME',
+
+}
 
 export interface Library {
     libraryId?: string;
     name: string;
+    type: LibraryType;
     clients?: LibraryClient[];
     List?: MediaList;
 }
@@ -152,6 +164,7 @@ export interface LibraryClient {
     libraryName: string;
     client?: Client;
     clientId: string;
+    mediaListId?: string;
     Library?: Library;
 }
 
@@ -257,6 +270,16 @@ export interface MediaPosterOverlayOptions {
     icon?: MediaPosterIconOptions;
     border?: MediaPosterBorderOptions;
     shadow?: MediaPosterShadowOptions;
+}
+
+export interface ProviderPoster {
+    providerPosterId?: string;
+    providerId: string; // configClientID
+    url: string;
+    width?: number;
+    height?: number;
+    type: MediaImageType;
+
 }
 
 export interface MediaPoster {

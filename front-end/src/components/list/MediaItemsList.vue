@@ -109,6 +109,7 @@ import ContextMenu from "@/components/ui/ContextMenu.vue";
 import {deleteMediaList, deleteMediaListItem} from "@/api/lists";
 import {useRouter} from "vue-router";
 import MediaListOptionsPopup from "@/components/list/MediaListOptionsPopup.vue";
+import {requestPosterForItem} from "@/api/posters";
 const router = useRouter();
 
 export default defineComponent({
@@ -174,6 +175,7 @@ export default defineComponent({
           label: 'Get Provider Poster',
           action: async () => {
             console.log("Get Provider Poster:", selectedItem.value);
+            await requestPosterForItem(selectedItem.value.mediaItemId);
           }
         },
         {

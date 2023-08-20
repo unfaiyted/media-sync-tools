@@ -3,8 +3,8 @@
 
     <!--    <UserManagement />-->
     <div v-if="config">
-<!--        <ClientsConfig :config="config" />
-        <LibraryManager :config="config"  />-->
+        <ClientsConfig :config="config" />
+        <LibraryManager :config="config"  />
     </div>
   <ClientButtonGroup :type="ClientType.MEDIA_SERVER" />
   <ClientButtonGroup :type="ClientType.UTILITY" />

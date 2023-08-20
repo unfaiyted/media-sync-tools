@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
+
+from src.create import ListBuilder
 from src.models import Library, LibraryClient
 from src.config import ConfigManager
 
@@ -94,3 +96,45 @@ async def delete_library_client(library_client_id: str, db: AsyncIOMotorDatabase
         raise HTTPException(status_code=404, detail="Library Client not found")
     await db.library_clients.delete_one({"libraryClientId": library_client_id})
     return existing_library_client
+
+
+# update library clients media list records
+@router.get("/trigger/update/{library_client_id}/", response_model=LibraryClient)
+async def trigger_update_library_client(library_client_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+    existing_library_client = await db.library_clients.find_one({"libraryClientId": library_client_id})
+    if existing_library_client is None:
+        raise HTTPException(status_code=404, detail="Library Client not found")
+
+    # get library client
+    library_client = LibraryClient(**existing_library_client)
+    client = db.clients.find_one({"clientId": library_client.clientId})
+    # find out what type of client this is
+    print('client', client)
+
+    details = {
+            'name': library_client.libraryName,
+            'description': f'{client.label} - {library_client.libraryName}',
+            'provider': client.name,
+            'filters': [{
+                'type': 'library',
+                'value': library_client.libraryName
+            }],
+            'include': ['Movies'],
+            'options': {
+                'add_prev_watched': False,
+                'add_missing_to_library': False,
+                'limit': 1000,
+                'sort': 'rank',
+                'poster': {
+                    'enabled': True,
+                }
+            }
+        }
+
+    list_builder = ListBuilder(config, list=details)
+    list_builder.build()
+
+    return library_client
+
+
+
