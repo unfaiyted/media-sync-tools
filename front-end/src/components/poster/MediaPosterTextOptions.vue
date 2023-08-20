@@ -32,10 +32,10 @@
     </div>
 
     <!-- Border Options -->
-<!--    <media-poster-border-options v-if="options.enabled" v-model="options.border" />-->
+    <media-poster-border-options v-if="options.enabled" v-model="options.border" />
 
     <!-- Shadow Options -->
-<!--    <media-poster-shadow-options v-if="options.enabled" v-model="options.shadow" />-->
+    <media-poster-shadow-options v-if="options.enabled" v-model="options.shadow" />
   </div>
 </template>
 
