@@ -38,7 +38,7 @@ export const deleteConfig = async (configClientId: string | undefined) => {
 
 // ConfigClient API methods
 export const createConfigClient = async (configClient: ConfigClient) => {
-        configClient.configClientId = generateGuid();
+        if(!configClient.configClientId) configClient.configClientId = generateGuid();
     return await apiClient.post('/config/client/', configClient);
 }
 

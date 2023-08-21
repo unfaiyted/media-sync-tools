@@ -14,7 +14,7 @@
 <script lang="ts">
 import ClientFieldManagement from "@/components/admin/ClientFieldManagement.vue";
 import ClientManager from "@/components/admin/ClientManager.vue";
-import ClientsConfig from "@/components/config/ClientsConfig.vue";
+// import ClientsConfig from "@/components/config/ClientsConfig.vue";
 import UserManagement from "@/components/admin/UserManager.vue";
 import LibraryManager from "@/components/config/LibraryManager.vue";
 import ListEditor from "@/components/ListEditor.vue";
@@ -24,7 +24,7 @@ import {fetchConfig} from "@/api/configs";
 export default defineComponent({
     components: {
         ClientFieldManagement,
-        ClientsConfig,
+        // ClientsConfig,
         UserManagement,
         ListEditor,
         ClientManager,

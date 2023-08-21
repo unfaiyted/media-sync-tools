@@ -21,3 +21,17 @@ export function camelCaseToWords(input: string): string {
 
 
 
+export function toReadableString(input: string) {
+    if (typeof input !== 'string') {
+        return input;
+    }
+
+    return input
+        .replace(/_/g, ' ')
+        .replace(/-/g, ' ')
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .toLowerCase()
+        .replace(/\b\w/g, char => char.toUpperCase());
+}
+
+// export function toLower

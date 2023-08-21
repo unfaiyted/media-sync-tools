@@ -51,7 +51,7 @@
 
 <script lang="ts">
 import { defineComponent, ref, onMounted } from 'vue';
-import Modal from '@/components/Modal.vue';
+import Modal from '@/components/ui/Modal.vue';
 import { fetchConfigClientsByConfigId } from '@/api/configs';
 import { Config, ConfigClient, Library, LibraryClient } from '@/models';
 import { generateGuid } from '@/utils/numbers';

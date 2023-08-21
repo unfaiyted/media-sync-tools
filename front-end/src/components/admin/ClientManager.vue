@@ -60,7 +60,7 @@
         </transition>
 
 
-        <ClientsConfig config="config"/>
+<!--        <ClientsConfig config="config"/>-->
 
         <!-- ... (rest of the template) -->
     </div>
@@ -75,11 +75,11 @@ import {generateGuid} from "@/utils/numbers";
 import {Client, ClientType} from "@/models";
 import {createClient, deleteClient, fetchClients, updateClient} from "@/api/clients";
 
-import ClientsConfig from "@/components/config/ClientsConfig.vue";
+// import ClientsConfig from "@/components/config/ClientsConfig.vue";
 export default defineComponent({
     components: {
         ClientFieldManagement,
-        ClientsConfig,
+        // ClientsConfig,
         ClientFilterManagement
     },
     data() {

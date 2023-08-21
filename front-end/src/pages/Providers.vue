@@ -22,16 +22,35 @@
       </div>
     </div>
   </div>
+
+
+  <Modal :isOpen="showLibraryManagerModal" @close="showLibraryManagerModal = false" :cancel-action="closeLibraryModal">
+    <LibraryManager :config="config" />
+  </Modal>
+
+  <Modal :isOpen="showProviderManagerModal" @close="showProviderManagerModal = false" :cancel-action="closeProviderModal">
+    <ProviderManager :config="config" />
+  </Modal>
+
 </template>
 
-<script>
+<script lang="ts">
 import { ref, onMounted } from 'vue';
 import {LibraryType} from "@/models";
+import {fetchConfig} from "@/api/configs";
+import Modal from "@/components/ui/Modal.vue";
+import LibraryManager from "@/components/config/LibraryManager.vue";
+import ProviderManager from "@/components/config/ProviderManager.vue";
+
 
 export default {
   name: 'Providers',
+  components: {Modal, LibraryManager, ProviderManager},
   data() {
     return {
+      config: {
+        configId: 'APP-DEFAULT-CONFIG'
+      },
       libraries: [{
         libraryId: 1,
         name: 'Movies',
@@ -56,12 +75,23 @@ export default {
       }], // This should be fetched from the backend
     };
   },
+  setup() {
+    const showLibraryManagerModal = ref(false);
+    const showProviderManagerModal = ref(false);
+
+    return {
+      showLibraryManagerModal,
+      showProviderManagerModal
+    };
+  },
   methods: {
     addProvider() {
       // Logic to add a new provider
+      this.showProviderManagerModal = true;
     },
     addLibrary() {
       // Logic to add a new library
+      this.showLibraryManagerModal = true;
     },
     async fetchLibraries() {
       // Fetch libraries and their clients from the backend.
@@ -69,10 +99,18 @@ export default {
       const response = await fetch('/api/libraries');
       this.libraries = await response.json();
     },
+    closeProviderModal() {
+      this.showProviderManagerModal = false;
+    },
+    closeLibraryModal() {
+      this.showLibraryManagerModal = false;
+    }
+
   },
-  mounted() {
+  async mounted() {
     // Fetch the libraries when the component is mounted
-    this.fetchLibraries();
+    this.libraries =  this.fetchLibraries();
+    this.config = await fetchConfig(this.configId);
   },
 };
 </script>

@@ -1,23 +1,30 @@
 <template>
     <div class="p-6">
         <!-- Create Config Client -->
-           <h2 class="text-lg font-semibold mb-4">Create Provider Instance</h2>
+           <h2 class="text-lg font-semibold mb-4 text-white">Create Provider Instance</h2>
         <div class="mb-4">
-            <input v-model="newConfigClient.label" class="input" placeholder="Label">
+            <input v-model="newConfigClient.label" class="block appearance-none w-full bg-gray-700 border border-gray-600 text-white py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-gray-600 focus:border-gray-500" placeholder="Label">
         </div>
-        <div class="mb-4">
-            <select v-model="newConfigClient.clientId" class="input">
-                <option v-for="client in possibleClients" :key="client.clientId" :value="client.clientId">
-                    {{ client.name }} <!-- Assuming each client object has a name property -->
-                </option>
-            </select>
-        </div>
-
+      <div class="mb-4">
+        <select v-model="newConfigClient.clientId"
+                @change="changeClient"
+                class="block appearance-none w-full bg-gray-700 border border-gray-600 text-white py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-gray-600 focus:border-gray-500">
+          <option v-for="client in possibleClients" :key="client.clientId" :value="client.clientId">
+            {{ toReadableString(client.name) }}
+          </option>
+        </select>
+      </div>
+<div class="mb-4" v-if="newConfigClient.clientId">
+   <ProviderFieldGenerator :editing-fields="newConfigClient" :client-fields="clientFields"
+                                              :handle-input-change="handleInputChange"
+                              :get-default-value="getDefaultValue"
+                      />
+</div>
         <!-- Add other input fields here for other properties of ConfigClient -->
-        <button @click="createConfigClient" class="btn btn-primary">Add Config Client</button>
+      <button @click="createConfigClient" class="btn btn-primary">Add Config Client</button>
 
         <!-- List Config Clients -->
-        <h2 class="text-lg font-semibold mt-8 mb-4">Config Clients</h2>
+        <h2 class="text-md font-semibold mt-8 mb-4 text-white">Configured Providers</h2>
         <ul v-if="configClients.length">
             <li v-for="config in configClients" :key="config.configClientId" class="mb-2">
                 {{ config.label }}
@@ -38,18 +45,17 @@
                     <!-- Add other input fields here for editing -->
 
                     <!-- Dynamic input generation for clientFields -->
-                    <div v-for="field in clientFields" :key="field.name" class="mb-4">
-                        <label :for="field.name" class="block mb-2">{{ field.name }}</label>
-                        <input v-model="editingFields[field.name]"
-                               @input="handleInputChange(field)"
-                               :id="field.name"
-                               class="input"
-                               :placeholder="getDefaultValue(field)">
-                    </div>
-                    <div class="flex justify-end">
+
+                  <ProviderFieldGenerator :editing-fields="editingFields" :client-fields="clientFields"
+                                             :handle-input-change="handleInputChange"
+                            :get-default-value="getDefaultValue"
+                     />
+
+
+<!--                    <div class="flex justify-end">
                         <button @click="updateConfigClient" class="btn btn-primary">Update</button>
                         <button @click="closeEditModal" class="btn btn-secondary ml-2">Cancel</button>
-                    </div>
+                    </div>-->
                 </div>
             </div>
         </transition>
@@ -67,6 +73,8 @@ import {
     updateConfigClient
 } from "@/api/configs";
 import {fetchClientFieldByClientId, fetchClients, updateConfigClientFieldsValue} from "@/api/clients";
+import ProviderFieldGenerator from "@/components/config/ProviderFieldGenerator.vue";
+import {toReadableString} from "../../utils/string";
 
 
 type EditingFieldsType = {
@@ -74,6 +82,7 @@ type EditingFieldsType = {
 };
 
 export default defineComponent({
+  components: {ProviderFieldGenerator},
     props: {
         config: {
             type: Object as () => Config,
@@ -83,7 +92,8 @@ export default defineComponent({
     data() {
         return {
             newConfigClient: {
-                label: ""
+                label: "",
+                clientId: "",
                 // initialize other properties here
             } as ConfigClient,
             configClients: [] as ConfigClient[],
@@ -107,6 +117,7 @@ export default defineComponent({
         console.log(this.possibleClients);
     },
     methods: {
+      toReadableString,
          async handleInputChange(field: ClientField) {
              if(this.editingConfigClient.configClientId === undefined) {
                  console.error("Config client ID is undefined");
@@ -138,10 +149,42 @@ export default defineComponent({
 
             this.newConfigClient = {
                 ...this.newConfigClient,
+              configClientId: crypto.randomUUID(),
                 configId: this.config.configId
             }
+
             await createConfigClient(this.newConfigClient);
+
+            // save the update for the client fields
+            for (const field of this.clientFields) {
+                const dataToUpdate: ConfigClientFieldsValue = {
+                    configClientFieldId:  field.clientFieldId, // you should have some logic or data property to know the ID
+                    clientField: field,
+                    configClientId:  this.newConfigClient.configClientId, // fill this in based on your component data
+                    value: this.newConfigClient[field.name]
+                };
+
+                console.log("Updating config client field value:", dataToUpdate);
+                try {
+                    await updateConfigClientFieldsValue(dataToUpdate);
+                    // maybe show a success message or some other logic after saving
+                } catch (error) {
+                    console.error("Error updating value:", error);
+                    // maybe show an error message to the user
+                }
+            }
+
+
+            // configured providers list
             this.configClients = await fetchConfigClientsByConfigId(this.config.configId);
+
+
+            // reset
+            this.newConfigClient = {
+                label: "",
+                clientId: "",
+                // initialize other properties here
+            } as ConfigClient;
         },
         async updateConfigClient() {
             const config = await updateConfigClient(this.editingConfigClient);
@@ -171,6 +214,18 @@ export default defineComponent({
                 }
             }
             this.showEditModal = true;
+        },
+       async changeClient() {
+            this.clientFields = await fetchClientFieldByClientId(this.newConfigClient.clientId);
+            this.configClientFieldValues = await fetchFieldsValueByConfigId(this.newConfigClient.configClientId);
+            this.defaultValues = await this.fetchDefaultValues();
+
+             for (const valueObj of this.configClientFieldValues) {
+                if (valueObj.clientField) {
+                    this.editingFields[valueObj.clientField.name] = valueObj.value;
+                    this.defaultValues[valueObj.clientField.name] = valueObj.value;
+                }
+            }
         },
         async fetchDefaultValues() {
             for (const field of this.clientFields) {

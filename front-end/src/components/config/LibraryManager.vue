@@ -1,37 +1,57 @@
 <template>
-    <div class="p-6">
-        <h1 class="text-3xl font-bold mb-4">Library Client Mapping Management</h1>
-        <div class="mb-4">
-            <input v-model="newLibraryName" class="px-4 py-2 rounded border" placeholder="Library Name" />
-            <button @click="createLibrary" class="px-4 py-2 bg-blue-500 text-white rounded ml-2">Create Library</button>
+    <div class="p-6 bg-grey-800">
+        <h1 class="text-xl font-bold mb-4 text-white">Add Library Management</h1>
+        <div class="mb-4 flex">
+            <input v-model="newLibraryName" class="block appearance-none w-[100%] bg-gray-700 border border-gray-600 text-white py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-gray-600 focus:border-gray-500" placeholder="Library Name" />
+<!--            <button @click="createLibrary" class="px-4 py-2 bg-blue-500 text-white rounded ml-2">Create Library</button>-->
         </div>
-        <div class="flex">
-            <div class="w-1/2 pr-4">
-                <h2 class="text-xl font-semibold mb-2">Selected Clients</h2>
-                <select v-model="selectedConfigClients" multiple class="px-4 py-2 rounded border w-full">
+         <div class="mb-4 flex">
+           <div class="flex flex-col">
+             <!-- Dropdown for LibraryType -->
+             <label class="block font-semibold text-white mb-2 mr-3 w-[50%]">Type</label>
+
+             <select v-model="selectedLibraryType" class="block mr-3appearance-none w-full bg-gray-700 border border-gray-600 text-white py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-gray-600 focus:border-gray-500">
+               <option disabled value="">Please select one</option>
+               <option v-for="(value, name) in LibraryType" :key="name" :value="value">
+                 {{ toReadableString(name) }}
+               </option>
+             </select>
+           </div>
+           <div class="w-1/2  pl-4">
+                <h2 class="text-md font-semibold mb-2 text-white">Selected Clients</h2>
+                <select v-model="selectedConfigClients" multiple class="block appearance-none w-full  bg-gray-700 border border-gray-600 text-white py-2 px-2 rounded leading-tight focus:outline-none focus:bg-gray-600 focus:border-gray-500">
                     <option v-for="configClient in possibleConfigClients" :key="configClient.clientId" :value="configClient">
                         {{ configClient.label }}
                     </option>
                 </select>
             </div>
-            <div class="w-1/2 pl-4">
-                <h2 class="text-xl font-semibold mb-2">Library Names</h2>
-                <div v-for="configClient in selectedConfigClients" :key="configClient.clientId" class="border p-2 mb-2 rounded">
-                    <h3 class="text-lg font-semibold">{{ configClient.label }}</h3>
-                    <input v-model="clientLibraryNames[configClient.clientId]" class="px-4 py-2 rounded border w-full" :placeholder="'Library Name for ' + configClient.label" />
+<!--            <button @click="createLibrary" class="px-4 py-2 bg-blue-500 text-white rounded ml-2">Create Library</button>-->
+        </div>
+        <div class="flex flex-col">
+
+                <h2 class="text-md font-semibold mb-2 text-white" >Library Names</h2>
+            <div class="w-full flex ">
+                <div v-for="configClient in selectedConfigClients" :key="configClient.clientId" class=" p-2 mb-2 w-full rounded">
+                    <h3 class="text-lg font-semibold text-white">{{ configClient.label }}</h3>
+                    <input v-model="clientLibraryNames[configClient.clientId]" class="block appearance-none w-full bg-gray-700 border border-gray-600 text-white py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-gray-600 focus:border-gray-500" :placeholder="'Library Name for ' + configClient.label" />
                 </div>
             </div>
+
+        </div>
+
+
+<!--      <div class="flex">
+        <div class="mt-4 mr-1">
+&lt;!&ndash;            <button @click="addLibraryClients" class="px-4 py-2 bg-green-500 text-white rounded">Add Clients</button>&ndash;&gt;
         </div>
         <div class="mt-4">
-            <button @click="addLibraryClients" class="px-4 py-2 bg-green-500 text-white rounded">Add Clients</button>
-        </div>
-        <div class="mt-4">
-            <button @click="submitLibraryClients" class="px-4 py-2 bg-blue-500 text-white rounded">Submit</button>
-        </div>
+&lt;!&ndash;            <button @click="submitLibraryClients" class="px-4 py-2 bg-blue-500 text-white rounded">Submit</button>&ndash;&gt;
+        </div>-->
+<!--      </div>-->
 
 
         <!-- List Config Clients -->
-        <h2 class="text-lg font-semibold mt-8 mb-4">Library Client Mapping</h2>
+        <h2 class="text-md font-semibold mt-8 mb-4 text-white">Library Client Mapping</h2>
         <ul v-if="libraries.length">
             <li v-for="library in libraries" :key="library.libraryId" class="mb-4">
                 <h3 class="text-md font-semibold">{{ library.name }}</h3>
@@ -43,22 +63,33 @@
                 <button @click="deleteLib(library.libraryId)" class="btn btn-danger">Delete</button>
             </li>
         </ul>
-
+    c
     </div>
 </template>
 
 <script lang="ts">
-import { ref, onMounted, Ref } from 'vue';
-import {fetchLibraries, createLibrary, deleteLibrary, createLibraryClient, deleteLibraryClient, fetchLibraryClients} from '@/api/libraries';
-import { fetchConfigClientsByConfigId } from "@/api/configs";
-import {Config, ConfigClient, Library, LibraryClient} from "@/models";
+import {onMounted, ref} from 'vue';
+import {
+  createLibrary,
+  createLibraryClient,
+  deleteLibrary,
+  deleteLibraryClient,
+  fetchLibraries,
+  fetchLibraryClients
+} from '@/api/libraries';
+import {fetchConfigClientsByConfigId} from "@/api/configs";
+import {Config, ConfigClient, Library, LibraryClient, LibraryType} from "@/models";
 import {generateGuid} from "@/utils/numbers";
-
-
+import {toReadableString} from "../../utils/string";
 
 
 export default defineComponent({
-    methods: {deleteLibrary, deleteLibraryClient},
+  computed: {
+    LibraryType() {
+      return LibraryType
+    }
+  },
+    methods: {toReadableString, deleteLibrary, deleteLibraryClient},
     props: {
         config: {
             required: true,
@@ -77,6 +108,7 @@ export default defineComponent({
     },
     setup(props: { config: Config }) {
         const newLibraryName = ref('');
+        const selectedLibraryType = ref<LibraryType>(LibraryType.UNKNOWN);
         const possibleConfigClients = ref<Array<ConfigClient>>([]);
         const selectedConfigClients = ref<Array<ConfigClient>>([]);
         const libraries = ref<Array<Library>>([]);
@@ -181,6 +213,7 @@ export default defineComponent({
             libraries,
             submitLibraryClients,
             clientLibraryNames,
+          selectedLibraryType,
             libraryClients,
             createLibrary: createLib,
             getConfigClient,

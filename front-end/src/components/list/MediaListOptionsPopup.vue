@@ -1,5 +1,5 @@
 <template>
-  <Modal :is-open="isOpen">
+  <Modal :is-open="isOpen" :cancel-action="closeModal" :do-action="doAction">
       <h2 class="text-white text-xl font-bold mb-4">Request Movie</h2>
       <p class="text-white mb-2">{{ mediaListItem?.name}}</p>
       <p class="text-indigo-300 mb-4">This request will be approved.</p>
@@ -41,10 +41,7 @@
         </div>
       </div>
 
-      <div class="flex justify-end">
-        <button @click="doAction" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 mr-2">Request</button>
-        <button @click="closeModal" class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">Cancel</button>
-      </div>
+
   </Modal>
 </template>
 

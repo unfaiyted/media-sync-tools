@@ -3,8 +3,8 @@
 
     <!--    <UserManagement />-->
     <div v-if="config">
-        <ClientsConfig :config="config" />
-        <LibraryManager :config="config"  />
+<!--        <ClientsConfig :config="config" />-->
+<!--        <LibraryManager :config="config"  />-->
     </div>
   <ClientButtonGroup :type="ClientType.MEDIA_SERVER" />
   <ClientButtonGroup :type="ClientType.UTILITY" />
@@ -15,10 +15,10 @@
 <script lang="ts">
 import ClientFieldManagement from "@/components/admin/ClientFieldManagement.vue";
 import ClientManager from "@/components/admin/ClientManager.vue";
-import ClientsConfig from "@/components/config/ClientsConfig.vue";
+// import ClientsConfig from "@/components/config/ClientsConfig.vue";
 import UserManagement from "@/components/admin/UserManager.vue";
 import ClientButtonGroup from "@/components/ui/ClientButtonGroup.vue";
-import LibraryManager from "@/components/config/LibraryManager.vue";
+// import LibraryManager from "@/components/config/LibraryManager.vue";
 import ListEditor from "@/components/ListEditor.vue";
 import SyncOptions from "@/components/config/SyncOptions.vue";
 import {ClientType, Config} from "@/models";
@@ -31,13 +31,13 @@ export default defineComponent({
   },
     components: {
         ClientFieldManagement,
-        ClientsConfig,
+        // ClientsConfig,
         UserManagement,
         ListEditor,
       ClientButtonGroup,
         ClientManager,
         SyncOptions,
-        LibraryManager
+        // LibraryManager
     },
     data() {
         return {

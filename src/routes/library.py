@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
@@ -19,15 +21,18 @@ async def create_library(library: Library, db: AsyncIOMotorDatabase = Depends(co
     return library_dict
 
 # Get all libraries
-@router.get("/all", response_model=list[Library])
+# Assuming the Library model is imported from somewhere
+# from .models import Library
+
+@router.get("/all", response_model=List[Library])
 async def read_all_libraries(db: AsyncIOMotorDatabase = Depends(config.get_db)):
-    libraries = []
-    async for library_doc in db.libraries.find({}):
-        # Create a Library instance from the retrieved document
-        libraries.append(library_doc)
-    if libraries is None:
+    libraries = [library_doc async for library_doc in db.libraries.find({})]
+
+    if not libraries:
         raise HTTPException(status_code=404, detail="Library not found")
+
     return libraries
+
 
 @router.get("/{library_id}", response_model=Library)
 async def read_library(library_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
