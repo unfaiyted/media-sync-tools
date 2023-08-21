@@ -63,7 +63,6 @@
                 <button @click="deleteLib(library.libraryId)" class="btn btn-danger">Delete</button>
             </li>
         </ul>
-    c
     </div>
 </template>
 

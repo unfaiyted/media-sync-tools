@@ -9,7 +9,8 @@
         <select v-model="newConfigClient.clientId"
                 @change="changeClient"
                 class="block appearance-none w-full bg-gray-700 border border-gray-600 text-white py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-gray-600 focus:border-gray-500">
-          <option v-for="client in possibleClients" :key="client.clientId" :value="client.clientId">
+          <option selected value="">Select provider...</option>
+            <option v-for="client in possibleClients" :key="client.clientId" :value="client.clientId">
             {{ toReadableString(client.name) }}
           </option>
         </select>
@@ -21,7 +22,7 @@
                       />
 </div>
         <!-- Add other input fields here for other properties of ConfigClient -->
-      <button @click="createConfigClient" class="btn btn-primary">Add Config Client</button>
+      <button @click="createConfigClient" class="btn btn-primary">Add Provider</button>
 
         <!-- List Config Clients -->
         <h2 class="text-md font-semibold mt-8 mb-4 text-white">Configured Providers</h2>

@@ -3,8 +3,8 @@
     <div v-if="isOpen" class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-gray-800 p-5 rounded-lg shadow-lg w-3/4 max-w-xl z-50">
       <slot></slot>
       <div class="flex justify-end">
-        <button @click="doAction" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 mr-2">Request</button>
-        <button @click="cancelAction" class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">Cancel</button>
+        <button @click="doAction" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 mr-2">{{doActionText}}</button>
+        <button @click="cancelAction" class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">{{cancelActionText}}</button>
       </div>
     </div>
   </transition>
@@ -16,9 +16,17 @@ import { defineComponent, ref, watch } from 'vue';
 export default defineComponent({
   name: 'Modal',
   props: {
-    isOpen: Boolean,
-    doAction: Function,
-    cancelAction: Function,
+      isOpen: Boolean,
+      doAction: Function,
+      doActionText: {
+          type: String,
+          default: 'Continue'
+      },
+      cancelActionText: {
+          type: String,
+          default: 'Cancel'
+      },
+      cancelAction: Function,
   },
   watch: {
     isOpen(newVal) {

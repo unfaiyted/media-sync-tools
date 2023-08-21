@@ -24,12 +24,20 @@
   </div>
 
 
-  <Modal :isOpen="showLibraryManagerModal" @close="showLibraryManagerModal = false" :cancel-action="closeLibraryModal">
+  <Modal :isOpen="showLibraryManagerModal"
+         @close="showLibraryManagerModal = false"
+         @do-action="addLibrary"
+         @cancel-action="closeLibraryModal">
     <LibraryManager :config="config" />
   </Modal>
 
-  <Modal :isOpen="showProviderManagerModal" @close="showProviderManagerModal = false" :cancel-action="closeProviderModal">
+  <Modal :isOpen="showProviderManagerModal"
+         @close="showProviderManagerModal = false"
+         @do-action="addProvider"
+         do-action-text="Add Provider"
+         @cancel-action="closeProviderModal">
     <ProviderManager :config="config" />
+
   </Modal>
 
 </template>
