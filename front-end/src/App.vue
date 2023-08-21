@@ -1,5 +1,6 @@
 
 <template>
+    <AppHydrate>
     <div id="app" class="bg-gray-200 min-h-screen">
         <Header />
         <div class="flex">
@@ -7,6 +8,7 @@
             <router-view class="flex-grow bg-gray-100" />
         </div>
     </div>
+    </AppHydrate>
 </template>
 
 
@@ -17,6 +19,7 @@ import ReloadPrompt from '@/pwa/ReloadPrompt.vue';
 import ServiceWorker from './components/ServiceWorker.vue';
 import Sidebar from "./components/ui/Sidebar.vue"
 import Header from "./components/ui/Header.vue"
+import AppHydrate from "@/components/ui/AppHydrate.vue";
 const userStore = useUserStore();
 
 userStore.initUser();

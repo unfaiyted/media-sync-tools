@@ -136,6 +136,8 @@ export default defineComponent({
             try {
                 const newLibrary = await createLibrary({
                     libraryId: generateGuid(),
+                    configId: configId,
+                    type: selectedLibraryType.value,
                     name: newLibraryName.value
                 });
                 libraries.value.push(newLibrary);
@@ -216,6 +218,7 @@ export default defineComponent({
             libraryClients,
             createLibrary: createLib,
             getConfigClient,
+          createLib,
             filteredLibraryClients,
             addLibraryClients,
             deleteLib

@@ -116,7 +116,8 @@ class DatabaseInitializer:
 
     async def create_admin_user(self):
         admin_user = {
-            "userId": str(uuid.uuid4()),
+            "userId": 'APP-DEFAULT-USER',
+            "configId": 'APP-DEFAULT-CONFIG',
             "email": "admin@media-sync.com",
             "name": "Admin",
             "password": "hashed_password",

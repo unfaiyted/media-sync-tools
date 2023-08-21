@@ -1,12 +1,20 @@
 <template>
-    <div class="container">
+    <div class="flex flex-col">
         <!-- Search and Button -->
-        <div class="controls">
+<!--        <div class="controls">
             <input v-model="searchQuery" placeholder="Enter search term" class="search-input" />
             <TextEffects/>
             <button @click="fetchImage" class="search-button">Create Poster</button>
 
+        </div>-->
+
+        <div>
+
+         <button @click="fetchImage" class="search-button">Save to...</button>
+
+            <button @click="fetchImage" class="search-button">Link to...</button>
         </div>
+
 
         <!-- Poster Display -->
         <div class="poster">
@@ -16,10 +24,10 @@
         <!-- Controls Below Poster -->
         <div class="sliders">
 
-            <BorderColorPicker @border-changed="updateBorder"></BorderColorPicker>
+<!--            <BorderColorPicker @border-changed="updateBorder"></BorderColorPicker>
             <GradientColorPickers @gradient-changed="updateGradient"></GradientColorPickers>
             <IconPicker @icon-selected="updateIcon"></IconPicker>
-            <DragDrop @background-image-selected="updateBgImage"/>
+            <DragDrop @background-image-selected="updateBgImage"/>-->
         </div>
     </div>
 </template>
@@ -86,11 +94,11 @@
 <script>
 // import { debounce } from 'lodash';
 
-import GradientColorPickers from "@/components/GradientPicker.vue";
-import BorderColorPicker from "@/components/BorderColorPicker.vue";
-import IconPicker from "@/components/IconPicker.vue";
-import DragDrop from "@/components/DragDrop.vue";
-import TextEffects from "@/components/TextEffects.vue";
+import GradientColorPickers from "@/components/poster/GradientPicker.vue";
+import BorderColorPicker from "@/components/poster/BorderColorPicker.vue";
+import IconPicker from "@/components/poster/IconPicker.vue";
+import DragDrop from "@/components/poster/DragDrop.vue";
+import TextEffects from "@/components/poster/TextEffects.vue";
 import {API_URL} from "@/utils/constants";
 
 

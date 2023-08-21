@@ -10,7 +10,7 @@
       </button>
     </div>
 
-    <table class="min-w-full bg-white rounded-lg shadow-md">
+    <table class="min-w-full bg-white rounded-lg shadow-md" v-if="lists">
       <thead>
       <tr class="text-gray-600 text-left">
         <th class="py-2 px-4">Select</th>
@@ -22,7 +22,7 @@
       </tr>
       </thead>
       <tbody>
-      <tr v-for="list in mediaLists"
+      <tr v-for="list in lists"
           :key="list.mediaListId"
           class="hover:bg-gray-100 cursor-pointer"
           @click="navigateToList(list.mediaListId)"
@@ -63,11 +63,11 @@
 <script lang="ts">
 import { defineComponent, ref } from 'vue';
 import {syncListToClient} from "@/api/sync";
-import {deleteMediaList, fetchMediaListsForUser} from "@/api/lists";
 import ContextMenu from "@/components/ui/ContextMenu.vue";
-import {MediaListItem} from "@/models";
+import {MediaListItem, MediaList} from "@/models";
 import { useRouter } from 'vue-router';
 import MediaListOptionsPopup from "@/components/list/MediaListOptionsPopup.vue";
+import {useListStore} from "@/store/listStore";
 
 export default defineComponent({
   name: 'MediaLists',
@@ -77,28 +77,35 @@ export default defineComponent({
   },
   props: {
     mediaLists: {
-      type: Array,
+      type: Object as () => MediaList[],
       required: true
     },
+  },
+  async mounted() {
+    // const store = useListStore();
+    // console.log(this.mediaLists)
+    // this.mediaLists = await store.fetchAllLists();
   },
   setup(props) {
     const showOptionsPopup = ref<boolean>(false);
     const contextMenuEvent = ref<Event | null>(null); // Store the event that triggers the context menu
-    const selectedListItem = ref<MediaListItem | null>(null);  // Store the selected list item for context operations
+    const selectedListItem = ref<MediaList | null>(null);  // Store the selected list item for context operations
     const requestModal = ref<InstanceType<typeof MediaListOptionsPopup> | null>(null);
+    const lists = ref<MediaList[]>(props.mediaLists)
+    const store = useListStore();
+    console.log("MediaLists:", lists.value)
 
 
+    // console.log(lists)
     const router = useRouter();
 
-    const navigateToList = (listId: string) => {
+    const navigateToList = (listId: string | undefined) => {
+      if(!listId) return;
       router.push(`/list/${listId}`);
     }
 
-    function handleRightClick(event: Event, item: MediaListItem) {
-      if(!item) {
-        console.error("List is null");
-        return;
-      }
+    function handleRightClick(event: Event, item: MediaList) {
+      if(!item) return;
       event.preventDefault();
       contextMenuEvent.value = event;
       selectedListItem.value = item; // Store the selected list item for context operations
@@ -111,12 +118,12 @@ export default defineComponent({
 
     const deleteSelected = async () => {
       if(selectedListItem.value)
-      await deleteMediaList(selectedListItem.value.mediaListId);
+        lists.value = await store.removeList(selectedListItem.value.mediaListId||'');
     };
 
     const syncSelected = async () => {
       if(selectedListItem.value)
-      await syncListToClient('CLIENT_ID', selectedListItem.value.mediaListId);
+      await syncListToClient('CLIENT_ID', selectedListItem.value.mediaListId||'');
     };
 
     const contextMenuItems = [
@@ -133,10 +140,11 @@ export default defineComponent({
         action: syncSelected
       }
     ];
-    const openRequestModal = () => {
+
+    const openRequestModal = (item: any) => {
       // requestModal.value.sendSync();
+      if(requestModal.value) requestModal.value.openModal(item);
       console.log("Request Modal:", requestModal.value)
-      requestModal.value?.openModal();
     }
 
     return {
@@ -146,6 +154,7 @@ export default defineComponent({
       contextMenuItems,
       deleteSelected,
       requestModal,
+      lists,
       openRequestModal,
       selectedListItem,
       handleRightClick,

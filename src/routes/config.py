@@ -226,6 +226,31 @@ async def create_config_client(config_client: ConfigClient, db: AsyncIOMotorData
     result = await db.config_clients.insert_one(config_client_dict)
     return config_client_dict
 
+
+# get config client by configId and type
+@router.get("/client/{config_id}/{type}", response_model=List[ConfigClient])
+async def read_config_client_by_config_id_and_type(config_id: str, type: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+
+    # 1. Find all clients of the given type.
+    clients_of_type = await db.clients.find({"type": type}).to_list(length=None)
+
+    if not clients_of_type:
+        raise HTTPException(status_code=404, detail="Clients of the given type not found")
+
+    # 2. Extract their IDs.
+    client_ids = [client['_id'] for client in clients_of_type]
+
+    # 3. Find config_clients matching those IDs and the given config_id.
+    matching_config_clients = await db.config_clients.find({
+        "configId": config_id,
+        "clientId": {"$in": client_ids}
+    }).to_list(length=None)
+
+    if not matching_config_clients:
+        raise HTTPException(status_code=404, detail="Matching Config Clients not found")
+
+    return matching_config_clients
+
 @router.get("/client/{config_client_id}", response_model=ConfigClient)
 async def read_config_client(config_client_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
     config_client = await db.config_clients.find_one({"configClientId": config_client_id})
@@ -367,3 +392,51 @@ async def read_all_filters_by_list_id(mediaListId: str, db: AsyncIOMotorDatabase
     if filters is None:
         raise HTTPException(status_code=404, detail="Filter not found")
     return filters
+
+
+@router.get("/hydrate/{user_id}", response_model=Config)
+async def hydrate_config(user_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+
+    # Fetch the user data
+    user = await db.users.find_one({"userId": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Fetch the related config data for the user
+    appConfig = Config(**await db.configs.find_one({"userId": user_id}))
+
+    # Fetch client data
+    clients = await db.clients.find({}).to_list(length=None)
+
+    # Fetch Library data based on the found clients
+    libraries = await db.libraries.find({"configId": appConfig.configId}).to_list(length=None)
+
+
+    # Fetch ConfigClient data based on the found clients
+    config_clients = await db.config_clients.find({"configId": appConfig.configId}).to_list(length=None)
+    library_clients = await db.library_clients.find({"libraryId": {"$in": [library['libraryId'] for library in libraries]}}).to_list(length=None)
+
+
+    for library in libraries:
+        library['clients'] = [library_client for library_client in library_clients if library_client['libraryId'] == library['libraryId']]
+
+    # Fetch ClientField data based on the found clients
+    client_fields = await db.client_fields.find({"clientId": {"$in": [client['clientId'] for client in config_clients]}}).to_list(length=None)
+
+    for config_client in config_clients:
+        config_client['clientFields'] = [field for field in client_fields if field['clientId'] == config_client['clientId']]
+        config_client['clientFieldValues'] = [value for value in await db.config_client_fields_values.find({"configClientId": config_client['configClientId']}).to_list(length=None)]
+
+    sync_options = await db.sync_options.find_one({"configId": appConfig.configId})
+
+
+    appConfig.user = user
+    appConfig.clients = config_clients
+    appConfig.libraries = libraries
+    appConfig.sync = sync_options
+
+
+
+
+
+    return appConfig

@@ -9,7 +9,7 @@ export const fetchPoster = async (mediaItemId: string) => {
     return (await apiClient.get(`/poster/${mediaItemId}`)).data;
 }
 
-export const requestPosterForItem = async (mediaItemId: string) => {
+export const requestPosterForItem = async (mediaItemId: string): Promise<MediaListItem> => {
     return (await apiClient.get(`/poster/item/${mediaItemId}`)).data;
 }
 

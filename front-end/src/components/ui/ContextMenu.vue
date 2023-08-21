@@ -15,6 +15,8 @@
 
 <script lang="ts">
 import { defineComponent, ref, watch, onMounted, onBeforeUnmount } from 'vue';
+// TODO: Add in divider support
+// TODO: Add in sub-menu support
 
 export default defineComponent({
   props: {

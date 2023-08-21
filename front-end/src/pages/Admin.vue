@@ -40,6 +40,7 @@ export default defineComponent({
         }
     },
     async mounted() {
+
         this.config = await fetchConfig(this.configId);
         console.log(this.config);
     },

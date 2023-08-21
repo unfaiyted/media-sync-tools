@@ -104,16 +104,16 @@
 
 <script lang="ts">
 import { defineComponent, ref } from 'vue';
-import {MediaListItem, MediaListOptions} from "@/models";
+import {MediaListItem, MediaListOptions, MediaList} from "@/models";
 import ContextMenu from "@/components/ui/ContextMenu.vue";
 import {deleteMediaList, deleteMediaListItem} from "@/api/lists";
 import {useRouter} from "vue-router";
 import MediaListOptionsPopup from "@/components/list/MediaListOptionsPopup.vue";
-import {requestPosterForItem} from "@/api/posters";
+import {useListStore} from "@/store/listStore";
 const router = useRouter();
 
 export default defineComponent({
-    name: 'MediaList',
+    name: 'MediaItemsList',
   components: {MediaListOptionsPopup, ContextMenu},
     props: {
         mediaList: {
@@ -131,6 +131,8 @@ export default defineComponent({
       const selectedItem = ref<MediaListItem | null>(null);  // Store the selected list item for context operations
       const requestModal = ref<InstanceType<typeof MediaListOptionsPopup> | null>(null);
       const viewMode = ref('table'); // Default view mode
+      const listStore = useListStore();
+      const mediaList = ref(listStore.getListWithItems(props.mediaList.mediaListId || ""));
 
       function updateOptions() {
             // Handle logic to update the MediaList options
@@ -155,8 +157,11 @@ export default defineComponent({
         {
           label: 'Delete',
           action: async () => {
-            console.log("Deleting item:", selectedItem.value);
-            await deleteMediaListItem(selectedItem.value.mediaItemId);
+            if(selectedItem.value && selectedItem.value.mediaItemId) {
+              console.log("Deleting item:", selectedItem.value);
+              // await deleteMediaListItem(selectedItem.value.mediaItemId);
+              mediaList.value = await listStore.removeListItem(selectedItem.value.mediaListId, selectedItem.value.mediaItemId);
+            }
           }
         },
         {
@@ -174,8 +179,10 @@ export default defineComponent({
         {
           label: 'Get Provider Poster',
           action: async () => {
-            console.log("Get Provider Poster:", selectedItem.value);
-            await requestPosterForItem(selectedItem.value.mediaItemId);
+            if(selectedItem.value && selectedItem.value.mediaItemId) {
+              mediaList.value = await listStore.updateListItemPoster(selectedItem.value.mediaItemId);
+
+            }
           }
         },
         {

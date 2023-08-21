@@ -8,14 +8,15 @@
 
     <!-- Display Library Categories -->
     <div>
-      <h2 class="text-xl mb-4">Library:</h2>
+      <h2 class="text-xl mb-4">Server Libraries:</h2>
       <div v-for="library in libraries" :key="library.libraryId">
         <h3 class="text-lg mb-2">{{ library.name }} ({{ library.type }}):</h3>
         <ul class="list-disc pl-5">
           <li v-for="client in library.clients" :key="client.libraryClientId">
             <a :href="`/provider/${client.clientId}`">{{ client.client?.name }}</a>
             <ul class="list-circle pl-5">
-              <li><a :href="`/library/${client.libraryName}`">{{ client.libraryName }}</a></li>
+              <li><a :href="`/library/${client.libraryName}`">{{ client.libraryName }}
+              </a></li>
             </ul>
           </li>
         </ul>
@@ -25,104 +26,79 @@
 
 
   <Modal :isOpen="showLibraryManagerModal"
-         @close="showLibraryManagerModal = false"
          @do-action="addLibrary"
-         @cancel-action="closeLibraryModal">
-    <LibraryManager :config="config" />
+         @cancel-action="showLibraryManagerModal = false">
+    <LibraryManager :config="config" ref="libraryManager"/>
   </Modal>
 
   <Modal :isOpen="showProviderManagerModal"
-         @close="showProviderManagerModal = false"
          @do-action="addProvider"
          do-action-text="Add Provider"
-         @cancel-action="closeProviderModal">
-    <ProviderManager :config="config" />
+         @cancel-action="showProviderManagerModal = false">
+    <ProviderManager :config="config" ref="providerManager" />
 
   </Modal>
 
 </template>
-
 <script lang="ts">
 import { ref, onMounted } from 'vue';
-import {LibraryType} from "@/models";
-import {fetchConfig} from "@/api/configs";
+import {Library} from "@/models";
 import Modal from "@/components/ui/Modal.vue";
 import LibraryManager from "@/components/config/LibraryManager.vue";
 import ProviderManager from "@/components/config/ProviderManager.vue";
-
+import {useAppConfigStore} from "@/store/appConfigStore";
 
 export default {
-  name: 'Providers',
-  components: {Modal, LibraryManager, ProviderManager},
-  data() {
-    return {
-      config: {
-        configId: 'APP-DEFAULT-CONFIG'
-      },
-      libraries: [{
-        libraryId: 1,
-        name: 'Movies',
-        type: LibraryType.MOVIES,
-        clients: [{
-          libraryClientId: 1,
-          libraryName: 'Movies',
-          clientId: 1,
-          client: {
-            clientId: 1,
-            name: 'Plex',
-          },
-        }, {
-          libraryClientId: 2,
-          libraryName: 'Movies',
-          clientId: 2,
-          client: {
-            clientId: 2,
-            name: 'Emby',
-          },
-        }],
-      }], // This should be fetched from the backend
-    };
-  },
-  setup() {
-    const showLibraryManagerModal = ref(false);
-    const showProviderManagerModal = ref(false);
+    name: 'Providers',
+    components: {Modal, LibraryManager, ProviderManager},
 
-    return {
-      showLibraryManagerModal,
-      showProviderManagerModal
-    };
-  },
-  methods: {
-    addProvider() {
-      // Logic to add a new provider
-      this.showProviderManagerModal = true;
-    },
-    addLibrary() {
-      // Logic to add a new library
-      this.showLibraryManagerModal = true;
-    },
-    async fetchLibraries() {
-      // Fetch libraries and their clients from the backend.
-      // For demonstration purposes, using a placeholder URL.
-      const response = await fetch('/api/libraries');
-      this.libraries = await response.json();
-    },
-    closeProviderModal() {
-      this.showProviderManagerModal = false;
-    },
-    closeLibraryModal() {
-      this.showLibraryManagerModal = false;
+    setup() {
+        const config = ref({
+            configId: 'APP-DEFAULT-CONFIG'
+        });
+        const libraries = ref<Library[]>([]);
+        const showLibraryManagerModal = ref<boolean>(false);
+        const showProviderManagerModal = ref<boolean>(false);
+
+        const libraryManager = ref<InstanceType<typeof LibraryManager> | null>(null);
+        const providerManager = ref<InstanceType<typeof ProviderManager> | null>(null);
+
+        onMounted(async () => {
+            const store = useAppConfigStore();
+            libraries.value = (await store.getLibraries()) || [];
+            config.value = await store.getAppConfig('APP-DEFAULT-CONFIG');
+        });
+
+        const addProvider = () => {
+            showProviderManagerModal.value = true;
+            providerManager.value?.createConfigClient();
+        };
+
+        const addLibrary = () => {
+            showLibraryManagerModal.value = true;
+            libraryManager.value?.createLib();
+        };
+
+        const closeProviderModal = () => {
+            showProviderManagerModal.value = false;
+        };
+
+        const closeLibraryModal = () => {
+            showLibraryManagerModal.value = false;
+        };
+
+        return {
+            config,
+            libraries,
+            showLibraryManagerModal,
+            showProviderManagerModal,
+            libraryManager,
+            providerManager,
+            addProvider,
+            addLibrary,
+            closeProviderModal,
+            closeLibraryModal
+        };
     }
-
-  },
-  async mounted() {
-    // Fetch the libraries when the component is mounted
-    this.libraries =  this.fetchLibraries();
-    this.config = await fetchConfig(this.configId);
-  },
 };
 </script>
-
-<style scoped>
-/* Add your Tailwind styles here */
-</style>

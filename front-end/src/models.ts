@@ -63,6 +63,8 @@ export interface Config {
     user: User;
     userId: string;
     clients?: ConfigClient[];
+    libraries?: Library[];
+
     sync?: SyncOptions;
 }
 
@@ -113,12 +115,10 @@ export interface MediaListItem {
 export interface MediaListOptions {
     mediaListOptionsId: string;
     mediaListId: string;
+    syncLibraryId: string;
     sync: boolean;
     updateImages: boolean;
-    configClientId: string;
-    includeLibraries?: Library[];
     deleteExisting: boolean;
-    deleteWatchlist: boolean;
 }
 
 
@@ -152,6 +152,7 @@ export enum LibraryType {
 
 export interface Library {
     libraryId?: string;
+    configId: string;
     name: string;
     type: LibraryType;
     clients?: LibraryClient[];

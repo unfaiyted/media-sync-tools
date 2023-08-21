@@ -1,6 +1,6 @@
 // ... other imports
 import axios from "axios";
-import {Config, ConfigClient, SyncOptions} from "@/models";
+import {ClientType, Client, Config, ConfigClient, SyncOptions} from "@/models";
 import { generateGuid } from "@/utils/numbers";
 import {apiClient} from "@/api/index";
 
@@ -24,8 +24,8 @@ export const fetchConfigByUserId= async (userId: string | undefined) => {
     return await apiClient.get(`/config/?userId=${userId}`);
 }
 
-export const updateConfig= async (updatedConfigClient: ConfigClient) => {
-    return await apiClient.put(`/config/${updatedConfigClient.configClientId}`, updatedConfigClient);
+export const updateConfig= async (updatedClient: Client) => {
+    return await apiClient.put(`/config/${updatedClient.clientId}`, updatedClient);
 }
 
 export const deleteConfig = async (configClientId: string | undefined) => {
@@ -54,6 +54,14 @@ export const fetchConfigClientsByConfigId = async (configId: string | undefined)
         return;
     }
     return (await apiClient.get(`/config/client/?configId=${configId}`)).data;
+}
+
+export const fetchConfigClientsByType = async (configId: string | undefined, type: ClientType) => {
+    if(!configId) {
+        console.error("Config ID is blank");
+        return;
+    }
+    return (await apiClient.get(`/config/client/${configId}/${type}`)).data;
 }
 
 
@@ -86,3 +94,12 @@ export const fetchFieldsValueByConfigId = async (configId: string | undefined) =
     return (await apiClient.get(`/config/client-fields-value/config/${configId}`)).data;
 }
 
+
+// Hydrate app api call
+export const hydrateApp = async (userId: string | undefined) => {
+    if(!userId) {
+        console.error("Config ID is blank");
+        return;
+    }
+    return (await apiClient.get(`/config/hydrate/${userId}`)).data;
+}

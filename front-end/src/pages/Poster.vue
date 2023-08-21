@@ -1,27 +1,15 @@
 <template>
-  <div>
-<!--    <router-link to="/">Home</router-link>-->
-
-      <MediaPosterTextOptions :value="poster.text"   />
-    <MediaPosterGradientOptions :gradient-options="poster.gradient" />
-    <MediaPosterBackgroundOptions :background-options="poster.background" />
-
-    <div v-if="poster.border">
-      Poster Border
-      <MediaPosterBorderOptions :value="poster.border"/>
-    </div>
-
-
-    <MediaPosterIconOptions :icon-options="poster.icon" />
-    <MediaPosterOverlayOptions :overlay-options="poster.overlays" />
-
-<!--    <PosterImage />-->
+  <div class="flex">
+        <MediaPosterSidebar :poster="poster" />
+        <div class="flex-grow">
+            <PosterImage :poster="poster" />
+            </div>
   </div>
 </template>
 
 <script lang="ts">
 // import PlaylistEditor from "./components/ListEditor.vue";
-import PosterImage from "@/components/PosterImage.vue";
+import PosterImage from "@/components/poster/PosterImage.vue";
 import MediaPosterTextOptions from "@/components/poster/MediaPosterTextOptions.vue";
 import {IconPosition, MediaImageType, MediaPoster} from "@/models";
 import MediaPosterGradientOptions from "@/components/poster/MediaPosterGradientOptions.vue";
@@ -29,6 +17,7 @@ import MediaPosterBackgroundOptions from "@/components/poster/MediaPosterBackgro
 import MediaPosterIconOptions from "@/components/poster/MediaPosterIconOptions.vue";
 import MediaPosterBorderOptions from "@/components/poster/MediaPosterBorderOptions.vue";
 import MediaPosterOverlayOptions from "@/components/poster/MediaPosterOverlays.vue";
+import MediaPosterSidebar from "@/components/poster/MediaPosterSidebar.vue";
 // import EndpointTrigger from "@/components/EndpointTrigger.vue";
 
 

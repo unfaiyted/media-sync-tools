@@ -19,9 +19,9 @@ async def create_list(list: MediaList, db: AsyncIOMotorDatabase = Depends(config
     return list_dict
 
 
-@router.get("/", response_model=MediaList)
+@router.get("/", response_model=List[MediaList])
 async def read_lists(db: AsyncIOMotorDatabase = Depends(config.get_db)):
-    lists = await db.media_lists.find()
+    lists = await db.media_lists.find({}).to_list(length=10000)
     if lists is None:
         raise HTTPException(status_code=404, detail="List not found")
     return lists
@@ -50,7 +50,7 @@ async def update_list(list_id: str, list: MediaList, db: AsyncIOMotorDatabase = 
 @router.get("/user/{user_id}", response_model=List[MediaList])
 async def read_lists_for_user(user_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
     cursor = db.media_lists.find({"creatorId": user_id})
-    lists = await cursor.to_list(length=100)  # adjust the length as per your needs
+    lists = await cursor.to_list(length=1000)  # adjust the length as per your needs
     if not lists:
         raise HTTPException(status_code=404, detail="List not found")
     return lists

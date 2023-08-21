@@ -29,7 +29,7 @@ async def read_all_libraries(db: AsyncIOMotorDatabase = Depends(config.get_db)):
     libraries = [library_doc async for library_doc in db.libraries.find({})]
 
     if not libraries:
-        raise HTTPException(status_code=404, detail="Library not found")
+        return []
 
     return libraries
 

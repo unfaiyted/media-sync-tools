@@ -1,6 +1,6 @@
 <template>
   <Modal :is-open="isOpen" :cancel-action="closeModal" :do-action="doAction">
-      <h2 class="text-white text-xl font-bold mb-4">Request Movie</h2>
+      <h2 class="text-white text-xl font-bold mb-4">Sync List</h2>
       <p class="text-white mb-2">{{ mediaListItem?.name}}</p>
       <p class="text-indigo-300 mb-4">This request will be approved.</p>
 
@@ -8,18 +8,20 @@
       <div class="flex justify-between mb-4 space-x-2">
 
         <div class="flex-1">
-          <label class="block text-white text-sm font-bold mb-2" for="quality">Quality Profile</label>
+          <label class="block text-white text-sm font-bold mb-2" for="quality">List Type</label>
           <select id="quality" class="block appearance-none w-full bg-gray-700 border border-gray-600 text-white py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-gray-600 focus:border-gray-500">
             <!-- ... existing options -->
           </select>
         </div>
 
         <div class="flex-1">
-          <label class="block text-white text-sm font-bold mb-2" for="folder">Root Folder</label>
+          <label class="block text-white text-sm font-bold mb-2" for="folder">Libraries</label>
           <select id="folder" class="block appearance-none w-full bg-gray-700 border border-gray-600 text-white py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-gray-600 focus:border-gray-500">
             <!-- ... existing options -->
           </select>
         </div>
+
+
 
         <div class="flex-1">
           <label class="block text-white text-sm font-bold mb-2" for="tags">Tags</label>
@@ -31,6 +33,21 @@
       <div class="mb-4">
         <label class="block text-white text-sm font-bold mb-2" for="tags">Sync to</label>
         <ClientButtonGroup :type="ClientType.MEDIA_SERVER" />
+      </div>
+
+
+      <div class="mb-4 space-y-2">
+          <label class="block text-white text-sm font-bold">Options:</label>
+
+          <div>
+              <input type="checkbox" id="updateImages" v-model="mediaListOptions.updateImages">
+              <label for="updateImages" class="text-white ml-2">Update client poster images</label>
+          </div>
+          <div>
+              <input type="checkbox" id="deleteExisting" v-model="mediaListOptions.deleteExisting">
+              <label for="deleteExisting" class="text-white ml-2">Delete list if one with same name exists.</label>
+          </div>
+
       </div>
 
       <div class="flex items-center mb-4">
@@ -47,7 +64,7 @@
 
 <script lang="ts">
 import { defineComponent, ref } from 'vue';
-import {MediaListItem, ClientType} from "@/models";
+import {MediaListItem, ClientType, MediaListOptions} from "@/models";
 import ClientButtonGroup from "@/components/ui/ClientButtonGroup.vue";
 import Modal from "@/components/ui/Modal.vue";
 
@@ -57,6 +74,14 @@ export default defineComponent({
   setup() {
     const isOpen = ref(false);
     const mediaListItem = ref<MediaListItem>();
+      const mediaListOptions = ref<MediaListOptions>({
+          mediaListOptionsId: '',
+          mediaListId: '',
+          syncLibraryId: '',
+          sync: false,
+          updateImages: false,
+          deleteExisting: false,
+      });
 
     const doAction = () => {
       // Implement the sync logic here
@@ -78,6 +103,7 @@ export default defineComponent({
       openModal,
       ClientType,
       mediaListItem,
+        mediaListOptions,
       doAction,
       closeModal
     };

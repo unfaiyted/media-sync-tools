@@ -27,7 +27,7 @@
         <!-- List Config Clients -->
         <h2 class="text-md font-semibold mt-8 mb-4 text-white">Configured Providers</h2>
         <ul v-if="configClients.length">
-            <li v-for="config in configClients" :key="config.configClientId" class="mb-2">
+            <li v-for="config in configClients" :key="config.configClientId" class="mb-2 text-white">
                 {{ config.label }}
                 <button @click="openEditModal(config)" class="btn btn-secondary">Edit</button>
                 <button @click="deleteConfigClient(config.configClientId)" class="btn btn-danger">Delete</button>
@@ -75,7 +75,7 @@ import {
 } from "@/api/configs";
 import {fetchClientFieldByClientId, fetchClients, updateConfigClientFieldsValue} from "@/api/clients";
 import ProviderFieldGenerator from "@/components/config/ProviderFieldGenerator.vue";
-import {toReadableString} from "../../utils/string";
+import {toReadableString} from "@/utils/string";
 
 
 type EditingFieldsType = {

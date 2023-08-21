@@ -58,6 +58,8 @@ class Config(BaseModel):
     user: Optional[ForwardRef('User')]
     userId: str
     clients: Optional[List[ForwardRef('ConfigClient')]]
+    libraries: Optional[List[ForwardRef('Library')]]
+
     sync: Optional[ForwardRef('SyncOptions')]
 
 
@@ -95,12 +97,10 @@ class FilterTypes(BaseModel):
 class MediaListOptions(BaseModel):
     mediaListOptionsId: str
     mediaListId: str
+    syncLibraryId: str
     sync: bool
-    configClientId: str
     updateImages: bool
-    includeLibraries: Optional[List[ForwardRef('Library')]]
     deleteExisting: bool
-    deleteWatchlist: bool
 
 
 class MediaList(BaseModel):
@@ -153,6 +153,7 @@ class Library(BaseModel):
     name: str
     type: LibraryType
     clients: Optional[List[ForwardRef('LibraryClient')]]
+    configId: str
     Lists: Optional[ForwardRef('MediaList')]
 
 
@@ -173,7 +174,8 @@ class ConfigClient(BaseModel):
     clientId: str
     relatedConfig: Optional[Config]
     configId: str
-    clientFields: Optional[List[ForwardRef('ConfigClientFieldsValue')]]
+    clientFields: Optional[List[ForwardRef('ClientField')]]
+    clientFieldValues: Optional[List[ForwardRef('ConfigClientFieldsValue')]]
 
 
 class ClientField(BaseModel):
@@ -182,7 +184,6 @@ class ClientField(BaseModel):
     name: str
     placeholderValue: Optional[str] = ''
     type: FieldType
-    ConfigClientFieldsValues: Optional[List[ForwardRef('ConfigClientFieldsValue')]]
 
 
 class ConfigClientFieldsValue(BaseModel):
@@ -216,6 +217,7 @@ class User(BaseModel):
     password: str  # Remember to hash passwords before storing
     lists: Optional[List[ForwardRef('MediaList')]]
     relatedConfig: Optional[Config]
+    configId: Optional[str]
 
 
 class MediaPosterBorderOptions(BaseModel):

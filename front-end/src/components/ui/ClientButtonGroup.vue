@@ -30,8 +30,8 @@
 <script lang="ts">
 import { defineComponent, ref, onBeforeMount } from 'vue';
 import {  fetchClientsByType,  } from '@/api/clients';
-import { fetchConfigClientsByConfigId } from '@/api/configs'
-import {ClientType} from "@/models"; // Adjust the path accordingly
+import {fetchConfigClientsByConfigId, fetchConfigClientsByType} from '@/api/configs'
+import {ClientType, ConfigClient} from "@/models"; // Adjust the path accordingly
 
 export default defineComponent({
   name: 'ClientButtonGroup',
@@ -54,16 +54,13 @@ export default defineComponent({
     }
   },
   setup(props, context) {
-    const clients = ref<Client[]>([]);
+    const clients = ref<(Client|ConfigClient)[]>([]);
     const selectedClientType = ref<ClientType>(ClientType.UNKNOWN);
     const clientTypes = Object.values(ClientType);
     const loading = ref(true);
     const toggledClients = ref<Record<string, boolean>>({}); // Store which clients are toggled
 
-    const toggleButton = (clientId: string) => {
-      toggledClients.value[clientId] = !toggledClients.value[clientId];
-      context.emit('update:toggledClients', toggledClients.value); // Notify parent of the change
-    };
+
 
     const getButtonClass = (clientId: string) => {
       return {
@@ -96,38 +93,41 @@ export default defineComponent({
     }));
 
     const fetchClients = async () => {
-      try {
-        clients.value = await fetchClientsByType(props.type);
-        console.log('got clients', clients.value, props.type)
-      } catch (error) {
-        console.error("Error fetching clients:", error);
-      }
-      loading.value = false;
-      console.log('Not Loading')
+        try {
+            if (props.isConfig) {
+                clients.value = await fetchConfigClientsByType(config.configId, props.type);
+            } else {
+                clients.value = await fetchClientsByType(props.type);
+            }
+            console.log('got clients', clients.value, props.type);
+        } catch (error) {
+            console.error("Error fetching clients:", error);
+        }
+        loading.value = false;
+        console.log('Not Loading')
     };
 
+      const getLabel = (client: Client | ConfigClient) => {
+          return (client as ConfigClient).label || (client as Client).label;
+      };
 
-    const fetchConfigClients = async () => {
-       try {
-        clients.value = await fetchConfigClientsByType(props.type);
-        console.log('got clients', clients.value, props.type)
-      } catch (error) {
-        console.error("Error fetching clients:", error);
-      }
-      loading.value = false;
-      console.log('Not Loading')
-    }
+      const toggleButton = (client: Client | ConfigClient) => {
+          const clientId = (client as ConfigClient).clientId || client.clientId;
+          toggledClients.value[clientId] = !toggledClients.value[clientId];
+          context.emit('update:toggledClients', toggledClients.value);
+      };
 
     onBeforeMount(fetchClients)
 
 
     return {
       clients,
+        getLabel,
+        toggleButton,
       selectedClientType,
       loading,
       clientTypes,
       buttonClass,
-      toggleButton,
       getButtonClass,
       buttonContainerClass,
       fetchClients
