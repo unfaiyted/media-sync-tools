@@ -3,10 +3,11 @@
     <h3 class="text-xl mb-4 font-semibold">Background Options</h3>
 
     <div class="mb-3">
-      <label class="flex items-center">
-        <input type="checkbox" v-model="backgroundOptions.enabled" class="mr-2">
-        Enable Background
-      </label>
+        <VCheckbox
+            label="Enable Background"
+            label-position="right"
+            v-model="backgroundOptions.enabled" class="mr-2">
+        </VCheckbox>
     </div>
 
     <div v-if="backgroundOptions.enabled">
@@ -57,10 +58,11 @@ import { defineComponent, PropType } from 'vue';
 import { MediaPosterBackgroundOptions } from "@/models";
 import MediaPosterBorderOptions from "@/components/poster/MediaPosterBorderOptions.vue";
 import MediaPosterShadowOptions from "@/components/poster/MediaPosterShadowOptions.vue";
+import VCheckbox from "@/components/ui/inputs/Checkbox.vue";
 
 export default defineComponent({
   name: 'MediaPosterBackgroundOptions',
-  components: {MediaPosterShadowOptions, MediaPosterBorderOptions},
+  components: {VCheckbox, MediaPosterShadowOptions, MediaPosterBorderOptions},
   props: {
     backgroundOptions: {
       type: Object as PropType<MediaPosterBackgroundOptions>,
