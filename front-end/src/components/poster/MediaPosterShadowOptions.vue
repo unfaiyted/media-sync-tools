@@ -9,24 +9,26 @@
                      v-model="shadow.offsetY" type="number" placeholder="Enter shadow Y offset" />
             <VSlider id="shadowBlur" v-model="shadow.blur" type="number" placeholder="Enter shadow blur"
             label="Blur:"/>
-            <VSlider id="shadowColor" v-model="shadow.color" type="color" placeholder="Select shadow color" label="Shadow:"/>
+<!--            <VSlider id="shadowColor" v-model="shadow.color" type="color" placeholder="Select shadow color" label="Shadow:"/>-->
+            <ColorPicker/>
     </div>
 </template>
 
 <script>
 import VInput from "@/components/poster/MediaPosterBackgroundOptions.vue";
 import VSlider from "@/components/ui/inputs/Slider.vue";
+import {ColorPicker} from "vue3-colorpicker";
 
 export default {
     name: "MediaPosterShadowOptions",
-  components: {VSlider, VInput},
+  components: {ColorPicker, VSlider, VInput},
     data() {
         return {
             shadow: {
                 offsetX: 0,  // Default X offset
                 offsetY: 0,  // Default Y offset
                 blur: 5, // Default blur
-                color: '#000000', // Default color
+                color: [0,0,0], // Default color
             }
         };
     }

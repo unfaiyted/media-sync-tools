@@ -58,15 +58,16 @@ export default defineComponent({
       if(!options.value.color) {
         return;
       }
+      console.log('changing color')
       options.value.color = parseRGB(color)
     }
 
 
     // Watch for changes in the props and update the local options
-    watch(
-        () => props.value,
+    watch(props.value,
         (newValue) => {
           options.value = newValue;
+          console.log('text options changed', newValue)
           posterStore.updateTextOptions(newValue);
         }
     );

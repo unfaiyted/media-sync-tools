@@ -1,11 +1,6 @@
 <template>
   <div class="p-3 border rounded shadow">
 
-    <div class="mb-3">
-<!--        <VCheckbox v-model="gradientOptions.enabled" class="mr-2" label="Enable" />-->
-      <VToggle v-model="gradientOptions.enabled" class="mr-2" label="Enable" />
-    </div>
-
     <div v-if="gradientOptions.enabled">
       <div class="mb-3">
         <label class="block mb-1">Gradient Colors:</label>
@@ -70,7 +65,7 @@ export default defineComponent({
 
     const debouncedUpdate = debounce((newVal: MediaPosterGradientOptions) => {
       console.log('gradientOptions changed', newVal);
-      // newVal.colors = validateColors(newVal.colors);
+      // newVal.colors = n2ualidateColors(newVal.colors);
       posterStore.updateGradientOptions(newVal);
     }, 500); // 300 milliseconds debounce time
 

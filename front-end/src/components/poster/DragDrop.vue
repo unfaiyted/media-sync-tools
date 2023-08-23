@@ -34,7 +34,7 @@ export default {
         };
     },
     watch: {
-        lastUploadedImageUrl: "fetchFileList",
+        // lastUploadedImageUrl: "fetchFileList",
         selectedFile: 'updateBackgroundImage'
     },
     methods: {
@@ -51,6 +51,7 @@ export default {
             const file = event.target.files[0];
             this.uploadFile(file);
         },
+
         async uploadFile(file) {
             const formData = new FormData();
             formData.append('file', file);

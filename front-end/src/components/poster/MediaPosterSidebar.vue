@@ -5,14 +5,9 @@
             :class="['bg-gray-700 p-4  overflow-y-auto', isCollapsed ? 'w-20' : 'w-80']"
             style="max-height: calc(100vh - 0px);">
 
-
           <!-- Buttons Container -->
           <div class="flex justify-end  mb-4 ">
-<!--            <VButton-->
-<!--                class="text-white"-->
-<!--                @click="toggleSidebar"-->
-<!--                :label="isCollapsed ? '>>' : '<<'"-->
-<!--            ></VButton>-->
+
 
             <VButton
                 class="text-white"
@@ -44,9 +39,10 @@ import MediaPosterBackgroundOptions from "@/components/poster/MediaPosterBackgro
 import MediaPosterIconOptions from "@/components/poster/MediaPosterIconOptions.vue";
 import MediaPosterBorderOptions from "@/components/poster/MediaPosterBorderOptions.vue";
 import MediaPosterOverlayOptions from "@/components/poster/MediaPosterOverlays.vue";
-import {ref} from "vue";
+import {PropType, ref} from "vue";
 import VButton from "@/components/ui/inputs/Button.vue";
 import VAccordion from "@/components/ui/Accordian.vue";
+import {usePosterStore} from "@/store/posterStore";
 
 
 
@@ -68,131 +64,98 @@ export default defineComponent({
     },
     methods: {
     },
+    props: {
+        poster: { type: Object as PropType<MediaPoster>, required: false },
+    },
     setup(props) {
-        const poster = ref<MediaPoster>({
-            mediaPosterId: crypto.randomUUID(),
-            text: {
-                enabled: true,
-                text: 'Hello World!',
-                // font: 'Arial',
-                // size: 24,
-                // style: 'normal',
-                // weight: 'normal',
-                // align: 'left',
-                position: [0, 0],
-                color: [255, 255, 255],
-                shadow: {
-                    enabled: true,
-                    color: [0, 0, 0],
-                    blur: 0,
-                    offset: 0,
-                    transparency: 100,
-                },
-                border: {
-                    enabled: true,
-                    color: [0, 0, 0],
-                    width: 1,
-                    height: 1,
-                },
-            },
-            width: 400,
-            height: 600,
-            type: MediaImageType.POSTER,
-            gradient: {
-                enabled: true,
-                colors: [
-                    [255, 255, 255],
-                    [0, 0, 0],
-                ],
-                opacity: 0.5,
-                type: 'linear',
-                angle: 0
-            },
-            background: {
-                url: '',
-                enabled: true,
-                opacity: 1.0,
-                color: [0, 0, 0],
-                border: {
-                    enabled: true,
-                    color: [0, 0, 0],
-                    width: 1,
-                    height: 1,
-                },
-
-            },
-            border: {
-                enabled: true,
-                color: [0, 0, 0],
-                width: 1,
-                height: 1,
-            },
-            icon: {
-                enabled: true,
-                path: '',
-                position: IconPosition.MIDDLE,
-                size: [200, 250],
-
-            },
-            overlays: [{
-                enabled: true,
-                cornerRadius: 0,
-                transparency: 0,
-                icon: {
-                    enabled: true,
-                    path: '',
-                    size: [0, 0],
-                    position: IconPosition.LEFT,
-                },
-                position: IconPosition.LEFT // Default position, adjust if needed
-            }]
-        });
-
+        const store = usePosterStore();
+        const poster = ref<MediaPoster>(props.poster || store.setDefaultPoster());
         const isCollapsed = ref(false);
 
         const toggleSidebar = () => {
             isCollapsed.value = !isCollapsed.value;
         };
 
+
       const accordionItems = ref([
         {
           title: 'Text Options',
           component: MediaPosterTextOptions,
-          enabled: poster.value.text.enabled,
+          enabled: poster?.value?.text?.enabled || true,
           props: { value: poster.value.text }
         },
         {
           title: 'Gradient Options',
-          enabled: false,
+          enabled: poster.value.gradient.enabled,
           component: MediaPosterGradientOptions,
           props: { gradientOptions: poster.value.gradient }
         },
         {
           title: 'Background Options',
-          enabled: false,
+          enabled: poster.value.background.enabled,
           component: MediaPosterBackgroundOptions,
           props: { value: poster.value.background }
         },
         {
           title: 'Border Options',
-          enabled: false,
+          enabled: poster.value.border.enabled,
           component: MediaPosterBorderOptions,
           props: { border: poster.value.border }
         },
         {
           title: 'Icon Options',
-          enabled: false,
+          enabled: poster.value.icon.enabled,
           component: MediaPosterIconOptions,
           props: { iconOptions: poster.value.icon }
         },
         {
           title: 'Overlay Options',
-          enabled: poster.value.overlays.length > 0,
+          enabled: false,
           component: MediaPosterOverlayOptions,
           props: { overlayOptions: poster.value.overlays }
         }
       ]);
 
+        const lastAccordionItems = ref(JSON.stringify(accordionItems.value));
+
+
+        watch(accordionItems, (newVal) => {
+            const store = usePosterStore();
+
+            if (JSON.stringify(newVal) !== lastAccordionItems.value) {
+                newVal.forEach((item) => {
+                    console.log('ITEM:::',item)
+                    updateStoreBasedOnComponentName(item, store);
+                });
+
+                // Update the lastAccordionItems value
+                lastAccordionItems.value = JSON.stringify(newVal);
+            }
+        }, {deep: true});
+
+        function updateStoreBasedOnComponentName(item: any, store: any) {
+            console.log('BEFORE CHANGES',item);
+
+            const mappings: Record<string, (enabled: boolean) => void> = {
+                'MediaPosterTextOptions': store.toggleText,
+                'MediaPosterGradientOptions': store.toggleGradient,
+                'MediaPosterBackgroundOptions': store.toggleBackground,
+                'MediaPosterBorderOptions': store.toggleBorder,
+                'MediaPosterIconOptions': store.toggleIcon,
+                'MediaPosterOverlayOptions': store.toggleOverlay
+                // Add more mappings if needed
+            };
+
+
+            console.log('COMPONENT NAMES => ',item.component.name)
+            const toggleFunc = mappings[item.component.name];
+            console.log('TOGGLE VALUE',toggleFunc);
+
+            if (toggleFunc) {
+                console.log(`updating ${item.component.name} options`, item.enabled);
+                toggleFunc(item.enabled);
+            }
+        }
 
       return {
         isCollapsed,

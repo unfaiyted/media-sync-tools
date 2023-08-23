@@ -24,7 +24,7 @@
 
     <div class="mb-3">
       <label class="block mb-1">Opacity:</label>
-      <VSlider  min.number="0" max="1" step="0.1" v-model.number="options.opacity"/>
+      <VSlider  min.number="0" max.number ="1" step.decimal="0.1" v-model.number="options.opacity"/>
       <span>{{ options.opacity }}</span>
     </div>
 
@@ -69,7 +69,6 @@ export default defineComponent({
 
     onBeforeMount(async () => {
       backgroundImages.value = await posterStore.getBackgroundImages();
-      console.log('bg',backgroundImages.value)
     });
 
 

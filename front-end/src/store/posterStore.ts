@@ -68,7 +68,7 @@ const defaultPoster:  MediaPoster = {
     },
     background: {
         // url: './assets/images/poster-background.jpg',
-        enabled: true,
+        enabled: false,
         opacity: 0.5,
         position: [0,0],
         // color: [100, 200, 0],
@@ -81,7 +81,7 @@ const defaultPoster:  MediaPoster = {
 
     },
     border: {
-        enabled: true,
+        enabled: false,
         color: [0, 0, 0],
         width: 5,
         height: 5,
@@ -179,7 +179,7 @@ export const usePosterStore = defineStore({
         },
 
         setDefaultPoster: function() {
-            this.currentPoster = defaultPoster;
+            this.currentPoster = {...defaultPoster};
             return this.currentPoster;
         },
 
@@ -251,9 +251,55 @@ export const usePosterStore = defineStore({
                     console.error("Error fetching image:", error);
                 }
         },
+
+
+        // list of filesnames
         getBackgroundImages: async function() {
             if(this.backgroundImages.length === 0) this.backgroundImages = await this.asyncWrapper(fetchBackgroundImages);
             return this.backgroundImages;
+        },
+
+        toggleText: function(value: boolean | undefined) {
+            if((typeof value === 'boolean') && this.currentPoster && this.currentPoster.text) {
+                console.log('set', value)
+                this.currentPoster.text.enabled = value;
+            } else if(this.currentPoster)
+                this.currentPoster.text!.enabled = !this.currentPoster.text!.enabled;
+        },
+        toggleGradient: function(value: boolean | undefined) {
+            if((typeof value === 'boolean') && this.currentPoster && this.currentPoster.gradient) {
+                console.log('set', value)
+                this.currentPoster.gradient.enabled = value;
+            } else if(this.currentPoster)
+                this.currentPoster.gradient!.enabled = !this.currentPoster.gradient!.enabled;
+        },
+        toggleBorder: function(value: boolean| undefined) {
+            if((typeof value === 'boolean') && this.currentPoster && this.currentPoster.border) {
+                console.log('set', value)
+                this.currentPoster.border.enabled = value;
+            } else if(this.currentPoster)
+                this.currentPoster.border!.enabled = !this.currentPoster.border!.enabled;
+        },
+        toggleBackground: function(value: boolean|undefined) {
+            if((typeof value === 'boolean') && this.currentPoster && this.currentPoster.background) {
+                console.log('set', value)
+                this.currentPoster.background.enabled = value;
+            } else if(this.currentPoster)
+                this.currentPoster.background!.enabled = !this.currentPoster.background!.enabled;
+        },
+        toggleOverlay: function(value: boolean|undefined) {
+            if((typeof value === 'boolean') && this.currentPoster && this.currentPoster.overlays) {
+                console.log('set', value)
+                this.currentPoster.overlays[0].enabled = value;
+            } else if(this.currentPoster)
+                this.currentPoster.overlays![0].enabled = !this.currentPoster.overlays![0].enabled;
+        },
+        toggleIcon: function(value: boolean|undefined) {
+            if((typeof value === 'boolean') && this.currentPoster && this.currentPoster.icon) {
+                console.log('set', value)
+                this.currentPoster.icon.enabled = value;
+            } else if(this.currentPoster)
+                this.currentPoster.icon!.enabled = !this.currentPoster.icon!.enabled;
         },
         getIcons: async function() {
             if(this.icons.length === 0) this.icons = await this.asyncWrapper(fetchIcons);

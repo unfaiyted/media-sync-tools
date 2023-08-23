@@ -5,8 +5,8 @@
 
 
       <div class="flex space-x-2 w-full">
-        <VSlider v-model.number="border.width" max="10" class=" w-1/2 px-3 py-2 " label="Width" />
-        <VSlider v-model.number="border.height" max="10" class="w-1/2 px-3 py-2 " label="Height" />
+        <VSlider v-model.number="border.width" max.number="10" class=" w-1/2 px-3 py-2 " label="Width" />
+        <VSlider v-model.number="border.height" max.number="10" class="w-1/2 px-3 py-2 " label="Height" />
       </div>
 
     <!-- Color Input -->

@@ -5,6 +5,27 @@
             <img v-if="poster" :src="poster.url" alt="Poster"  />
         </div>
 
+        <div>
+           TEXT: {{ JSON.stringify(poster.text)}}
+        </div>
+        <div>
+            BACKGROUND: {{ JSON.stringify(poster.background)}}
+            </div>
+        <div>
+            GRADIENT:  {{ JSON.stringify(poster.gradient)}}
+        </div>
+         <div>
+            ICON:  {{ JSON.stringify(poster.icon)}}
+        </div>
+        <div>
+            BORDER:  {{ JSON.stringify(poster.border)}}
+        </div>
+
+       <div>
+           URL: {{ JSON.stringify(poster.url)}}
+       </div>
+
+
     </div>
 </template>
 
