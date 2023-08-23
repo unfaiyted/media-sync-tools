@@ -253,7 +253,7 @@ class MediaPosterTextOptions(BaseModel):
     shadow: Optional[MediaPosterShadowOptions] = None
 
 
-class MediaPosterBackground(BaseModel):
+class MediaPosterBackgroundOptions(BaseModel):
     enabled: bool = False
     url: Optional[str] = None
     # image: Optional[Image] = None
@@ -263,17 +263,24 @@ class MediaPosterBackground(BaseModel):
     border: Optional[MediaPosterBorderOptions] = None
     shadow: Optional[MediaPosterShadowOptions] = None
 
+class IconPosition(str, Enum):
+        LEFT = 'LEFT',
+        MIDDLE = 'MIDDLE',
+        RIGHT = 'RIGHT',
+        TOP = 'TOP',
+        BOTTOM = 'BOTTOM'
+
 
 class MediaPosterIconOptions(BaseModel):
     enabled: bool = False
     path: Optional[str] = None
-    position: Tuple[int, int] = (0, 0)
+    position: IconPosition = IconPosition.TOP
     size: Tuple[int, int] = (100, 100)
 
 class MediaPosterOverlayOptions(BaseModel):
     enabled: bool = False
     text: Optional[str] = None
-    icon: Optional[str] = None
+    icon: Optional[MediaPosterIconOptions] = None
     position: str = 'bottom-left'
     textColor: Optional[Tuple[int, int, int]] = (255, 255, 255)
     backgroundColor: Optional[Tuple[int, int, int]] = (100, 100, 100)
@@ -294,13 +301,6 @@ class MediaImageType(str, Enum):
     DISCART = 'DISCART'
 
 
-class IconPosition(str, Enum):
-        LEFT = 'LEFT',
-        MIDDLE = 'MIDDLE',
-        RIGHT = 'RIGHT',
-        TOP = 'TOP',
-        BOTTOM = 'BOTTOM'
-
 class MediaPoster(BaseModel):
     mediaPosterID: Optional[str] = None
     mediaItemId: Optional[str] = None
@@ -311,7 +311,7 @@ class MediaPoster(BaseModel):
     border: Optional[MediaPosterBorderOptions]
     text: Optional[MediaPosterTextOptions]
     gradient: Optional[MediaPosterGradientOptions]
-    background: Optional[MediaPosterBackground]
+    background: Optional[MediaPosterBackgroundOptions]
     overlays: Optional[List[MediaPosterOverlayOptions]]
     icon: Optional[MediaPosterIconOptions]
     mediaItem: Optional[str]

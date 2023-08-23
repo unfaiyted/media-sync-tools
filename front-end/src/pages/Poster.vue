@@ -2,125 +2,82 @@
   <div class="flex">
         <MediaPosterSidebar :poster="poster" />
         <div class="flex-grow">
+          <div class="flex justify-end bg-gray-300 mb-4">
+            <VButton
+                class="text-white m-2"
+                label="Actions"
+                @click="fetchImage"
+                />
+            <VButton @click="fetchImage" class="search-button m-2">Link to...</VButton>
+          </div>
+
             <PosterImage :poster="poster" />
             </div>
   </div>
 </template>
 
 <script lang="ts">
-// import PlaylistEditor from "./components/ListEditor.vue";
 import PosterImage from "@/components/poster/PosterImage.vue";
 import MediaPosterTextOptions from "@/components/poster/MediaPosterTextOptions.vue";
-import {IconPosition, MediaImageType, MediaPoster} from "@/models";
 import MediaPosterGradientOptions from "@/components/poster/MediaPosterGradientOptions.vue";
 import MediaPosterBackgroundOptions from "@/components/poster/MediaPosterBackgroundOptions.vue";
 import MediaPosterIconOptions from "@/components/poster/MediaPosterIconOptions.vue";
 import MediaPosterBorderOptions from "@/components/poster/MediaPosterBorderOptions.vue";
 import MediaPosterOverlayOptions from "@/components/poster/MediaPosterOverlays.vue";
 import MediaPosterSidebar from "@/components/poster/MediaPosterSidebar.vue";
-// import EndpointTrigger from "@/components/EndpointTrigger.vue";
-
+import {usePosterStore} from "@/store/posterStore";
+import { MediaPoster} from "@/models";
+import VButton from "@/components/ui/inputs/Button.vue";
 
 
 export default defineComponent({
   name: "App",
   components: {
+    VButton,
+    MediaPosterSidebar,
     MediaPosterBackgroundOptions,
     MediaPosterGradientOptions,
-      MediaPosterTextOptions,
-      MediaPosterIconOptions,
-      MediaPosterOverlayOptions,
+    MediaPosterTextOptions,
+    MediaPosterIconOptions,
+    MediaPosterOverlayOptions,
     MediaPosterBorderOptions,
-
-    // EndpointTrigger,
-    /*PlaylistEditor*/
     PosterImage
   },
   methods: {
   },
   setup(props) {
-    const poster = ref<MediaPoster>({
-      mediaPosterID: crypto.randomUUID(),
-      text: {
-        enabled: true,
-        text: 'Hello World!',
-        // font: 'Arial',
-        // size: 24,
-        // style: 'normal',
-        // weight: 'normal',
-        // align: 'left',
-        position: [0, 0],
-        color: [255, 255, 255],
-        shadow: {
-          enabled: true,
-          color: [0, 0, 0],
-          blur: 0,
-          offset: 0,
-          transparency: 100,
-        },
-        border: {
-          enabled: true,
-          color: [0, 0, 0],
-          width: 1,
-          height: 1,
-        },
-      },
-      width: 400,
-      height: 600,
-      type: MediaImageType.POSTER,
-      gradient: {
-         enabled: true,
-          colors: [
-            [255, 255, 255],
-            [0, 0, 0],
-          ],
-          opacity: 0.5,
-          type: 'linear',
-          angle: 0
-      },
-      background: {
-        url: '',
-        enabled: true,
-        opacity: 1.0,
-        color: [0, 0, 0],
-        border: {
-          enabled: true,
-          color: [0, 0, 0],
-          width: 1,
-          height: 1,
-        },
+    const store = usePosterStore();
 
-      },
-      border: {
-        enabled: true,
-        color: [0, 0, 0],
-        width: 1,
-        height: 1,
-      },
-      icon: {
-        enabled: true,
-        path: '',
-        position: IconPosition.MIDDLE,
-        size: [200, 250],
+    const poster = ref<MediaPoster>(store.setDefaultPoster());
 
-      },
-      overlays: [{
-        enabled: true,
-        cornerRadius: 0,
-        transparency: 0,
-        icon: {
-          enabled: true,
-          path: '',
-          size: [0, 0],
-          position: IconPosition.LEFT,
-        },
-        position: IconPosition.LEFT // Default position, adjust if needed
-      }]
-    });
+    const fetchImage = () => {
+      console.log('fetching image', poster.value)
+      store.createPoster(poster.value);
+      console.log(poster.value)
+
+    };
 
     return {
-      poster
+      poster,
+      fetchImage
     }
   }
 });
 </script>
+
+<style>
+.search-button {
+  padding: 10px 20px;
+  background-color: #007BFF;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.search-button:hover {
+  background-color: #0056b3;
+}
+
+</style>

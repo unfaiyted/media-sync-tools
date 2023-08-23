@@ -4,7 +4,6 @@
             <option v-for="file in files" :key="file">{{ file }}</option>
         </select>
 
-
     </div>
 </template>
 

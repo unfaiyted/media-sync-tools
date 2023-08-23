@@ -1,74 +1,14 @@
 <template>
-    <div class="flex flex-col">
-        <!-- Search and Button -->
-<!--        <div class="controls">
-            <input v-model="searchQuery" placeholder="Enter search term" class="search-input" />
-            <TextEffects/>
-            <button @click="fetchImage" class="search-button">Create Poster</button>
+    <div class="flex flex-col h-full">
 
-        </div>-->
-
-        <div>
-
-         <button @click="fetchImage" class="search-button">Save to...</button>
-
-            <button @click="fetchImage" class="search-button">Link to...</button>
-        </div>
-
-
-        <!-- Poster Display -->
         <div class="poster">
-            <img v-if="posterImage" :src="posterImage" alt="Poster" />
+            <img v-if="poster" :src="poster.url" alt="Poster"  />
         </div>
 
-        <!-- Controls Below Poster -->
-        <div class="sliders">
-
-<!--            <BorderColorPicker @border-changed="updateBorder"></BorderColorPicker>
-            <GradientColorPickers @gradient-changed="updateGradient"></GradientColorPickers>
-            <IconPicker @icon-selected="updateIcon"></IconPicker>
-            <DragDrop @background-image-selected="updateBgImage"/>-->
-        </div>
     </div>
 </template>
 
 <style scoped>
-.container {
-    max-width: 600px;
-    margin: 0 auto;
-    padding: 20px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-}
-
-.controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.search-input {
-    padding: 10px;
-    font-size: 16px;
-    border-radius: 5px;
-    border: 1px solid #ddd;
-    flex: 1;
-    margin-right: 10px;
-}
-
-.search-button {
-    padding: 10px 20px;
-    background-color: #007BFF;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-.search-button:hover {
-    background-color: #0056b3;
-}
 
 .poster {
     width: 400px;
@@ -86,103 +26,27 @@
     left: 0;
 }
 
-.sliders > div {
-    margin-bottom: 20px;
-}
+
 </style>
 
-<script>
-// import { debounce } from 'lodash';
-
-import GradientColorPickers from "@/components/poster/GradientPicker.vue";
-import BorderColorPicker from "@/components/poster/BorderColorPicker.vue";
-import IconPicker from "@/components/poster/IconPicker.vue";
-import DragDrop from "@/components/poster/DragDrop.vue";
-import TextEffects from "@/components/poster/TextEffects.vue";
-import {API_URL} from "@/utils/constants";
+<script lang="ts">
+import {MediaPoster} from "@/models";
 
 
 export default {
-    components: {TextEffects, DragDrop, BorderColorPicker, GradientColorPickers, IconPicker},
-    data() {
-        return {
-            searchQuery: 'Hi!',
-            posterImage: null,
-            border: null,
-            gradient: null,
-
-            icon: null,
-            angle: -160,
-        };
+    components: {},
+    props: {
+      poster: {
+        type: Object as () => MediaPoster,
+        required: true
+      }
     },
-    watch: {
-        border: 'fetchImage',
-        searchQuery: 'fetchImage',
-        gradient: 'fetchImage',
-        bgImage: 'fetchImage',
-        icon: 'fetchImage',
-        angle: 'fetchImage',
-    },
+  watch: {
+    poster: function(newPoster: MediaPoster) {
+      this.poster = newPoster;
+    }
+  },
     methods: {
-        updateBgImage(image) {
-            this.bgImage = image.backgroundImage;
-            this.fetchImage();
-        },
-        updateGradient(changes) {
-            this.gradient = {
-                ...this.gradient,
-                ...changes
-            }
-
-            this.fetchImage();
-        },
-        updateBorder(changes) {
-            this.border = {
-                ...this.border,
-                ...changes
-            }
-
-            this.fetchImage();
-        },
-        updateIcon(icon) {
-            this.icon = icon.icon;
-            this.fetchImage();
-        },
-        async fetchImage() {
-            try {
-
-                const request = {
-                    query: this.searchQuery,
-                    bgImage: this.bgImage,
-                    angle: this.angle,
-                    icon: this.icon,
-                    ...this.border,
-                    ...this.gradient,
-                }
-
-                console.log(request)
-
-                const response = await fetch(`${API_URL}/image/poster/create`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-
-                    body: JSON.stringify(request)
-                });
-
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                this.posterImage = url;
-
-            } catch (error) {
-                console.error("Error fetching image:", error);
-            }
-        }
     }
 }
 </script>

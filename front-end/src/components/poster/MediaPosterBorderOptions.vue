@@ -1,64 +1,94 @@
 <template>
-  <div class="p-4 border rounded shadow">
-    <h3 class="text-xl mb-4 font-semibold">Border Options</h3>
+  <div class="p-2 rounded border">
+    <h4 class="text-md font-bold">Border Options</h4>
+<!--     Width Input -->
 
-    <!-- Width Input -->
-<!--    <div class="mb-4">
-      <label class="block mb-1 font-medium" for="borderWidth">Width:</label>
-      <input v-model.number="border.width" id="borderWidth" class="w-full px-3 py-2 border rounded" type="number">
-    </div>-->
-      <!-- Width Input -->
-<!--    <div class="mb-4">-->
-<!--      <label class="block mb-1 font-medium" for="borderHeight">Height:</label>-->
-<!--      <input v-model.number="border.height" id="borderHeight" class="w-full px-3 py-2 border rounded" type="number">-->
-<!--    </div>-->
+
+      <div class="flex space-x-2 w-full">
+        <VSlider v-model.number="border.width" max="10" class=" w-1/2 px-3 py-2 " label="Width" />
+        <VSlider v-model.number="border.height" max="10" class="w-1/2 px-3 py-2 " label="Height" />
+      </div>
 
     <!-- Color Input -->
-    <div class="mb-4">
-      <label class="block mb-1 font-medium" for="borderColor">Color:</label>
-      <input v-model="border.color" id="borderColor" class="w-full px-3 py-2 border rounded" type="color">
+    <div class="mb-4 flex">
+      <div class="mt-2">
+        <label class="block mb-1 font-medium" for="borderColor">Color:</label>
+        <ColorPicker
+            :pure-color="colorTupleToRGBString(border.color)"
+            @update:pure-color="(color) => handleColorChange(color)" id="borderColor" />
+
+
+      </div>
+<!--      <VSelect label="Style:" options="solid,dashed,dotted,double" v-model="border.style" id="borderStyle" class="w-full px-3 py-2" />-->
     </div>
 
     <!-- Style Select -->
-    <div>
-      <label class="block mb-1 font-medium" for="borderStyle">Style:</label>
-      <select  id="borderStyle" class="w-full px-3 py-2 border rounded">
-        <option value="solid">Solid</option>
-        <option value="dashed">Dashed</option>
-        <option value="dotted">Dotted</option>
-        <option value="double">Double</option>
-        <!-- Add other styles as needed -->
-      </select>
-    </div>
   </div>
 </template>
 
 <script lang="ts">
 import { ref, defineComponent, PropType } from 'vue';
-import { MediaPosterBorderOptions } from '@/models'; // Import your models here
+import {MediaPosterBorderOptions, MediaPosterGradientOptions, MediaPosterTextOptions} from '@/models';
+import VSelect from "@/components/ui/inputs/Select.vue";
+import {ColorPicker} from "vue3-colorpicker";
+import VSlider from "@/components/ui/inputs/Slider.vue";
+import {colorTupleToRGBString, parseRGB} from "@/utils/string";
+import debounce from "lodash.debounce"; // Import your models here
+import {usePosterStore} from "@/store/posterStore";
 
 export default defineComponent({
   name: 'MediaPosterBorderOptions',
+  methods: {colorTupleToRGBString},
+  components: {VSlider, ColorPicker, VSelect},
   props: {
-    value: { type: Object as PropType<MediaPosterBorderOptions>, required: true },
+    border: { type: Object as PropType<MediaPosterBorderOptions>, required: true },
+    parent: {
+      type: String,
+      required: false
+    }
   },
-  setup(props) {
-    console.log(props.value)
-    const border = ref(props.value);
+  setup({border, parent}) {
+    const borderOptions = ref<MediaPosterBorderOptions>(border);
+    const store = usePosterStore();
+
+    const handleColorChange = (color: string) => {
+      if(!borderOptions.value.color) {
+        return;
+      }
+      borderOptions.value.color = parseRGB(color)
+    }
 
 
-    console.log(border.value);
+
+    console.log(borderOptions.value);
+
+    const debouncedUpdate = debounce((newVal: MediaPosterBorderOptions) => {
+      console.log('gradientOptions changed', newVal);
+      // newVal.colors = validateColors(newVal.colors);
+
+      if(parent === 'text') {
+        store.updateTextBorderOptions(newVal);
+      } else {
+        store.updateBorderOptions(newVal);
+      }
+
+
+    }, 500); // 300 milliseconds debounce time
+
+
     // Watch for changes in the props and update the local border options
     watch(
-        () => props.value,
+        () => border ,
         (newValue) => {
-          console.log('new value', newValue);
-          border.value = newValue;
-        }
+          console.log('border changed', newValue);
+
+         debouncedUpdate(newValue);
+        }, {deep: true}
     );
 
     return {
       border,
+      handleColorChange
     };
   },
 });

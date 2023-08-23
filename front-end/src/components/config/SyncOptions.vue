@@ -17,7 +17,7 @@
     </div>
 </template>
 
-<style>
+<style scoped>
 .switch {
     position: relative;
     display: inline-block;

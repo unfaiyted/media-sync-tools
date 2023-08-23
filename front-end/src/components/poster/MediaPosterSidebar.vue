@@ -2,28 +2,32 @@
     <div class="flex">
         <!-- Sidebar -->
         <div
-            :class="['bg-gray-800 p-4 overflow-y-auto', isCollapsed ? 'w-20' : 'w-64']"
-            @click="toggleSidebar"
-            style="max-height: calc(100vh - 60px);">
-            <button class="mb-4 text-white">Toggle</button>
-
-            <!-- Place your sidebar content here -->
-            <div v-if="!isCollapsed">
-                <MediaPosterTextOptions :value="poster.text"   />
-                <MediaPosterGradientOptions :gradient-options="poster.gradient" />
-                <MediaPosterBackgroundOptions :background-options="poster.background" />
-
-                <div v-if="poster.border">
-                    Poster Border
-                    <MediaPosterBorderOptions :value="poster.border"/>
-                </div>
+            :class="['bg-gray-700 p-4  overflow-y-auto', isCollapsed ? 'w-20' : 'w-80']"
+            style="max-height: calc(100vh - 0px);">
 
 
-                <MediaPosterIconOptions :icon-options="poster.icon" />
-                <MediaPosterOverlayOptions :overlay-options="poster.overlays" />            </div>
+          <!-- Buttons Container -->
+          <div class="flex justify-end  mb-4 ">
+<!--            <VButton-->
+<!--                class="text-white"-->
+<!--                @click="toggleSidebar"-->
+<!--                :label="isCollapsed ? '>>' : '<<'"-->
+<!--            ></VButton>-->
+
+            <VButton
+                class="text-white"
+                label="Create Poster"
+            ></VButton>
+          </div>
+
+          <!-- Place your sidebar content here -->
+          <div v-if="!isCollapsed">
+            <VAccordion :items="accordionItems" />
+          </div>
         </div>
 
-        <!-- Main Content -->
+
+      <!-- Main Content -->
         <div class="flex-grow">
             <!-- Your main content goes here -->
         </div>
@@ -41,12 +45,16 @@ import MediaPosterIconOptions from "@/components/poster/MediaPosterIconOptions.v
 import MediaPosterBorderOptions from "@/components/poster/MediaPosterBorderOptions.vue";
 import MediaPosterOverlayOptions from "@/components/poster/MediaPosterOverlays.vue";
 import {ref} from "vue";
+import VButton from "@/components/ui/inputs/Button.vue";
+import VAccordion from "@/components/ui/Accordian.vue";
 
 
 
 export default defineComponent({
     name: "MediaPosterSidebar",
     components: {
+      VAccordion,
+      VButton,
         MediaPosterBackgroundOptions,
         MediaPosterGradientOptions,
         MediaPosterTextOptions,
@@ -62,7 +70,7 @@ export default defineComponent({
     },
     setup(props) {
         const poster = ref<MediaPoster>({
-            mediaPosterID: crypto.randomUUID(),
+            mediaPosterId: crypto.randomUUID(),
             text: {
                 enabled: true,
                 text: 'Hello World!',
@@ -146,11 +154,53 @@ export default defineComponent({
             isCollapsed.value = !isCollapsed.value;
         };
 
-        return {
-            isCollapsed,
-            toggleSidebar,
-            poster
-        };
+      const accordionItems = ref([
+        {
+          title: 'Text Options',
+          component: MediaPosterTextOptions,
+          enabled: poster.value.text.enabled,
+          props: { value: poster.value.text }
+        },
+        {
+          title: 'Gradient Options',
+          enabled: false,
+          component: MediaPosterGradientOptions,
+          props: { gradientOptions: poster.value.gradient }
+        },
+        {
+          title: 'Background Options',
+          enabled: false,
+          component: MediaPosterBackgroundOptions,
+          props: { value: poster.value.background }
+        },
+        {
+          title: 'Border Options',
+          enabled: false,
+          component: MediaPosterBorderOptions,
+          props: { border: poster.value.border }
+        },
+        {
+          title: 'Icon Options',
+          enabled: false,
+          component: MediaPosterIconOptions,
+          props: { iconOptions: poster.value.icon }
+        },
+        {
+          title: 'Overlay Options',
+          enabled: poster.value.overlays.length > 0,
+          component: MediaPosterOverlayOptions,
+          props: { overlayOptions: poster.value.overlays }
+        }
+      ]);
+
+
+      return {
+        isCollapsed,
+        toggleSidebar,
+        poster,
+        accordionItems
+      };
+
     }
 });
 </script>

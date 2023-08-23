@@ -56,7 +56,7 @@ export default {
             formData.append('file', file);
 
             try {
-                const response = await fetch(`${API_URL}/poster/upload-file/`, {
+                const response = await fetch(`${API_URL}/poster/background/`, {
                     method: 'POST',
                     body: formData,
                 });
@@ -69,18 +69,9 @@ export default {
                 console.error("File upload error:", error);
             }
         },
-        async fetchFileList() {
-            try {
-                const response = await fetch(`${API_URL}/uploads/filenames/`);
-                const data = await response.json();
-                this.uploadedFiles = data.files;
-            } catch (error) {
-                console.error("Error fetching file list:", error);
-            }
-        }
+
     },
     async created() {
-      await this.fetchFileList()
     },
 }
 </script>
@@ -88,7 +79,7 @@ export default {
 
 <style>
 .dropzone {
-    width: 300px;
+    width: 100%;
     height: 200px;
     border: 3px dashed #ccc;
     display: flex;

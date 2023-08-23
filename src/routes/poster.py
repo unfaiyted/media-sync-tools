@@ -1,6 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException
-from motor.motor_asyncio import AsyncIOMotorDatabase
+import os
+from io import BytesIO
 
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from motor.motor_asyncio import AsyncIOMotorDatabase
+from starlette.responses import StreamingResponse
+
+from src.create.posters import MediaPosterImageCreator
 from src.config import ConfigManager
 from src.models import MediaListItem, MediaPoster, ProviderPoster
 from typing import List
@@ -11,6 +16,7 @@ config = ConfigManager.get_manager()
 # Sample data for demonstration purposes
 sample_posters_db = {}
 
+
 @router.get("/posters/{media_list_item_id}", response_model=List[MediaPoster])
 async def get_posters_by_media_list_item_id(media_list_item_id: str):
     # TODO: Retrieve posters by MediaListItemId from the database or external service
@@ -18,7 +24,6 @@ async def get_posters_by_media_list_item_id(media_list_item_id: str):
         return sample_posters_db[media_list_item_id]
     else:
         return []
-
 
 
 @router.get("/item/{mediaItemId}", response_model=MediaListItem)
@@ -53,22 +58,29 @@ async def get_posters_by_provider(mediaItemId: str, ):
     if movie['total_results'] > 0:
         TMDB_IMAGE_URL = "https://image.tmdb.org/t/p/original"
         poster = tmdb.get_movie_poster_path(movie['results'][0]['id'])
-        list_item["poster"] =  f'{TMDB_IMAGE_URL}{poster}'
+        list_item["poster"] = f'{TMDB_IMAGE_URL}{poster}'
         await db.media_list_items.replace_one({"mediaItemId": mediaItemId}, list_item)
         return list_item
 
     raise HTTPException(status_code=404, detail="Unable to identify poster, not found")
 
 
-
 # MediaPoster CRUD operations
 @router.post("/", response_model=MediaPoster)
 async def create_media_poster(media_poster: MediaPoster, db: AsyncIOMotorDatabase = Depends(config.get_db)):
-    if await db.media_posters.find_one({"mediaPosterId": media_poster.mediaPosterID}):
-        raise HTTPException(status_code=400, detail="MediaPoster already exists")
+    # if await db.media_posters.find_one({"mediaPosterId": media_poster.mediaPosterID}):
+    # raise HTTPException(status_code=400, detail="MediaPoster already exists")
     media_poster_dict = media_poster.dict()
+
+    poster = MediaPosterImageCreator(media_poster)
+
+    image = poster.create()
+    byteArr = BytesIO()
+    image.save(byteArr, format='JPEG')
     await db.media_posters.insert_one(media_poster_dict)
-    return media_poster_dict
+    print('Converting to bytes')
+    return StreamingResponse(BytesIO(byteArr.getvalue()), media_type="image/jpeg")
+
 
 @router.get("/", response_model=List[MediaPoster])
 async def read_media_posters(db: AsyncIOMotorDatabase = Depends(config.get_db)):
@@ -77,6 +89,7 @@ async def read_media_posters(db: AsyncIOMotorDatabase = Depends(config.get_db)):
         raise HTTPException(status_code=404, detail="MediaPosters not found")
     return posters
 
+
 @router.get("/{media_poster_id}", response_model=MediaPoster)
 async def read_media_poster(media_poster_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
     poster = await db.media_posters.find_one({"mediaPosterId": media_poster_id})
@@ -84,8 +97,10 @@ async def read_media_poster(media_poster_id: str, db: AsyncIOMotorDatabase = Dep
         raise HTTPException(status_code=404, detail="MediaPoster not found")
     return poster
 
+
 @router.put("/{media_poster_id}", response_model=MediaPoster)
-async def update_media_poster(media_poster_id: str, media_poster: MediaPoster, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def update_media_poster(media_poster_id: str, media_poster: MediaPoster,
+                              db: AsyncIOMotorDatabase = Depends(config.get_db)):
     existing_poster = await db.media_posters.find_one({"mediaPosterId": media_poster_id})
     if existing_poster is None:
         raise HTTPException(status_code=404, detail="MediaPoster not found")
@@ -94,6 +109,7 @@ async def update_media_poster(media_poster_id: str, media_poster: MediaPoster, d
     await db.media_posters.replace_one({"mediaPosterId": media_poster_id}, poster_dict)
     return poster_dict
 
+
 @router.delete("/{media_poster_id}", response_model=MediaPoster)
 async def delete_media_poster(media_poster_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
     poster = await db.media_posters.find_one({"mediaPosterId": media_poster_id})
@@ -101,3 +117,31 @@ async def delete_media_poster(media_poster_id: str, db: AsyncIOMotorDatabase = D
         raise HTTPException(status_code=404, detail="MediaPoster not found")
     await db.media_posters.delete_one({"mediaPosterId": media_poster_id})
     return poster
+
+
+
+@router.get("/icons/")
+async def list_icons(root_path: str = Depends(config.get_root_path)):
+    try:
+        files = os.listdir(root_path + "/resources/icons")
+        return {"filenames": files}
+    except Exception as e:
+        return {"error": str(e)}
+
+@router.get("/backgrounds/")
+async def list_uploads(config_path: str = Depends(config.get_config_path)):
+    try:
+        files = os.listdir(config_path + "/uploads")
+
+        # loop over files and map them to text and value objects
+        files = list(map(lambda x: {"text": x, "value": x}, files))
+
+        return {"files": files}
+    except Exception as e:
+        return {"error": str(e)}
+
+@router.post("/background/")
+async def upload_file(file: UploadFile = File(...), config_path: str = Depends(config.get_config_path)):
+    with open(f"{config_path}/uploads/{file.filename}", "wb") as buffer:
+        buffer.write(file.file.read())
+    return {"filename": file.filename}

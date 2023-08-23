@@ -1,3 +1,4 @@
+export type Color = string | [number, number, number];
 
 export enum ListType {
     COLLECTION = "COLLECTION",
@@ -220,12 +221,12 @@ export interface MediaPosterBorderOptions {
     enabled: boolean;
     width: number;
     height: number;
-    color?: [number, number, number];
+    color?: Color;
 }
 
 export interface MediaPosterGradientOptions {
     enabled: boolean;
-    colors?: [number, number, number][];
+    colors?: Color[];
     opacity: number;
     type: string;
     angle: number;
@@ -233,7 +234,7 @@ export interface MediaPosterGradientOptions {
 
 export interface MediaPosterShadowOptions {
     enabled: boolean;
-    color?: [number, number, number];
+    color?: Color;
     offset: number;
     blur: number;
     transparency: number;
@@ -243,7 +244,7 @@ export interface MediaPosterTextOptions {
     enabled: boolean;
     text?: string;
     position: [number, number];
-    color?: [number, number, number];
+    color?: Color;
     border?: MediaPosterBorderOptions;
     shadow?: MediaPosterShadowOptions;
 }
@@ -251,7 +252,7 @@ export interface MediaPosterTextOptions {
 export interface MediaPosterBackgroundOptions {
     enabled: boolean;
     url?: string;
-    color?: [number, number, number];
+    color?: Color;
     position?: [number, number];
     size?: [number, number];
     opacity: number;
@@ -264,8 +265,8 @@ export interface MediaPosterOverlayOptions {
     enabled: boolean;
     text?: string;
     position: string;
-    textColor?: [number, number, number];
-    backgroundColor?: [number, number, number];
+    textColor?: Color;
+    backgroundColor?: Color;
     transparency: number;
     cornerRadius: number;
     icon?: MediaPosterIconOptions;
@@ -284,7 +285,7 @@ export interface ProviderPoster {
 }
 
 export interface MediaPoster {
-    mediaPosterID?: string;
+    mediaPosterId?: string;
     mediaItemId?: string;
     url?: string;
     width: number;

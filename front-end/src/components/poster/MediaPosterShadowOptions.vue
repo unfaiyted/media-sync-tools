@@ -1,32 +1,25 @@
 <template>
-    <div>
-        <h3>Shadow Options</h3>
-
-        <div>
-            <label for="shadowOffsetX">Offset X:</label>
-            <input id="shadowOffsetX" v-model="shadow.offsetX" type="number" placeholder="Enter shadow X offset" />
-        </div>
-
-        <div>
-            <label for="shadowOffsetY">Offset Y:</label>
-            <input id="shadowOffsetY" v-model="shadow.offsetY" type="number" placeholder="Enter shadow Y offset" />
-        </div>
-
-        <div>
-            <label for="shadowBlur">Blur:</label>
-            <input id="shadowBlur" v-model="shadow.blur" type="number" placeholder="Enter shadow blur" />
-        </div>
-
-        <div>
-            <label for="shadowColor">Color:</label>
-            <input id="shadowColor" v-model="shadow.color" type="color" placeholder="Select shadow color" />
-        </div>
+      <div class="p-3 border rounded ">
+        <h4 class="text-md mb-4 font-semibold">Shadow Options</h4>
+          <VSlider id="shadowOffsetX"
+                   label="Offset X:"
+                   v-model="shadow.offsetX" type="number" placeholder="Enter shadow X offset"/>
+            <VSlider id="shadowOffsetY"
+                     label="Offset Y:"
+                     v-model="shadow.offsetY" type="number" placeholder="Enter shadow Y offset" />
+            <VSlider id="shadowBlur" v-model="shadow.blur" type="number" placeholder="Enter shadow blur"
+            label="Blur:"/>
+            <VSlider id="shadowColor" v-model="shadow.color" type="color" placeholder="Select shadow color" label="Shadow:"/>
     </div>
 </template>
 
 <script>
+import VInput from "@/components/poster/MediaPosterBackgroundOptions.vue";
+import VSlider from "@/components/ui/inputs/Slider.vue";
+
 export default {
     name: "MediaPosterShadowOptions",
+  components: {VSlider, VInput},
     data() {
         return {
             shadow: {

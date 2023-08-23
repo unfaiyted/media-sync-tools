@@ -1,13 +1,17 @@
-export function parseRGB(rgbString: string) : Array<number> {
-    const matches = rgbString.match(/\d+/g); // match all groups of digits in the string
+import {Color} from "@/models";
 
-    if (matches && matches.length === 3) {
-        return matches.map(Number); // convert each matched string to a number
+export function parseRGB(rgbString: string): Color {
+    const match = rgbString.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+    if (match) {
+        return [parseInt(match[1]), parseInt(match[2]), parseInt(match[3])];
     }
-
-    console.error('Invalid RGB format');
-    return [0,0,0];
+    return [255, 255, 255]; // Default value if the string doesn't match the expected format
 }
+
+export function colorTupleToRGBString(color: Color): string {
+    return `rgb(${color[0]},${color[1]},${color[2]})`;
+}
+
 
 export function camelCaseToWords(input: string): string {
     // Regular expression to match camel case pattern
