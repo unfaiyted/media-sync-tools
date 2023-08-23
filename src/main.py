@@ -1,7 +1,10 @@
 from fastapi import FastAPI, UploadFile, File
 import sys
 import os
-from src.routes import poster, images, sync, utils, config, client, lists, users, library
+
+from src.routes import poster, images, sync, utils, config, client, lists, users, library, tasks
+from src.tasks.scheduler import start_scheduler, stop_scheduler
+
 # Get the absolute path of the 'src' folder
 src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'src'))
 
@@ -34,12 +37,19 @@ app.include_router(client.router, prefix="/client", tags=["client"])
 app.include_router(users.router, prefix="/user", tags=["users"])
 app.include_router(library.router, prefix="/library", tags=["library"])
 app.include_router(poster.router, prefix="/poster", tags=["poster"])
+app.include_router(tasks.router, prefix="/task", tags=["tasks"])
 # app.include_router(filter.router, prefix="/filter", tags=["filter"])
 
 # app.include_router(collections.router, prefix="/collection", tags=["collections"])
 # app.include_router(playlists.router, prefix="/playlist", tags=["playlists"])
 
+@app.on_event("startup")
+async def on_startup():
+    start_scheduler()
 
+@app.on_event("shutdown")
+async def on_shutdown():
+    stop_scheduler()
 
 #... rest of your FastAPI routes ...
 if __name__ == '__main__':

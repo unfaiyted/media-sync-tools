@@ -1,3 +1,5 @@
+from __future__ import annotations  # Use this to enable postponed evaluation of type annotations
+
 from datetime import datetime
 from enum import Enum
 
@@ -264,11 +266,11 @@ class MediaPosterBackgroundOptions(BaseModel):
     shadow: Optional[MediaPosterShadowOptions] = None
 
 class IconPosition(str, Enum):
-        LEFT = 'LEFT',
-        MIDDLE = 'MIDDLE',
-        RIGHT = 'RIGHT',
-        TOP = 'TOP',
-        BOTTOM = 'BOTTOM'
+    LEFT = 'LEFT',
+    MIDDLE = 'MIDDLE',
+    RIGHT = 'RIGHT',
+    TOP = 'TOP',
+    BOTTOM = 'BOTTOM'
 
 
 class MediaPosterIconOptions(BaseModel):
@@ -330,7 +332,6 @@ class ProviderPoster(BaseModel):
     width: int
     height: int
     type: MediaImageType
-
 
 
 # Update the forward references

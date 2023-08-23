@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from src.models import MediaList, MediaListItem, MediaType, MediaListType
+from src.models.media_lists import MediaList, MediaListItem, MediaType, MediaListType
 
 
 class EmbyProvider:

@@ -4,7 +4,7 @@ import numpy as np
 import requests
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter
 
-from src.models import MediaPosterOverlayOptions, MediaPoster, MediaPosterTextOptions
+from src.models.posters import MediaPosterOverlayOptions, MediaPoster, MediaPosterTextOptions
 
 
 class PosterImageCreator:
@@ -405,12 +405,12 @@ class MediaPosterImageCreator:
         media_poster = self.media_poster
 
         # Main function that will orchestrate the creation of the poster image.
+        if media_poster.gradient and media_poster.gradient.enabled:
+            self._apply_gradient()
+
         if media_poster.background and media_poster.background.enabled:
             self._apply_background()
 
-        if media_poster.gradient and media_poster.gradient.enabled:
-            self._apply_gradient()
-        print(media_poster)
 
         if (media_poster.text and media_poster.text.enabled and
                 media_poster.icon and media_poster.icon.enabled):
@@ -437,7 +437,9 @@ class MediaPosterImageCreator:
         return self._generate_poster()
 
     def _fetch_image_from_path(self, path):
-        return Image.open(path)
+            return Image.open(path)
+
+
 
     def _fetch_image_from_url(self, url):
         # This method fetches the image from the provided URL.
@@ -483,7 +485,11 @@ class MediaPosterImageCreator:
 
         # If the url attribute is present, fetch, process and blend the image
         if self.media_poster.background.url:
-            background_image = self._fetch_image_from_url(self.media_poster.background.url)
+            # check if its a http path or local
+            if self.media_poster.background.url.startswith('http'):
+                background_image = self._fetch_image_from_url(self.media_poster.background.url)
+            else:
+                background_image = self._fetch_image_from_path(self.media_poster.background.url)
             processed_bg_image = self._process_fetched_image(background_image)
             self._blend_with_background(processed_bg_image, self.media_poster.background.opacity)
 

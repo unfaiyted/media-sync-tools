@@ -7,7 +7,8 @@ from starlette.responses import StreamingResponse
 
 from src.create.posters import MediaPosterImageCreator
 from src.config import ConfigManager
-from src.models import MediaListItem, MediaPoster, ProviderPoster
+from src.models.media_lists import MediaListItem
+from src.models.posters import MediaPoster, ProviderPoster
 from typing import List
 
 router = APIRouter()
@@ -131,10 +132,13 @@ async def list_icons(root_path: str = Depends(config.get_root_path)):
 @router.get("/backgrounds/")
 async def list_uploads(config_path: str = Depends(config.get_config_path)):
     try:
-        files = os.listdir(config_path + "/uploads")
+
+        path = config_path + "/uploads"
+        files = os.listdir(path)
+
 
         # loop over files and map them to text and value objects
-        files = list(map(lambda x: {"text": x, "value": x}, files))
+        files = list(map(lambda x: {"text": x, "value": path +"/"+ x}, files))
 
         return {"files": files}
     except Exception as e:

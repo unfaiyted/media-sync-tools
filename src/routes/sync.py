@@ -1,7 +1,8 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from src.create import ListBuilder
-from src.models import SyncOptions, MediaList
+from src.models.configs import SyncOptions
+from src.models.media_lists import MediaList
 from src.config import ConfigManager
 from src.create.toplists import sync_top_lists
 from src.sync.watchlist import sync_watchlist

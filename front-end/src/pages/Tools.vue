@@ -1,19 +1,14 @@
 <template>
-  <EndpointTrigger />
 </template>
 
 
 
 <script>
-import EndpointTrigger from "@/components/EndpointTrigger.vue";
-// import PosterImage from "@/components/PosterImage";
 
 export default {
   name: "App",
   components: {
-    // EndpointTrigger,
-    /*PlaylistEditor*/
-    EndpointTrigger
+
   },
   methods: {
     savePlaylistData(playlist) {

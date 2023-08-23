@@ -3,7 +3,7 @@
 
 
 
-    <div class="" v-if="options.enabled">
+    <div class="" >
       <div class="flex items-center space-x-2">
         <VInput v-model="options.url" class="w-full  py-2 " label="Url:" />
         <div class="pt-2">
@@ -14,23 +14,23 @@
 
     <DragDrop/>
     <!-- Position Inputs -->
-    <div class="mb-3 border rounded mt-4 p-2" v-if="options.enabled">
+    <div class="mb-3 border rounded mt-4 p-2">
       <label class="block mb-1 font-bold">Offset Position:</label>
       <div class="flex space-x-2" v-if="options.position" >
-        <VSlider v-model:number="options.position[0]" class="w-1/2 px-3 py-2 " label="X" label-position="left"/>
-        <VSlider v-model:number="options.position[1]" class="w-1/2 px-3 py-2 " label="Y" label-position="left"/>
+        <VSlider v-model:number="options.position[0]" class="w-1/2 px-3 py-2 " icon="ArrowsUpDownIcon" label-position="left"/>
+        <VSlider v-model:number="options.position[1]" class="w-1/2 px-3 py-2 " icon="ArrowsRightLeftIcon" label-position="left"/>
       </div>
     </div>
 
     <div class="mb-3">
       <label class="block mb-1">Opacity:</label>
-      <VSlider  min.number="0" max.number ="1" step.decimal="0.1" v-model.number="options.opacity"/>
+      <VSlider  :min="0" :max="1" :step="0.1" v-model.number="options.opacity"/>
       <span>{{ options.opacity }}</span>
     </div>
 
-  <div class="" v-if="options.enabled">
+  <div class="" >
       <div class="flex items-center space-x-2" v-if="backgroundImages">
-        <VSelect :options="backgroundImages?.files" v-model="options.url" class="w-full  py-2 " label="Image:" />
+        <VSelect :options="backgroundImages" v-model="options.url" class="w-full  py-2 " label="Image:" />
         <div class="pt-2">
 
         </div>
@@ -56,7 +56,7 @@ export interface FileOption {
 
 export default defineComponent({
   name: 'MediaPosterBackgroundOptions',
-  components: {VSelect, VSlider, VInput },
+  components: {VSelect, VSlider, VInput, },
 
   props: {
     value: { type: Object as PropType<MediaPosterBackgroundOptions>, required: true },
