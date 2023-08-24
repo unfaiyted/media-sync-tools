@@ -202,7 +202,6 @@ class Emby:
         print(items, total_count)
         return items, total_count
 
-
     def get_libraries(self):
         url = self._build_url(f'Users/{self.user_id}/views')
         response = self._get_request(url)
@@ -212,7 +211,6 @@ class Emby:
         libraries = self.get_libraries()
         library = next((item for item in libraries if item.get('Id') == library_id), None)
         return library
-
 
     def get_items_from_library(self, library_name):
         libraries = self.get_libraries()

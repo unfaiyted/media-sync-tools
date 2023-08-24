@@ -5,7 +5,6 @@ from src.models.configs import SyncOptions
 from src.models.media_lists import MediaList
 from src.config import ConfigManager
 from src.create.toplists import sync_top_lists
-from src.sync.watchlist import sync_watchlist
 from src.sync.collections import sync_collections
 from src.create.lists import Lists
 from src.create.trakt import sync_trakt_user_lists
@@ -17,10 +16,11 @@ from fastapi import APIRouter, Depends, HTTPException
 router = APIRouter()
 config = ConfigManager.get_manager()
 
+
 @router.get("/watched")
 async def trigger_sync_watchlist():
     try:
-       # sync_watchlist(config)
+        # sync_watchlist(config)
         config = ConfigManager.get_manager()
         list_maker = Lists(config)
         list_maker.create_previously_watchedlist()
@@ -109,30 +109,29 @@ async def handle_ratings():
             'description': 'This is a test.',  # assuming the description might be optional
             'provider': 'emby',
             'filters': [{
-                            'type': 'list_id',
-                            'value': 168737
-                            }],
+                'type': 'list_id',
+                'value': 168737
+            }],
             'include': ['Movies'],  # assuming lists are for movies only, adjust if necessary
             'options': {
-                            'add_prev_watched': False,
-                            'add_missing_to_library': False,
-                            'limit': 100,  # adjust as necessary
-                            'sort': 'rank',  # adjust as necessary
-                            'poster': {
-                            'enabled': True,
-                            }
-                               }
+                'add_prev_watched': False,
+                'add_missing_to_library': False,
+                'limit': 100,  # adjust as necessary
+                'sort': 'rank',  # adjust as necessary
+                'poster': {
+                    'enabled': True,
+                }
+            }
         }
 
         # Here, I'm assuming you want to process movie lists only. Adjust this if lists can be for other media types too.
         list_builder = ListBuilder(config, list=details)
         list_builder.build()
 
-
-
         return JSONResponse(status_code=200, content={"message": "Test completed", })
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": str(e)})
+
 
 # Sync list to ConfiguredClient
 @router.get('/list/{list_id}/client/{client_id}', response_model=MediaList)
@@ -159,12 +158,14 @@ async def create_sync_options(sync_option: SyncOptions, db: AsyncIOMotorDatabase
     await db.sync_options.insert_one(sync_option_dict)
     return sync_option_dict
 
+
 @router.get("/options/{sync_options_id}", response_model=SyncOptions)
 async def read_sync_options(sync_options_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
     sync_option = await db.sync_options.find_one({"syncOptionsId": sync_options_id})
     if sync_option is None:
         raise HTTPException(status_code=404, detail="SyncOption not found")
     return sync_option
+
 
 # Get Sync Options by Config ID
 @router.get("/options/config/{config_id}", response_model=SyncOptions)
@@ -174,8 +175,10 @@ async def read_sync_options_by_config_id(config_id: str, db: AsyncIOMotorDatabas
         raise HTTPException(status_code=404, detail="SyncOption not found")
     return sync_option
 
+
 @router.put("/options/{sync_options_id}", response_model=SyncOptions)
-async def update_sync_options(sync_options_id: str, sync_option: SyncOptions, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def update_sync_options(sync_options_id: str, sync_option: SyncOptions,
+                              db: AsyncIOMotorDatabase = Depends(config.get_db)):
     existing_sync_option = await db.sync_options.find_one({"syncOptionsId": sync_options_id})
     if existing_sync_option is None:
         raise HTTPException(status_code=404, detail="SyncOption not found")
@@ -184,6 +187,7 @@ async def update_sync_options(sync_options_id: str, sync_option: SyncOptions, db
     await db.sync_options.replace_one({"syncOptionsId": sync_options_id}, sync_option_dict)
     return sync_option_dict
 
+
 @router.delete("/options/{sync_options_id}", response_model=SyncOptions)
 async def delete_sync_options(sync_options_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
     existing_sync_option = await db.sync_options.find_one({"syncOptionsId": sync_options_id})
@@ -191,4 +195,3 @@ async def delete_sync_options(sync_options_id: str, db: AsyncIOMotorDatabase = D
         raise HTTPException(status_code=404, detail="SyncOption not found")
     await db.sync_options.delete_one({"syncOptionsId": sync_options_id})
     return existing_sync_option
-

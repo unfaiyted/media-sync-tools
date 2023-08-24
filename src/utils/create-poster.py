@@ -1,9 +1,10 @@
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 
+
 def create_gradient(width, height, start, end, angle):
     # Calculate the diagonal length of the image using the Pythagorean theorem
-    diagonal = int((width**2 + height**2)**0.5)
+    diagonal = int((width ** 2 + height ** 2) ** 0.5)
 
     # Create a straight gradient from start to end in a square image
     data = np.zeros((diagonal, diagonal, 3), dtype=np.uint8)
@@ -25,7 +26,6 @@ def create_gradient(width, height, start, end, angle):
     return img
 
 
-
 def draw_text(img, text, font_path, color=(255, 255, 255)):
     # Draw text in the center of the image
     draw = ImageDraw.Draw(img)
@@ -37,10 +37,10 @@ def draw_text(img, text, font_path, color=(255, 255, 255)):
     draw.text(position, text, font=font, fill=color)
     return img
 
+
 # Parameters
 text = 'Sleeping Shows'
 width, height = 400, 600  # size of the image
-
 
 # #ffffff#ffffff#ffffff
 start, end = (233, 0, 4), (88, 76, 76)  # colors for the gradient

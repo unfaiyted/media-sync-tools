@@ -6,6 +6,7 @@ from src.create.posters import PosterImageCreator
 from src.create.providers.ai import AiProvider
 from src.create.providers.mdb import MdbProvider
 from src.create.providers.trakt import TraktProvider
+from src.models.media_lists import MediaListType
 
 
 class ProcessedFilter:
@@ -65,7 +66,7 @@ class ProcessedFilter:
 
 class ListBuilder:
 
-    def __init__(self, config, list_type="Collection", list=None):
+    def __init__(self, config, list_type=MediaListType.COLLECTION, list=None):
         self.config = config
         self._ai_list = []
         self.rules = []
@@ -268,13 +269,15 @@ class ListBuilder:
         new_list = None
         # create the list
         print(f'Creating {self.type} - {self.title}')
-        if self.type == 'Collection':
+        if self.type == MediaListType.COLLECTION:
             self.print_list()
-            self
             new_list = self.emby.create_collection(self.title, self._get_media_type_for_emby(), self.sort_title)
-        elif self.type == 'Playlist':
+        elif self.type == MediaListType.PLAYLIST:
             self.print_list()
             new_list = self.emby.create_playlist(self.title, self._get_media_type_for_emby())
+        elif self.type == MediaListType.LIBRARY:
+            self.print_list()
+            new_list = self.emby.create_library(self.title, self._get_media_type_for_emby(), self.sort_title)
 
         if new_list is not None:
             self.new_list_id = new_list['Id']

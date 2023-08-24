@@ -9,6 +9,7 @@ from typing import List, Optional, ForwardRef, Tuple
 class MediaListType(str, Enum):
     COLLECTION = "COLLECTION"
     PLAYLIST = "PLAYLIST"
+    LIBRARY = "LIBRARY"
     # ... other types ...
 
 class MediaType(str, Enum):

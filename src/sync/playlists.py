@@ -1,5 +1,4 @@
 import logging
-from config import ConfigManager
 
 
 def sync_playlists(config):
@@ -9,7 +8,7 @@ def sync_playlists(config):
     logging.basicConfig(filename=f'{config_path}/logs/playlists.log', level=logging.INFO)
 
     plex = config.get_client('plex')
-    emby = config.get_client('emby')
+
 
     playlists = plex.playlists()
 
