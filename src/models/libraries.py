@@ -4,7 +4,7 @@ from enum import Enum
 from pydantic import BaseModel
 from typing import List, Optional, ForwardRef
 
-from src.models.media_lists import MediaList
+from src.models import MediaList
 
 
 class LibraryType(str, Enum):

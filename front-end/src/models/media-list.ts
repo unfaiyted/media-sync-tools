@@ -22,23 +22,60 @@ export interface MediaList {
     user?: User;
 }
 
-export interface MediaListItem {
+export interface MediaItem {
     mediaItemId?: string;
-    mediaListId: string;
-    name: string;
+    title: string;
+    year: string;
+    type: MediaType;
+    sortTitle: string;
+    originalTitle?: string;
+    tagline?: string;
     poster?: string;
     description?: string;
-    year: string;
-    sourceId?: string;
-    releaseDate?: string;
+    parentalRating?: string;
+    genres?: string[];
+    releaseDate?: Date;
     dateAdded?: Date;
+    providers?: MediaProviderIds;
+    ratings?: MediaItemRatings;
+
+}
+
+
+class MediaItemRatings {
+    tmdb?: number;
+    imdb?: number;
+    trakt?: number;
+    metacritic?: number;
+    rottenTomatoes?: number;
+    tvdb?: number;
+    aniList?: number;
+}
+
+
+export interface MediaProviderIds {
     imdbId?: string;
     tvdbId?: string;
     tmdbId?: string;
     traktId?: string;
     aniList?: string;
+}
+
+
+export interface MediaListItem {
+    mediaItemId?: string;
+    mediaListId: string;
     type: MediaType;
-    list: any[]; // Adjust this type accordingly
+    name: string;
+    sortName: string;
+    poster?: string;
+    description?: string;
+    year: string;
+    sourceListId?: string;
+    createdAt: Date;
+    filters?: Filter[];
+    item?: MediaItem[];
+    dateAdded?: Date;
 }
 
 export interface MediaListOptions {

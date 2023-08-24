@@ -1,12 +1,12 @@
 from src.create.providers.emby import EmbyProvider
 from src.create.providers.plex import PlexProvider
 from src.create.providers.tmdb import TMDBProvider
-from src.create.providers.trakt import TraktProvider
+# from src.create.providers.trakt import TraktProvider
 from src.create.posters import PosterImageCreator
 from src.create.providers.ai import AiProvider
 from src.create.providers.mdb import MdbProvider
 from src.create.providers.trakt import TraktProvider
-from src.models.media_lists import MediaListType
+from src.models import MediaListType
 
 
 class ProcessedFilter:
@@ -215,22 +215,28 @@ class ListBuilder:
         print(f'Retry Count: {self.retry_count}')
         print(f'Media List: {self.media_list}')
 
-    def _get_media_list_from_provider(self):
+    async def _get_media_list_from_provider(self):
 
         provider_mapping = {
             'self': (lambda: print('Using media list')),
             'ai': (lambda: AiProvider(self.media_types, self.description, self._process_filters('ai'), self.limit)),
-            'mdb': (lambda: MdbProvider(self.config, self.filters)),
-            'trakt': (lambda: TraktProvider(self.config, self.filters)),
-            'tmdb': (lambda: TMDBProvider(self.config, self.filters)),
-            'plex': (lambda: PlexProvider(self.config, self.filters)),
-            'emby': (lambda: EmbyProvider(self.config, self.filters))
+            'mdb': (lambda: MdbProvider(self.config, self.filters, listType=self.type)),
+            'trakt': (lambda: TraktProvider(self.config, self.filters, listType=self.type)),
+            'tmdb': (lambda: TMDBProvider(self.config, self.filters, listType=self.type)),
+            'plex': (lambda: PlexProvider(self.config, self.filters, listType=self.type)),
+            'emby': (lambda: EmbyProvider(self.config, self.filters, listType=self.type))
         }
 
         if self.provider in provider_mapping:
             if self.provider != 'self':
                 print(f'Using {self.provider.capitalize()} list')
-                self.media_list = provider_mapping[self.provider]().get_list()
+                try:
+                    self.media_list = await provider_mapping[self.provider]().get_list()
+                except Exception as e:
+                    print(f'Error getting list from provider {self.provider}: {e}, {e.args}',)
+                    import traceback
+                    traceback.print_exc()
+                print('Media List', self.media_list)
             else:
                 provider_mapping[self.provider]()  # Only prints a message for 'self'
         else:
@@ -259,7 +265,7 @@ class ListBuilder:
         poster.save(poster_location, quality=95)
         return poster_location
 
-    def build(self):
+    async def build(self):
         # join the rules into a string
         rules_string = ','.join(self.rules)
         if self.delete_existing:
@@ -277,7 +283,10 @@ class ListBuilder:
             new_list = self.emby.create_playlist(self.title, self._get_media_type_for_emby())
         elif self.type == MediaListType.LIBRARY:
             self.print_list()
-            new_list = self.emby.create_library(self.title, self._get_media_type_for_emby(), self.sort_title)
+            # new_list = self.emby.create_library(self.title, self._get_media_type_for_emby(), self.sort_title)
+            self.new_list_id = {
+                'Id': 'library_id',
+            }
 
         if new_list is not None:
             self.new_list_id = new_list['Id']
@@ -285,14 +294,14 @@ class ListBuilder:
         # if the list already exists, delete it
         poster_location = self._create_poster()
 
-        if poster_location is not None:
+        if poster_location is not None and not MediaListType.LIBRARY:
             self.emby.upload_image(self.new_list_id, poster_location)
 
         if self.new_list_id is None:
             print(f'Unable to create list {self.title}')
             return
 
-        media_list = self._get_media_list_from_provider()
+        media_list = await self._get_media_list_from_provider()
 
         if media_list is None:
             print(f'Unable to get media list')

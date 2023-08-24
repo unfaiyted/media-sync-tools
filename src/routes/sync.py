@@ -2,7 +2,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from src.create import ListBuilder
 from src.models.configs import SyncOptions
-from src.models.media_lists import MediaList
+from src.models import MediaList, MediaListType
 from src.config import ConfigManager
 from src.create.toplists import sync_top_lists
 from src.sync.collections import sync_collections
@@ -12,6 +12,8 @@ from src.create.playlists import create_emby_playlist
 
 from starlette.responses import JSONResponse
 from fastapi import APIRouter, Depends, HTTPException
+
+from src.tasks.tasks import sync_all_lists_from_provider
 
 router = APIRouter()
 config = ConfigManager.get_manager()
@@ -104,29 +106,34 @@ async def handle_ratings():
     try:
 
         # Create new list with listBuilder
-        details = {
-            'name': 'Emby Provider Test',
-            'description': 'This is a test.',  # assuming the description might be optional
-            'provider': 'emby',
-            'filters': [{
-                'type': 'list_id',
-                'value': 168737
-            }],
-            'include': ['Movies'],  # assuming lists are for movies only, adjust if necessary
-            'options': {
-                'add_prev_watched': False,
-                'add_missing_to_library': False,
-                'limit': 100,  # adjust as necessary
-                'sort': 'rank',  # adjust as necessary
-                'poster': {
-                    'enabled': True,
-                }
-            }
-        }
+        # details = {
+        #     'name': 'Emby Provider Test',
+        #     'description': 'This is a test.',  # assuming the description might be optional
+        #     'provider': 'emby',
+        #     'type': MediaListType.COLLECTION,
+        #     'filters': [{
+        #         'type': 'list_id',
+        #         'value': 168737
+        #     }],
+        #     'include': ['Movies'],  # assuming lists are for movies only, adjust if necessary
+        #     'options': {
+        #         'add_prev_watched': False,
+        #         'add_missing_to_library': False,
+        #         'limit': 100,  # adjust as necessary
+        #         'sort': 'rank',  # adjust as necessary
+        #         'poster': {
+        #             'enabled': True,
+        #         }
+        #     }
+        # }
+
+        await sync_all_lists_from_provider(payload=None)
+
+
 
         # Here, I'm assuming you want to process movie lists only. Adjust this if lists can be for other media types too.
-        list_builder = ListBuilder(config, list=details)
-        list_builder.build()
+        # list_builder = ListBuilder(config, list=details)
+        # await list_builder.build()
 
         return JSONResponse(status_code=200, content={"message": "Test completed", })
     except Exception as e:

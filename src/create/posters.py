@@ -4,7 +4,7 @@ import numpy as np
 import requests
 from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter
 
-from src.models.posters import MediaPosterOverlayOptions, MediaPoster, MediaPosterTextOptions
+from src.models import MediaPosterOverlayOptions, MediaPoster, MediaPosterTextOptions
 
 
 class PosterImageCreator:

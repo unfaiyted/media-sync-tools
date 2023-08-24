@@ -1,11 +1,11 @@
 import uuid
 from datetime import datetime
 
-from src.models.media_lists import MediaList, MediaListItem, MediaType, MediaListType
+from src.models import MediaList, MediaListItem, MediaType, MediaListType
 
 
 class PlexProvider:
-    def __init__(self, config, filters=None):
+    def __init__(self, config, filters=None, listType=MediaListType.COLLECTION):
         self.config = config
         self.client = config.get_client('plex')  # Retrieve the Plex client
         self.filters = filters

@@ -3,8 +3,6 @@
         <!-- Table for Media List Details -->
         <!-- View Mode Toggle -->
 
-
-
         <div class="flex justify-between items-center mb-4">
             <h1 class="text-lg font-semibold">{{ mediaList.name }}</h1>
 
@@ -25,6 +23,7 @@
             <thead>
             <tr class="text-gray-600 text-left">
                 <th class="py-2 px-4">Select</th>
+                <th class="py-2 px-4">Poster</th>
                 <th class="py-2 px-4">Name</th>
                 <th class="py-2 px-4">Type</th>
                 <th class="py-2 px-4">Sort Name</th>
@@ -34,20 +33,22 @@
             </tr>
             </thead>
             <tbody>
-            <tr v-for="item in mediaList.items" :key="item.itemId"
+            <tr v-for="item in mediaList.items" :key="item.mediaListItemId"
                 class="hover:bg-gray-100"
                 @contextmenu.prevent="handleRightClick($event, item)"
 
             >
+
                 <td class="py-2 px-4">
+<!--                     {{ item}}-->
                     <input type="checkbox">
                 </td>
                 <td class="py-2 px-4">
-                  <img :src="item.poster" :alt="item.name" class="max-w-full h-20 mb-2">
+                  <img :src="item.item.poster" :alt="item.name" class="max-w-full h-20 mb-2">
                 </td>
-                <td class="py-2 px-4">{{ item.name }} ({{ item.year || item.releaseDate}})</td>
-                <td class="py-2 px-4">{{ item.type }}</td>
-                <td class="py-2 px-4">{{ mediaList.sortName }}</td>
+                <td class="py-2 px-4">{{ item.item.title }} ({{ item.item.year || item.releaseDate}})</td>
+                <td class="py-2 px-4">{{ item.item.type }}</td>
+                <td class="py-2 px-4">{{ item.item.sortName }}</td>
                 <td class="py-2 px-4">{{ mediaList.clientId }}</td>
                 <!-- Add other data fields as needed -->
             </tr>
@@ -57,12 +58,12 @@
 
       <!-- Poster View -->
       <div v-else-if="viewMode === 'poster'" class="flex flex-wrap">
-        <div v-for="item in mediaList.items" :key="item.itemId"
+        <div v-for="item in mediaList.items" :key="item.mediaListItemId"
              class="w-1/6 p-4 flex flex-col items-center"
              @contextmenu.prevent="handleRightClick($event, item)"
         >
-          <img :src="item.poster" :alt="item.name" class="max-w-full h-auto mb-2">
-          <span class="text-center">{{ item.name }} ({{ item.year || item.releaseDate }})</span>
+          <img :src="item.item.poster" :alt="item.item.title" class="max-w-full h-auto mb-2">
+          <span class="text-center">{{ item.item.title }} ({{ item.item.year || item.releaseDate }})</span>
         </div>
       </div>
 

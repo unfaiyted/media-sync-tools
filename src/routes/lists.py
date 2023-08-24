@@ -4,6 +4,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from src.models import MediaList, MediaListItem, MediaListOptions
 from src.config import ConfigManager
 from fastapi import APIRouter, HTTPException, Depends
+from src.db.queries import media_list_queries
 
 router = APIRouter()
 config = ConfigManager.get_manager()
@@ -12,7 +13,7 @@ config = ConfigManager.get_manager()
 # LISTS main CRUD operations for List
 @router.post("/", response_model=MediaList)
 async def create_list(list: MediaList, db: AsyncIOMotorDatabase = Depends(config.get_db)):
-    if await db.media_lists.find_one({"listId": list.listId}):
+    if await db.media_lists.find_one({"mediaListId": list.mediaListId}):
         raise HTTPException(status_code=400, detail="List already exists")
     list_dict = list.dict()
     await db.media_lists.insert_one(list_dict)
@@ -107,7 +108,7 @@ async def delete_list_options(list_option_id: str, db: AsyncIOMotorDatabase = De
 # ITEMS = CRUD operations for ListItems
 @router.post("/item/", response_model=MediaListItem)
 async def create_listitem(item: MediaListItem, db: AsyncIOMotorDatabase = Depends(config.get_db)):
-    if await db.media_list_items.find_one({"mediaItemId": item.mediaItemId}):
+    if await db.media_list_items.find_one({"mediaListItemId": item.mediaListItemId}):
         raise HTTPException(status_code=400, detail="ListItem already exists")
     item_dict = item.dict()
     result = await db.media_list_items.insert_one(item_dict)
@@ -117,36 +118,35 @@ async def create_listitem(item: MediaListItem, db: AsyncIOMotorDatabase = Depend
 # get all list items for a give listId
 @router.get("/items/{list_id}", response_model=List[MediaListItem])
 async def read_media_list_items(list_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
-    cursor = db.media_list_items.find({"mediaListId": list_id})
-    items = await cursor.to_list(length=10000)
+    items = await media_list_queries.get_media_list_items_with_media(db, list_id)
     if not items:
-        raise HTTPException(status_code=404, detail="ListItem not found")
+            raise HTTPException(status_code=404, detail="ListItem not found")
     return items
 
 
-@router.get("/item/{item_id}", response_model=MediaListItem)
-async def read_listitem(item_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
-    item = await db.media_list_items.find_one({"mediaItemId": item_id})
-    if item is None:
+@router.get("/item/{list_item_id}", response_model=MediaListItem)
+async def read_listitem(list_item_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+    listItem = await media_list_queries.get_media_list_item_with_media(db, list_item_id)
+    if listItem is None:
         raise HTTPException(status_code=404, detail="ListItem not found")
-    return item
+    return listItem
 
 
 @router.put("/item/{item_id}", response_model=MediaListItem)
-async def update_listitem(item_id: str, item: MediaListItem, db: AsyncIOMotorDatabase = Depends(config.get_db)):
-    existing_item = await db.media_list_items.find_one({"mediaItemId": item_id})
+async def update_listitem(list_item_id: str, item: MediaListItem, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+    existing_item = await db.media_list_items.find_one({"mediaListItemId": list_item_id})
     if existing_item is None:
         raise HTTPException(status_code=404, detail="ListItem not found")
 
     item_dict = item.dict()
-    await db.media_list_items.replace_one({"mediaItemId": item_id}, item_dict)
+    await db.media_list_items.replace_one({"mediaItemId": list_item_id}, item_dict)
     return item_dict
 
 
-@router.delete("/item/{item_id}", response_model=MediaListItem)
-async def delete_listitem(item_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
-    existing_item = await db.media_list_items.find_one({"mediaItemId": item_id})
+@router.delete("/item/{media_item_id}", response_model=MediaListItem)
+async def delete_listitem(media_list_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+    existing_item = await db.media_list_items.find_one({"mediaListItemId": media_list_id})
     if existing_item is None:
         raise HTTPException(status_code=404, detail="ListItem not found")
-    await db.media_list_items.delete_one({"mediaItemId": item_id})
+    await db.media_list_items.delete_one({"mediaItemId": media_list_id})
     return existing_item

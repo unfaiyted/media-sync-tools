@@ -7,8 +7,7 @@ from starlette.responses import StreamingResponse
 
 from src.create.posters import MediaPosterImageCreator
 from src.config import ConfigManager
-from src.models.media_lists import MediaListItem
-from src.models.posters import MediaPoster, ProviderPoster
+from src.models import MediaListItem, MediaPoster, ProviderPoster
 from typing import List
 
 router = APIRouter()
@@ -16,6 +15,8 @@ config = ConfigManager.get_manager()
 
 # Sample data for demonstration purposes
 sample_posters_db = {}
+
+
 
 
 @router.get("/posters/{media_list_item_id}", response_model=List[MediaPoster])
@@ -27,15 +28,15 @@ async def get_posters_by_media_list_item_id(media_list_item_id: str):
         return []
 
 
-@router.get("/item/{mediaItemId}", response_model=MediaListItem)
-async def get_posters_by_provider(mediaItemId: str, ):
+@router.get("/item/{mediaListItemId}", response_model=MediaListItem)
+async def get_posters_by_provider(mediaListItemId: str, ):
     # Get ConfigManager instance
     config_manager = ConfigManager.get_manager()
     # Get the database instance
     db = config_manager.get_db()
     tmdb = config_manager.get_client('tmdb')
 
-    list_item = await db.media_list_items.find_one({"mediaItemId": mediaItemId})
+    list_item = await db.media_list_items.find_one({"mediaListItemId": mediaListItemId})
 
     if list_item is None:
         raise HTTPException(status_code=404, detail="MediaListItem not found")
@@ -48,8 +49,13 @@ async def get_posters_by_provider(mediaItemId: str, ):
     if list_item['tmdbId'] is not None:
         poster = tmdb.get_movie_poster_path(list_item['tmdbId'])
 
-        list_item.poster = poster
-        await db.media_list_items.replace_one({"mediaItemId": mediaItemId}, list_item)
+        await db.media_list_items.replace_one({"mediaListItemId": mediaListItemId}, list_item)
+
+        item = await db.media_items.find_one({"mediaItemId": list_item.mediaItemId})
+        item.poster = poster
+        await db.media_items.replace_one({"mediaItemId": list_item.mediaItemId}, item)
+
+        list_item.item = item
 
         return list_item
 
@@ -59,8 +65,11 @@ async def get_posters_by_provider(mediaItemId: str, ):
     if movie['total_results'] > 0:
         TMDB_IMAGE_URL = "https://image.tmdb.org/t/p/original"
         poster = tmdb.get_movie_poster_path(movie['results'][0]['id'])
-        list_item["poster"] = f'{TMDB_IMAGE_URL}{poster}'
-        await db.media_list_items.replace_one({"mediaItemId": mediaItemId}, list_item)
+
+        item = await db.media_items.find_one({"mediaItemId": list_item.mediaItemId})
+        item["poster"] = f'{TMDB_IMAGE_URL}{poster}'
+        await db.media_items.replace_one({"mediaItemId": list_item.mediaItemId}, item)
+        list_item.item = item
         return list_item
 
     raise HTTPException(status_code=404, detail="Unable to identify poster, not found")

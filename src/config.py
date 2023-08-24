@@ -4,6 +4,7 @@ import openai
 from plexapi.myplex import MyPlexAccount
 from plexapi.server import PlexServer
 
+from src.models import User
 from src.clients.tmdb import TmdbClient
 from src.clients.trakt import TraktClient
 from src.clients.emby import Emby
@@ -30,11 +31,16 @@ class ConfigManager:
         self.create_subdirectories()
         self.db = self.get_db()
         self.load_config()
+        #TODO: Refactor config to take in the config object from the database for a given user. For now, we'll use the default user
+        self.user: User = User(userId='APP-DEFAULT-USER', name='APP USER', email="app@user.com", password="test")
 
     def get_db(self) -> motor.motor_asyncio.AsyncIOMotorDatabase:
         client = motor.motor_asyncio.AsyncIOMotorClient("mongodb://root:dragon@localhost:27017/sync-tools-db?authSource=admin")
         database = client['sync-tools-db']
         return database
+
+    def get_user(self):
+        return self.user
 
     def create_subdirectories(self):
         subdirectories = ['logs', 'collections', 'playlists', 'resources', 'libraries']
@@ -205,6 +211,7 @@ class ConfigManager:
 
     def get_collection_settings(self):
         return self.collections
+
 
     def add_tmdb_client(self, name, api_key, username, password):
         print('Adding tmdb client', api_key)

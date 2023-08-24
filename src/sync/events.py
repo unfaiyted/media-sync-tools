@@ -34,8 +34,6 @@ def sync_event(event, config):
         isFavorite = data['UserData']['IsFavorite']
 
 
-
-
         tv = plex.library.section('TV Shows')
 
         series_name = data['SeriesName']

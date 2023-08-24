@@ -6,6 +6,7 @@ from src.models import ClientField, Client
 from src.models import Library
 from src.models import User
 
+
 class Config(BaseModel):
     configId: str = None
     user: Optional[User]
@@ -14,12 +15,14 @@ class Config(BaseModel):
     libraries: Optional[List[Library]]
     sync: Optional[SyncOptions]
 
+
 class ConfigClientFieldsValue(BaseModel):
     configClientFieldValueId: Optional[str] = None
     configClientFieldId: str
     clientField: Optional[ClientField]
     configClientId: str
     value: str
+
 
 class SyncOptions(BaseModel):
     syncOptionsId: str = None
@@ -31,6 +34,7 @@ class SyncOptions(BaseModel):
     watched: bool
     ratings: bool
     relatedConfig: Optional[Config]
+
 
 class ConfigClient(BaseModel):
     configClientId: str = None

@@ -12,6 +12,7 @@ from bson import ObjectId
 class MediaListType(str, Enum):
     COLLECTION = "COLLECTION"
     PLAYLIST = "PLAYLIST"
+    LIBRARY = "LIBRARY"
     # ... other types ...
 
 
@@ -84,9 +85,6 @@ class Filter(BaseModel):
     label: str
     type: str
     value: str
-    List: Optional[ForwardRef('List')]
-    listListId: Optional[str]
-
 
 class FilterTypes(BaseModel):
     filterTypeId: str = None
@@ -106,36 +104,62 @@ class MediaListOptions(BaseModel):
 
 
 class MediaList(BaseModel):
+    sourceListId: Optional[str]
     mediaListId: str = None
+    clientId: str  # client provider
+    creatorId: str
     name: str
     type: MediaListType
     sortName: str
-    clientId: str  # client provider
     filters: Optional[List[ForwardRef('Filter')]]
     items: Optional[List[ForwardRef('MediaListItem')]]
-    includeLibraries: Optional[ForwardRef('Library')]
-    creatorId: str
     createdAt: datetime
     creator: Optional[ForwardRef('User')]
 
 
-class MediaListItem(BaseModel):
-    mediaItemId: str = None
-    mediaListId: str
-    sourceId: Optional[str]
-    name: str
-    poster: Optional[str]
-    description: Optional[str]
-    year: str
-    releaseDate: Optional[str]
-    dateAdded: Optional[datetime]
+class MediaProviderIds(BaseModel):
     imdbId: Optional[str]
     tvdbId: Optional[str]
     tmdbId: Optional[str]
     traktId: Optional[str]
     aniList: Optional[str]
-    type: MediaType
 
+
+class MediaItemRatings(BaseModel):
+    tmdb: Optional[float]
+    imdb: Optional[float]
+    trakt: Optional[float]
+    metacritic: Optional[float]
+    rottenTomatoes: Optional[float]
+    tvdb: Optional[float]
+    aniList: Optional[float]
+
+
+class MediaItem(BaseModel):
+    mediaItemId: str = None
+    title: str
+    year: Optional[str]
+    type: MediaType
+    sortTitle: Optional[str]
+    originalTitle: Optional[str]
+    tagline: Optional[str]
+    poster: Optional[str]
+    description: Optional[str]
+    parentalRating: Optional[str]
+    genres: Optional[List[str]]
+    releaseDate: Optional[str]
+    dateAdded: Optional[datetime]
+    providers: Optional[MediaProviderIds]
+    ratings: Optional[MediaItemRatings]
+
+
+class MediaListItem(BaseModel):
+    mediaListItemId: str = None
+    mediaListId: str
+    mediaItemId: str
+    item: Optional[ForwardRef('MediaItem')]
+    sourceId: Optional[str]
+    dateAdded: Optional[datetime]
 
 
 class LibraryType(str, Enum):
@@ -148,7 +172,6 @@ class LibraryType(str, Enum):
     AUDIOBOOKS = 'AUDIOBOOKS'
     ANIME = 'ANIME'
 
-    # ... other types ...
 
 class Library(BaseModel):
     libraryId: str = None
@@ -265,6 +288,7 @@ class MediaPosterBackgroundOptions(BaseModel):
     border: Optional[MediaPosterBorderOptions] = None
     shadow: Optional[MediaPosterShadowOptions] = None
 
+
 class IconPosition(str, Enum):
     LEFT = 'LEFT',
     MIDDLE = 'MIDDLE',
@@ -278,6 +302,7 @@ class MediaPosterIconOptions(BaseModel):
     path: Optional[str] = None
     position: IconPosition = IconPosition.TOP
     size: Tuple[int, int] = (100, 100)
+
 
 class MediaPosterOverlayOptions(BaseModel):
     enabled: bool = False
@@ -317,6 +342,7 @@ class MediaPoster(BaseModel):
     overlays: Optional[List[MediaPosterOverlayOptions]]
     icon: Optional[MediaPosterIconOptions]
     mediaItem: Optional[str]
+
 
 class MediaPosterIconOptions(BaseModel):
     enabled: bool = False

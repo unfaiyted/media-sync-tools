@@ -192,6 +192,7 @@ class Emby:
             'ParentId': parent_id,
             'ImageTypeLimit': image_type_limit,
             'Fields': fields,
+            'Recursive': 'true',
             'EnableTotalRecordCount': enable_total_record_count,
         }
 

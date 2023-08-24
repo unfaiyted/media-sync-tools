@@ -1,3 +1,4 @@
+from src.models import MediaListType
 
 
 class TMDBListProviderResult:
@@ -13,8 +14,9 @@ class TMDBListProviderResult:
 
 class TMDBProvider:
 
-    def __init__(self, config, filters=None):
+    def __init__(self, config, filters=None, listType=MediaListType.COLLECTION):
         self.config = config
+        self.listType = listType
         self.client = config.get_client('tmdb')
         self.filters = filters
 

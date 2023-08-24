@@ -1,6 +1,10 @@
+from src.models import MediaListType
+
+
 class TraktProvider:
-    def __init__(self, config, filters=None):
+    def __init__(self, config, filters=None, listType=MediaListType.COLLECTION):
         self.config = config
+        self.listType = listType
         self.client = config.get_client('trakt')
         self.username = None
         self.list_slug_or_id = None
