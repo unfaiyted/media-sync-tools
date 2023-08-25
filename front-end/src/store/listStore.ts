@@ -58,33 +58,48 @@ export const useListStore = defineStore({
             this.mediaLists = await this.asyncWrapper(fetchMediaListsForUser, userId);
             return this.mediaLists;
         },
-        fetchListWithItems: async function(listId: string | string[]) {
+        fetchListWithItems: async function(listId: string | string[], skip = 0, limit = 50) : Promise<MediaList> {
             // todo: handle multiple listIds
-            const mediaList = await this.asyncWrapper(fetchMediaListWithItems, listId);
-            if (mediaList) {
-                const index = this.mediaLists.findIndex(list => list.mediaListId === mediaList.mediaListId);
-                if (index >= 0) {
-                    this.mediaLists[index] = mediaList;
+            const newMediaList: MediaList = await this.asyncWrapper(fetchMediaListWithItems, listId, skip, limit);
+
+            if (newMediaList) {
+                const listIndex = this.mediaLists.findIndex(list => list.mediaListId === listId);
+                if (listIndex >= 0) {
+                    // Append new items to existing list
+                    const currentItems = this.mediaLists[listIndex].items || [];
+                    const itemsToAdd = newMediaList.items || [];
+                    this.mediaLists[listIndex].items = [...currentItems, ...itemsToAdd];
+
                 } else {
-                    this.mediaLists.push(mediaList);
+                    // If the list doesn't exist, create a new one and add to mediaLists
+                    this.mediaLists.push(newMediaList);
                 }
             }
-            return mediaList;
+
+            return newMediaList; // Return the newly fetched items for potential immediate use in the component
         },
 
-        getListWithItems: async function(listId: string | string[]) {
-            const index = this.mediaLists.findIndex(list => list.mediaListId === listId);
-            const list = (index >= 0) ? this.mediaLists[index] : null;
 
+        getListWithItems: async function(listId: string | string[], skip = 0, limit = 50) : Promise<MediaList> {
+            // First, try to get items from the local store
+            const list = this.mediaLists.find(l => l.mediaListId === listId);
 
-            console.log(list)
-            if(list && list.items && list.items.length > 0) {
-                return list;
+            if (list && list.items && list.items.length > skip + limit) {
+                console.log("List found in store:", list);
+
+                // return list with a spliced items array
+                const splicedItems = list.items.splice(skip, limit);
+                return {
+                    ...list,
+                    items: splicedItems
+                } as MediaList
+
             }
 
-            console.log('Fetching list with items');
-            return await this.fetchListWithItems(listId);
+            console.log('Fetching list with items from server');
+            return await this.fetchListWithItems(listId, skip, limit);
         },
+
         addList: async function(mediaList: MediaList) {
             const newList = await this.asyncWrapper(createMediaList, mediaList);
             if (newList) this.mediaLists.push(newList);

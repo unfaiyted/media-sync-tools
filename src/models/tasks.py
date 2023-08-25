@@ -1,9 +1,23 @@
 from __future__ import annotations
 
+from enum import Enum
+
 from pydantic import BaseModel, Field
 
 from datetime import datetime
 from typing import List, Optional, Dict, Any, Union
+
+
+class TaskType(str, Enum):
+    SYNC_PROVIDER = "SYNC_PROVIDER"
+    SYNC_LIST = "SYNC_LIST"
+    SYNC_FAVORITES = "SYNC_FAVORITES"
+    SYNC_LIBRARY = "SYNC_LIBRARY"
+    SYNC_POSTERS = "SYNC_POSTERS"
+    SYNC_METADATA = "SYNC_METADATA"
+    BACKUP = "BACKUP"
+
+    # ... other types ...
 
 # Main Task Schedule Model
 class TaskSchedule(BaseModel):
@@ -39,11 +53,13 @@ class TaskPayload(BaseModel):
     filePath: Optional[str]
     parameters: Optional[Dict[str, Any]]
     additionalConfig: Optional[Dict[str, Any]]
+    configId: Optional[str]
 
 # Main Task Model
 class Task(BaseModel):
     taskName: str
     taskDescription: str
+    type: TaskType
     schedule: TaskSchedule
     status: TaskStatus
     metadata: TaskMetadata

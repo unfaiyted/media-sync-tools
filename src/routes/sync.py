@@ -1,4 +1,6 @@
+import asyncio
 from motor.motor_asyncio import AsyncIOMotorDatabase
+from starlette.background import BackgroundTasks
 
 from src.create import ListBuilder
 from src.models.configs import SyncOptions
@@ -102,7 +104,8 @@ async def handle_trakt():
 
 
 @router.get('/ratings')
-async def handle_ratings():
+async def handle_ratings(background_tasks: BackgroundTasks):
+
     try:
 
         # Create new list with listBuilder
@@ -127,7 +130,12 @@ async def handle_ratings():
         #     }
         # }
 
-        await sync_all_lists_from_provider(payload=None)
+        def run_in_thread(task, *args, **kwargs):
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            return loop.run_until_complete(task(*args, **kwargs))
+
+        background_tasks.add_task(await sync_all_lists_from_provider(payload=None), name="sync_all_lists_from_provider")
 
 
 

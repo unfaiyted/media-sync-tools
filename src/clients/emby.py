@@ -187,20 +187,24 @@ class Emby:
 
     def get_items_from_parent(self, parent_id, image_type_limit=1,
                               fields='BasicSyncInfo,CanDelete,Container,PrimaryImageAspectRatio,ProductionYear,ExternalUrls,Status,EndDate,ProviderIds',
-                              enable_total_record_count=True):
+                              enable_total_record_count=True,
+                              limit: int = 50, offset: int = 0):
         params = {
             'ParentId': parent_id,
             'ImageTypeLimit': image_type_limit,
             'Fields': fields,
+            'IncludeItemTypes': 'Movie,Series,Season,Episode',
             'Recursive': 'true',
             'EnableTotalRecordCount': enable_total_record_count,
+            'StartIndex': offset,
+            'Limit': limit
         }
 
         url = self._build_url(f'Users/{self.user_id}/Items', params=params)
         response = self._get_request(url)
         items = response.get('Items', [])
         total_count = response.get('TotalRecordCount', 0)
-        print(items, total_count)
+        # print(items, total_count)
         return items, total_count
 
     def get_libraries(self):

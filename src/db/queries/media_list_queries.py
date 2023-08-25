@@ -1,8 +1,8 @@
 
-from typing import List
+from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-async def get_media_list_items_with_media(db: AsyncIOMotorDatabase, list_id: str, max_length: int = 10000) -> List[dict]:
+async def get_media_list_items_with_media(db: AsyncIOMotorDatabase, list_id: str, skip=0, limit=100) -> List[dict]:
     """
     Retrieve media list items with their associated media.
     """
@@ -20,10 +20,38 @@ async def get_media_list_items_with_media(db: AsyncIOMotorDatabase, list_id: str
         },
         {
             "$unwind": "$item"
+        },
+        {
+            "$skip": skip
+        },
+        {
+            "$limit": limit
         }
     ]
 
-    return await db.media_list_items.aggregate(pipeline).to_list(length=max_length)
+    return await db.media_list_items.aggregate(pipeline).to_list(length=limit)
+
+async def get_media_list_with_items(db: AsyncIOMotorDatabase, list_id: str, skip=0, limit=10) -> Optional[dict]:
+    # Fetch the media list by its ID.
+    media_list = await db.media_lists.find_one({"mediaListId": list_id})
+    if not media_list:
+        return None
+
+    # Fetch associated media list items.
+    media_list_items_cursor = db.media_list_items.find({"mediaListId": list_id}).skip(skip).limit(limit)
+    media_list_items = await media_list_items_cursor.to_list(length=limit)
+
+    # For each media list item, fetch the associated media item.
+    for mli in media_list_items:
+        media_item = await db.media_items.find_one({"mediaItemId": mli["mediaItemId"]})
+        mli["item"] = media_item
+
+    media_list["items"] = media_list_items
+
+    return media_list
+
+
+
 
 def get_media_list_item_by_id(db: AsyncIOMotorDatabase, item_id: str) -> dict:
     """

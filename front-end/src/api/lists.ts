@@ -17,12 +17,11 @@ export const fetchMediaList = async (listId: string) => {
 }
 
 // fetch media list with all items
-export const fetchMediaListWithItems = async (listId: string) => {
-    const media_list = (await apiClient.get(`/list/${listId}`)).data;
-    media_list.items = (await apiClient.get(`/list/items/${listId}`)).data;
+export const fetchMediaListWithItems = async (listId: string, skip = 0, limit = 10) => {
+    // Fetching the list items with skip and limit
+    const media_list = (await apiClient.get(`/list/items/${listId}?skip=${skip}&limit=${limit}`)).data;
     return media_list;
 }
-
 export const fetchAllMediaLists = async () => {
     return (await apiClient.get('/list/')).data;
 }

@@ -42,7 +42,17 @@ class EmbyProvider:
             self.id = self.client.get_library(self.library_name)
 
         if self.id is not None:
-            list_items, list_items_count = self.client.get_items_from_parent(self.id)
+            limit = 100
+            offset = 0
+            all_list_items = []
+
+            while True:
+                list_items, list_items_count = self.client.get_items_from_parent(self.id, limit=limit, offset=offset)
+                print('Getting items from parent', offset, list_items_count)
+                all_list_items.extend(list_items)
+                offset += limit
+                if offset > list_items_count:
+                    break
 
             list_ = self.client.get_list(list_id=self.id)  # Renamed to avoid conflict with built-in name 'list'
             # print('list ',list_)
@@ -66,11 +76,11 @@ class EmbyProvider:
 
             primary_list = []
 
-            for item in list_items:
+
+            for item in all_list_items:
                 print('-------------', item)
                 # primary_list.extend(self.search_emby_for_external_ids(item))
-
-                # media_item = await self.create_media_item(item, media_list)
+                media_item = await self.create_media_item(item, media_list)
 
 
                 # Adding to primary list or any other processing you need to do

@@ -74,7 +74,7 @@ export interface MediaListItem {
     sourceListId?: string;
     createdAt: Date;
     filters?: Filter[];
-    item?: MediaItem[];
+    item?: MediaItem;
     dateAdded?: Date;
 }
 

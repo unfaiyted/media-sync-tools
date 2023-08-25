@@ -1,5 +1,5 @@
 <template>
-    <div class="p-6 bg-gray-100 min-h-screen">
+    <div class="p-6 bg-gray-100 min-h-screen" v-if="mediaList.items">
         <!-- Table for Media List Details -->
         <!-- View Mode Toggle -->
 
@@ -33,23 +33,26 @@
             </tr>
             </thead>
             <tbody>
-            <tr v-for="item in mediaList.items" :key="item.mediaListItemId"
+<!--            {{ mediaList.items}}-->
+            <tr v-for="item in mediaList.items" :key="item.mediaItemId"
                 class="hover:bg-gray-100"
                 @contextmenu.prevent="handleRightClick($event, item)"
 
             >
 
-                <td class="py-2 px-4">
-<!--                     {{ item}}-->
-                    <input type="checkbox">
-                </td>
-                <td class="py-2 px-4">
-                  <img :src="item.item.poster" :alt="item.name" class="max-w-full h-20 mb-2">
-                </td>
-                <td class="py-2 px-4">{{ item.item.title }} ({{ item.item.year || item.releaseDate}})</td>
-                <td class="py-2 px-4">{{ item.item.type }}</td>
-                <td class="py-2 px-4">{{ item.item.sortName }}</td>
-                <td class="py-2 px-4">{{ mediaList.clientId }}</td>
+                    <td class="py-2 px-4">
+                        <!--&lt;!&ndash;                     {{ item}}&ndash;&gt; {{item}}-->
+                        <input type="checkbox">
+                    </td>
+                    <td class="py-2 px-4">
+                        <img :src="item?.item?.poster" :alt="item?.name" class="max-w-full h-20 mb-2">
+                    </td>
+                    <td class="py-2 px-4">{{ item?.item?.title }} ({{ item?.item?.year || item?.item?.releaseDate}})</td>
+                    <td class="py-2 px-4">{{ item?.item?.type }}</td>
+                    <td class="py-2 px-4">{{ item?.item?.sortTitle}}</td>
+                    <td class="py-2 px-4">{{ mediaList?.clientId }}</td>
+
+
                 <!-- Add other data fields as needed -->
             </tr>
             </tbody>
@@ -58,12 +61,13 @@
 
       <!-- Poster View -->
       <div v-else-if="viewMode === 'poster'" class="flex flex-wrap">
-        <div v-for="item in mediaList.items" :key="item.mediaListItemId"
+        <div v-for="item in mediaList.items" :key="item.mediaItemId"
              class="w-1/6 p-4 flex flex-col items-center"
              @contextmenu.prevent="handleRightClick($event, item)"
+
         >
-          <img :src="item.item.poster" :alt="item.item.title" class="max-w-full h-auto mb-2">
-          <span class="text-center">{{ item.item.title }} ({{ item.item.year || item.releaseDate }})</span>
+          <img :src="item.item?.poster" :alt="item.item?.tagline" class="max-w-full h-auto mb-2">
+          <span class="text-center">{{ item.item.title }} ({{ item.item.year || item.item.releaseDate }})</span>
         </div>
       </div>
 
@@ -105,13 +109,10 @@
 
 <script lang="ts">
 import { defineComponent, ref } from 'vue';
-import {MediaListItem, MediaListOptions, MediaList} from "@/models";
+import {MediaListItem, MediaListOptions, MediaList, MediaItem} from "@/models";
 import ContextMenu from "@/components/ui/ContextMenu.vue";
-import {deleteMediaList, deleteMediaListItem} from "@/api/lists";
-import {useRouter} from "vue-router";
 import MediaListOptionsPopup from "@/components/list/MediaListOptionsPopup.vue";
 import {useListStore} from "@/store/listStore";
-const router = useRouter();
 
 export default defineComponent({
     name: 'MediaItemsList',
@@ -119,11 +120,18 @@ export default defineComponent({
     props: {
         mediaList: {
             type: Object as () => MediaList,
-            required: true
+            required: true,
+            default: () => ({ items: []})
         } ,
         mediaListOptions: {
             type: Object as () => MediaListOptions,
             required: true
+        },
+        item: {
+            type: Object as () => MediaItem
+            ,
+            required: false,
+            default: () => ({})
         }
     },
     setup(props) {
@@ -133,7 +141,7 @@ export default defineComponent({
       const requestModal = ref<InstanceType<typeof MediaListOptionsPopup> | null>(null);
       const viewMode = ref('table'); // Default view mode
       const listStore = useListStore();
-      const mediaList = ref(listStore.getListWithItems(props.mediaList.mediaListId || ""));
+      const mediaList = ref(props.mediaList);
 
       function updateOptions() {
             // Handle logic to update the MediaList options

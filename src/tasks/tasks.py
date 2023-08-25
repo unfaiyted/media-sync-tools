@@ -1,5 +1,6 @@
 from typing import List
 
+from src.models.tasks import TaskType
 from src.db.queries import library_queries
 from src.create import ListBuilder
 from src.models import MediaListType, Library, LibraryType
@@ -12,6 +13,8 @@ async def sync_all_lists_from_provider(payload):
 
     payload = {
         'configId': 'APP-DEFAULT-CONFIG',
+        'provider': 'emby'
+        # config client id
     }
     # lets start with emby.
     # starting with the main library list and then get all the the sub lists.
@@ -54,9 +57,7 @@ async def sync_all_lists_from_provider(payload):
             elif(embyLibrary['CollectionType'] == 'tvshows'):
                 library = await library_queries.create_library(db, embyLibrary['Name'], LibraryType.SHOWS, 'EMBYCLIENTID')
 
-
             # Create new list with listBuilder
-
         # list_items = emby.get_items_for_library(embyLibrary['id'])
 
 
@@ -99,7 +100,7 @@ async def sync_all_lists_from_provider(payload):
 
 async def execute_task(task_type, payload):
     task_map = {
-        "sync_provider": sync_all_lists_from_provider,
+        TaskType.SYNC_PROVIDER.value: sync_all_lists_from_provider,
         # "another_task_type": another_function,
         # ... add more tasks as needed
     }

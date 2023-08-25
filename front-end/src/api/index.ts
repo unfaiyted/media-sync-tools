@@ -8,7 +8,7 @@ import * as configs from './configs';
 export default Object.assign({}, login, index, clients, configs);
 export const apiClient = axios.create({
     baseURL: API_URL,
-    timeout: 10000,  // Optional: timeout for requests
+    timeout: 30000,  // Optional: timeout for requests
     // any other default configs you want
 });
 

@@ -3,7 +3,7 @@ from typing import List
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from src.models import MediaList, MediaListItem, MediaListOptions
 from src.config import ConfigManager
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from src.db.queries import media_list_queries
 
 router = APIRouter()
@@ -116,12 +116,19 @@ async def create_listitem(item: MediaListItem, db: AsyncIOMotorDatabase = Depend
 
 
 # get all list items for a give listId
-@router.get("/items/{list_id}", response_model=List[MediaListItem])
-async def read_media_list_items(list_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
-    items = await media_list_queries.get_media_list_items_with_media(db, list_id)
+@router.get("/items/{list_id}", response_model=MediaList)
+async def read_media_list_items(
+    list_id: str,
+    skip: int = Query(0, alias="skip", description="Number of records to skip"),
+    limit: int = Query(10, alias="limit", description="Max number of records to return"),
+    db: AsyncIOMotorDatabase = Depends(config.get_db)
+):
+    items = await media_list_queries.get_media_list_with_items(db, list_id, skip, limit)
     if not items:
-            raise HTTPException(status_code=404, detail="ListItem not found")
+        raise HTTPException(status_code=404, detail="ListItem not found")
     return items
+
+
 
 
 @router.get("/item/{list_item_id}", response_model=MediaListItem)
