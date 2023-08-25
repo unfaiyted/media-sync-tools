@@ -5,6 +5,7 @@ import Settings from '@/pages/Settings.vue'
 import About from '@/pages/About.vue'
 import UserLists from '@/pages/UserLists.vue'
 import MediaList from '@/pages/List.vue'
+import TaskManager from "@/pages/TaskManager.vue";
 import Tools from '@/pages/Tools.vue'
 import Poster from '@/pages/Poster.vue'
 import Admin from '@/pages/Admin.vue'
@@ -90,6 +91,16 @@ const routes: Array<RouteRecordRaw> = [
             requireAuth: false,
         },
         component: Poster,
+    },
+     {
+        path: '/tasks',
+        name: 'Tasks',
+        meta: {
+            title: 'Poster Page',
+            keepAlive: true,
+            requireAuth: false,
+        },
+        component: TaskManager,
     },
      {
         path: '/admin',
