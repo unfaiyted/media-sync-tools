@@ -15,7 +15,8 @@ from src.create.playlists import create_emby_playlist
 from starlette.responses import JSONResponse
 from fastapi import APIRouter, Depends, HTTPException
 
-from src.tasks.tasks import sync_libraries_from_provider, sync_all_collections_from_provider
+from src.tasks.tasks import sync_libraries_from_provider, sync_all_collections_from_provider, \
+    sync_media_list_to_provider
 
 router = APIRouter()
 config = ConfigManager.get_manager()
@@ -137,8 +138,12 @@ async def handle_ratings(background_tasks: BackgroundTasks):
 
         # background_tasks.add_task(await sync_all_collecions_from_provider(payload=None), name="sync_all_lists_from_provider")
 
+        payload = {
+            'list_id': '9bab7eeb-fa54-4061-baa0-c1ec99ec95dd',
+        }
 
-        await sync_all_collections_from_provider(payload=None)
+        # await sync_all_collections_from_provider(payload=None)
+        await sync_media_list_to_provider(payload)
         # Here, I'm assuming you want to process movie lists only. Adjust this if lists can be for other media types too.
         # list_builder = ListBuilder(config, list=details)
         # await list_builder.build()

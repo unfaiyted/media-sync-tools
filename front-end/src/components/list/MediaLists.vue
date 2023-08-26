@@ -1,4 +1,4 @@
-template>
+<template>
   <div class="p-6 bg-gray-100 ">
     <!-- Table for Media List Details -->
     <div class="flex justify-between items-center mb-4">
@@ -85,6 +85,8 @@ export default defineComponent({
     // const store = useListStore();
     // console.log(this.mediaLists)
     // this.mediaLists = await store.fetchAllLists();
+
+
   },
   setup(props) {
     const showOptionsPopup = ref<boolean>(false);
@@ -124,6 +126,7 @@ export default defineComponent({
     const syncSelected = async () => {
       if(selectedListItem.value)
       await syncListToClient('CLIENT_ID', selectedListItem.value.mediaListId||'');
+
     };
 
     const contextMenuItems = [

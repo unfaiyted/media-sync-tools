@@ -6,10 +6,6 @@
         <div class="flex justify-between items-center mb-4">
             <h1 class="text-lg font-semibold">{{ mediaList.name }}</h1>
 
-            <!-- Button to trigger popup -->
-            <button @click="showOptionsPopup = true" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300">
-              +
-            </button>
           <div class="mb-4">
             <label class="mr-4">View Mode:</label>
             <input type="radio" id="table" value="table" v-model="viewMode">
@@ -17,6 +13,10 @@
             <input type="radio" id="poster" value="poster" v-model="viewMode">
             <label for="poster">Poster</label>
           </div>
+            <!-- Button to trigger popup -->
+            <button @click="showOptionsPopup = true" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300">
+             Actions
+            </button>
         </div>
 
       <table v-if="viewMode === 'table'" class="min-w-full bg-white rounded-lg shadow-md">
@@ -67,7 +67,7 @@
 
         >
           <img :src="item.item?.poster" :alt="item.item?.tagline" class="max-w-full h-auto mb-2">
-          <span class="text-center">{{ item?.item?.title }} ({{ item?.item?.year || item?.item?.releaseDate }})</span>
+          <span class="text-center">{{ item.item.title }} ({{ item.item.year || item.item.releaseDate }})</span>
         </div>
       </div>
 
@@ -104,6 +104,14 @@
                 </div>
             </div>
         </transition>
+
+        <Modal
+<!--            :event="contextMenuEvent"
+            :items="contextMenuItems"
+            ref="contextMenu"-->
+        >
+        <MediaListOptionsPopup ref="requestModal" />
+        </Modal>
     </div>
 </template>
 
@@ -174,14 +182,15 @@ export default defineComponent({
           }
         },
         {
-          label: 'Copy to list',
+          label: 'Send to List',
           action: async () => {
             console.log("Copying item to list:", selectedItem.value);
           }
         },
         {
-           label: 'Create Poster',
+           label: 'Edit Poster',
           action: async () => {
+               // default poster with path set to this posters path.
             console.log("Update Poster list:", selectedItem.value);
           }
         },
@@ -199,7 +208,7 @@ export default defineComponent({
           action: async () => {
             console.log("Navigating to IMDB:", selectedItem.value);
             //TODO: add check for imdb for this label
-            window.open(`https://www.imdb.com/title/${selectedItem.value?.imdbId}`, '_blank');
+            window.open(`https://www.imdb.com/title/${selectedItem?.value?.item?.providers?.imdbId}`, '_blank');
           }
         },
         {

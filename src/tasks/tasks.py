@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from src.clients.emby import Emby
 from src.db.queries import media_list_queries
 from typing import Optional
 from typing import List
@@ -186,22 +187,80 @@ async def sync_all_collections_from_provider(payload):
                     # Here, I'm assuming you want to process movie lists only. Adjust this if lists can be for other media types too.
             print('About to build list')
             try:
-                list_builder = ListBuilder(config, list=details, list_type=MediaListType.LIBRARY)
+                list_builder = ListBuilder(config, list=details, list_type=MediaListType.COLLECTION)
                 await list_builder.build()
             except:
                 print('Error building list')
         print("All collections synced!")
 
+async def sync_media_list_to_provider(payload):
+    print("Syncing media list to provider!")
 
+    # Extract necessary payload details.
+    list_id = payload.get('list_id', None)
+    if not list_id:
+        print("No list_id provided in payload.")
+        return
+
+    config = ConfigManager().get_manager()
+    db = config.get_db()
+
+    # Fetch the media list from your local database
+    media_list = await media_list_queries.get_media_list_with_items(db, list_id)
+    if not media_list:
+        print(f"No media list found for id: {list_id}")
+        return
+
+    # get the emby client
+    emby: Emby = config.get_client('emby')
+
+    embyListId = media_list['sourceListId']
+    # Assuming that the media_list model has a 'clientType' field
+    is_from_emby = media_list.get('clientConfigId') == 'emby' # TODO: implment client selection logic and such
+    # If the list doesn't originate from emby or has no source ID, assume it's a new list
+    if not embyListId or not is_from_emby:
+        emby_list = None
+    else:
+        # Fetch the list from emby using the sourceListId
+        emby_list = emby.get_list(embyListId)
+
+    # Determine media list type and perform relevant actions
+    media_list_type = media_list.get('type')
+
+
+    if(media_list is None):
+        print('No media list found')
+        return
+
+    media_list = MediaList(**media_list)
+
+    if media_list_type == MediaListType.COLLECTION:
+        if not emby_list:
+            emby.create_collection_from_list(media_list)
+        else:
+            emby.update_collection_from_list(media_list)
+    elif media_list_type == MediaListType.PLAYLIST:
+        if not emby_list:
+            emby.create_playlist_from_list(media_list)
+        else:
+            emby.update_playlist_from_list(media_list)
+    elif media_list_type == MediaListType.LIBRARY:
+        print("Ignoring libraries, not syncing to provider.")
+        return
+    else:
+        print(f"Unknown media list type: {media_list_type}")
+        return
+
+    print("Media list synced to provider!")
 
 # async def sync_media_list_to_provider(payload):
-
 
 
 async def execute_task(task_type, payload):
     task_map = {
         TaskType.SYNC_PROVIDER.value: sync_libraries_from_provider,
-        # "another_task_type": another_function,
+        TaskType.SYNC_COLLECTIONS.value: sync_all_collections_from_provider,
+        TaskType.SYNC_MEDIA_LIST.value: sync_media_list_to_provider,
         # ... add more tasks as needed
     }
 

@@ -1,4 +1,6 @@
 import random
+from typing import Optional
+
 from PIL import Image
 from io import BytesIO
 import requests
@@ -7,6 +9,7 @@ from mimetypes import guess_type
 import base64
 import time
 
+from src.models import MediaList, MediaItem
 from src.create.posters import PosterImageCreator
 
 from enum import Enum
@@ -486,3 +489,76 @@ class Emby:
 
         img.save(path, quality=95)
         return img
+
+    ####
+    # MediaList based Methods
+    ####
+
+    def search_for_external_ids(self, media_item: MediaItem) -> Optional[dict]:
+        item = None
+
+        def search_id(external_id: str) -> Optional[dict]:
+            try:
+                search_results = self.get_media(external_id=external_id)
+                if search_results and search_results[0]['Type'] != 'Trailer':
+                    return search_results[0]
+            except Exception as e:
+                print(f"Failed searching for {external_id} due to {e}")
+            return None
+
+        try:
+            imdb_result = search_id(f"imdb.{media_item.providers.imdbId}")
+            tvdb_result = search_id(f"tvdb.{media_item.providers.tvdbId}")
+        except Exception as e:
+            print(f"Failed searching for {media_item} due to {e}")
+            return None
+
+        if imdb_result:
+            item = imdb_result
+        elif tvdb_result:
+            item = tvdb_result
+        return item
+
+    def create_collection_from_list(self, media_list: MediaList):
+        collection = self.create_collection(media_list.name, media_list.type, media_list.sortName)
+            # search emby for the items
+            # add the first result to the collection
+
+        print('-------------', media_list.items)
+        for item in media_list.items:
+            print('-------------', item)
+            media_item = self.search_for_external_ids(item)
+            if media_item:
+                    self.add_item_to_collection(collection['Id'], media_item['Id'])
+        return collection
+
+
+    def delete_collection_items(self, collection_id):
+        items = self.get_collection_items(collection_id)
+        for item in items:
+            self.delete_item_from_collection(collection_id, item['Id'])
+        return
+
+    def update_collection_from_list(self, media_list: MediaList):
+        collection = self.get_list(media_list.sourceListId)
+        if collection:
+            self.delete_collection_items(collection['Id'])
+        return self.create_collection_from_list(media_list)
+
+    def create_playlist_from_list(self, media_list: MediaList):
+        playlist = self.create_playlist(media_list.name, media_list.type, media_list.sortName)
+        # search emby for the items
+        # add the first result to the collection
+
+        for item in media_list.items:
+            print('-------------', item)
+            emby_media_item = self.search_for_external_ids(item)
+            if emby_media_item:
+                self.add_item_to_playlist(playlist['Id'], emby_media_item['Id'])
+        return playlist
+
+    def update_playlist_from_list(self, media_list: MediaList):
+        playlist = self.get_list(media_list.sourceListId)
+        if playlist:
+            self.delete_collection_items(playlist['Id'])
+        return self.create_playlist_from_list(media_list)

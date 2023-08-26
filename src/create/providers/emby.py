@@ -16,7 +16,7 @@ class EmbyProvider:
 
         self.id, self.library_name = self.parse_filters(filters if filters is not None else [])
         print('id ',self.id)
-        print('library name ',self.library_name)
+        print('library name ', self.library_name)
 
     def parse_filters(self, filters):
         id_value = None
@@ -55,7 +55,6 @@ class EmbyProvider:
                     break
 
             list_ = self.client.get_list(list_id=self.id)  # Renamed to avoid conflict with built-in name 'list'
-            # print('list ',list_)
             db = self.config.get_db()
 
             media_list = MediaList(
@@ -70,21 +69,16 @@ class EmbyProvider:
                 creatorId=self.config.get_user().userId
             )
 
-            # print('media list ', media_list.dict())
 
             db.media_lists.insert_one(media_list.dict())
-
             primary_list = []
 
 
             for item in all_list_items:
                 print('-------------', item)
-                # primary_list.extend(self.search_emby_for_external_ids(item))
                 media_item = await self.create_media_item(item, media_list)
 
 
-                # Adding to primary list or any other processing you need to do
-                # ...
 
             return primary_list
         return None
@@ -122,13 +116,13 @@ class EmbyProvider:
 
         media_item = MediaItem(
             mediaItemId=str(uuid.uuid4()),
-            title=item['Name'],
-            year=item.get('ProductionYear'),
+            title=item.get('Name','TITLE MISSING'),
+            year=item.get('ProductionYear', None),
             type=MediaType.MOVIE if item['Type'] == 'Movie' else MediaType.SHOW,
             poster=poster_url,
             providers=MediaProviderIds(
-                imdbId=item['ProviderIds'].get('IMDB'),
-                tvdbId=item['ProviderIds'].get('Tvdb')
+                imdbId=item['ProviderIds'].get('IMDB', None),
+                tvdbId=item['ProviderIds'].get('Tvdb', None)
             ),
             # ... add any other fields you need here ...
         )
@@ -141,16 +135,21 @@ class EmbyProvider:
             existing_media_item = await db.media_items.find_one({"providers.tvdbId": media_item.providers.tvdbId})
 
         if existing_media_item:
+            media_item.mediaItemId = existing_media_item['mediaItemId']
+
             # Update missing fields
-            for field, value in media_item.dict().items():
-                if value and not existing_media_item.get(field):
-                    existing_media_item[field] = value
+            # for field, value in media_item.dict().items():
+            #     if value and not existing_media_item.get(field):
+            #         existing_media_item[field] = value
             db.media_items.update_one(
-                {"_id": existing_media_item["_id"]},
-                {"$set": existing_media_item}
+                {"mediaItemId": existing_media_item["mediaItemId"]},
+                {"$set": media_item.dict()}
             )
+         # media_item.dict()
         else:
+            print('inserting new media item')
             db.media_items.insert_one(media_item.dict())
+            # return media_item.dict()
 
         media_list_item = MediaListItem(
             mediaListItemId=str(uuid.uuid4()),

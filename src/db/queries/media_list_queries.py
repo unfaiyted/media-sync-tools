@@ -106,3 +106,9 @@ def update_media_list(db, mediaListId, matching_collection):
     collections = db['media_lists']
     result = collections.update_one({'mediaListId': mediaListId}, {'$set': matching_collection.dict()})
     return None
+
+
+def get_media_list_by_id(db, list_id):
+    collections = db['media_lists']
+    media_list = collections.find_one({'mediaListId': list_id})
+    return media_list if media_list else None
