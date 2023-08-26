@@ -67,7 +67,7 @@
 
         >
           <img :src="item.item?.poster" :alt="item.item?.tagline" class="max-w-full h-auto mb-2">
-          <span class="text-center">{{ item.item.title }} ({{ item.item.year || item.item.releaseDate }})</span>
+          <span class="text-center">{{ item?.item?.title }} ({{ item?.item?.year || item?.item?.releaseDate }})</span>
         </div>
       </div>
 

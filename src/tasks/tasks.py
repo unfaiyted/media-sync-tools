@@ -1,14 +1,17 @@
+from datetime import datetime
+
+from src.db.queries import media_list_queries
+from typing import Optional
 from typing import List
 
 from src.models.tasks import TaskType
 from src.db.queries import library_queries
 from src.create import ListBuilder
-from src.models import MediaListType, Library, LibraryType
+from src.models import MediaListType, Library, LibraryType, MediaList
 from src.config import ConfigManager
 from src.models.libraries import LibraryClient
 
-async def sync_all_lists_from_provider(payload):
-    # Your syncing logic...
+async def sync_libraries_from_provider(payload):
     print("Lists synced from provider!")
 
     payload = {
@@ -82,25 +85,122 @@ async def sync_all_lists_from_provider(payload):
                     'limit': 5000,  # adjust as necessary
                     'sort': 'rank',  # adjust as necessary
                     'poster': {
-                                   'enabled': True,
-                                      }
+                        'enabled': True,
+                    }
                 }
             }
 
 
             print('details',details)
-        # Here, I'm assuming you want to process movie lists only. Adjust this if lists can be for other media types too.
+            # Here, I'm assuming you want to process movie lists only. Adjust this if lists can be for other media types too.
             print('About to build list')
             list_builder = ListBuilder(config, list=details, list_type=MediaListType.LIBRARY)
             await list_builder.build()
             print('List built')
         print("All libraries and their items synced!")
 
+
 # More task-specific functions can be added here...
+
+
+async def sync_all_collections_from_provider(payload):
+    print("Syncing all collections from provider!")
+
+    embyCollectionTypes: List = ['boxsets']
+
+    # Your initial config and database setup
+    config = ConfigManager().get_manager()
+    db = config.get_db()
+
+    # get the emby client
+    emby = config.get_client('emby')
+    libraries = emby.get_libraries()
+    # print('libraries',libraries)
+
+    # Retrieve collections of type "Collection" from Emby.
+    # Assuming emby has a method like `get_collections_of_type`
+
+    boxset_libraries = [lib for lib in libraries if lib.get('CollectionType') == 'boxsets']
+    print(boxset_libraries)
+
+    # Loop through the Emby collections
+    for library in boxset_libraries:
+
+        print('Looking at library')
+        # print('library', library)
+        # Check if the collection already exists in the database
+        boxsets, boxset_count = emby.get_items_from_parent(library['Id'])
+        print('Boxset found.', boxset_count)
+        print('boxsets', boxsets)
+
+        for boxset in boxsets:
+            print('Looking at boxset', boxset['Name'], boxset['Id'])
+            # print('boxset', boxset)
+
+            matching_collection: Optional[MediaList] = await media_list_queries.get_media_list_by_source_id(db, boxset['Id'])
+
+        # get the items from the boxset
+            if not matching_collection:
+                print('No matching collection found')
+                # If the collection isn't in the database, add it.
+                new_media_list = MediaList(
+                    sourceListId=boxset['Id'],
+                    clientId='EMBYCLIENTID',
+                    creatorId="YOUR_CREATOR_ID", # Adjust this accordingly
+                    name=boxset['Name'],
+                    type=MediaListType.COLLECTION,
+                    sortName=boxset['SortName'] if 'SortName' in boxset else boxset['Name'],
+                    createdAt=datetime.now()
+                    # Add more fields if necessary
+                )
+
+                await media_list_queries.create_media_list(db, new_media_list)
+                print('Created new collection')
+            elif boxset['Name'] != matching_collection.name:
+                matching_collection.name = boxset['Name']
+                matching_collection = await media_list_queries.update_media_list(db, matching_collection.mediaListId, matching_collection)
+
+            # Loop through the items in the boxset
+                    # Create new list with listBuilder
+            details = {
+                        'name': boxset['Name'],
+                        'description': boxset['Name'] + " / " + boxset['Type'],  # assuming the description might be optional
+                        'provider': 'emby',
+                        'type': MediaListType.COLLECTION,
+                        'filters': [{
+                            'type': 'list_id',
+                            'value': boxset['Id']
+                        }],
+                        'include': ['Movies'],  # assuming lists are for movies only, adjust if necessary
+                        'options': {
+                            'add_prev_watched': False,
+                            'add_missing_to_library': False,
+                            'limit': 5000,  # adjust as necessary
+                            'sort': 'rank',  # adjust as necessary
+                            'poster': {
+                                'enabled': True,
+                            }
+                        }
+                    }
+            print('details',details)
+                    # Here, I'm assuming you want to process movie lists only. Adjust this if lists can be for other media types too.
+            print('About to build list')
+            try:
+                list_builder = ListBuilder(config, list=details, list_type=MediaListType.LIBRARY)
+                await list_builder.build()
+            except:
+                print('Error building list')
+        print("All collections synced!")
+
+
+
+# async def sync_media_list_to_provider(payload):
+
+
 
 async def execute_task(task_type, payload):
     task_map = {
-        TaskType.SYNC_PROVIDER.value: sync_all_lists_from_provider,
+        TaskType.SYNC_PROVIDER.value: sync_libraries_from_provider,
         # "another_task_type": another_function,
         # ... add more tasks as needed
     }

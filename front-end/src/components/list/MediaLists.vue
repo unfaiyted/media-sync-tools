@@ -1,4 +1,4 @@
-<template>
+template>
   <div class="p-6 bg-gray-100 ">
     <!-- Table for Media List Details -->
     <div class="flex justify-between items-center mb-4">
