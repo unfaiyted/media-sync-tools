@@ -15,9 +15,10 @@ export const useTaskStore = defineStore({
         async fetchTaskById(taskId: string) {
             this.selectedTask = await TaskAPI.fetchTaskById(taskId);
         },
-        async createTask(task: Task) {
+        async createTask(task: Task): Promise<Task> {
             const newTask = await TaskAPI.createTask(task);
             this.tasks.push(newTask);
+            return newTask;
         },
         async updateTask(taskId: string, task: Task) {
             const updatedTask = await TaskAPI.updateTask(taskId, task);

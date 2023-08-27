@@ -10,6 +10,9 @@ export enum TaskState {
     RUNNING = 'running',
     PAUSED = 'paused',
     FAILED = 'failed',
+    CANCELLED = 'cancelled',
+    CREATED = 'created',
+    COMPLETED = 'completed',
     // Add other states as necessary
 }
 
@@ -36,7 +39,7 @@ export interface TaskSchedule {
 
 // TaskStatus.ts
 export interface TaskStatus {
-    lastRunTime: Date;
+    lastRunTime?: Date;
     nextRunTime: Date;
     state: TaskState;
     error?: string;
@@ -47,7 +50,7 @@ export interface TaskMetadata {
     createdBy: string;
     createdOn: Date;
     lastModified: Date;
-    tags: string[];
+    tags?: string[];
     priority: TaskPriority;
 }
 
@@ -71,6 +74,7 @@ export interface TaskPayload {
 // Task.ts
 export interface Task {
     taskName: string;
+    taskId: string;
     taskDescription: string;
     schedule: TaskSchedule;
     status: TaskStatus;

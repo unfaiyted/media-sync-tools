@@ -1,4 +1,4 @@
-from src.models import MediaListType
+from src.models import MediaListType, MediaList
 
 
 class TMDBListProviderResult:
@@ -33,6 +33,9 @@ class TMDBProvider:
         movie_results = movie_data.get("results", [])
 
 
+
+
+
         primary_list = []
 
         for item in movie_results:
@@ -57,20 +60,17 @@ class TMDBProvider:
         return primary_list
 
 
+    def create_list_record(self):
+        media_list = MediaList(
+            mediaListId=str(uuid.uuid4()),
+            name=list_['Name'],
+            type=self.listType,
+            sourceListId=list_['Id'],
+            # filters=self.filters,
+            sortName=list_['SortName'],
+            clientId='EMBYCLIENTID',
+            createdAt=datetime.now(),
+            creatorId=self.config.get_user().userId
+        )
 
-        # return [TMDBListProviderResult(item['id'], item['title'], item['overview'], item['release_date']) for item in movie_results]
 
-
-# # Example usage of the above class:
-# config_manager = ConfigManager()
-#
-# filters = [
-#     {'type': 'year', 'value': 2020},
-#     {'type': 'with_genres', 'value': '28'}
-# ]
-# # Assuming MockConfig and MockTmdbClient are defined as earlier:
-# provider = TMDBProvider(config_manager, filters)
-# movie_list = provider.get_list()
-#
-# for movie in movie_list:
-#     print(movie)
