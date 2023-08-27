@@ -6,20 +6,28 @@
         <div class="flex justify-between items-center mb-4">
             <h1 class="text-lg font-semibold">{{ mediaList.name }}</h1>
 
-          <div class="mb-4">
-            <label class="mr-4">View Mode:</label>
-            <input type="radio" id="table" value="table" v-model="viewMode">
-            <label for="table" class="mr-4">Table</label>
-            <input type="radio" id="poster" value="poster" v-model="viewMode">
-            <label for="poster">Poster</label>
-          </div>
+            <div class="mb-4">
+                <label class="mr-4">View Mode:</label>
+                <input type="radio" id="table" value="table" v-model="viewMode">
+                <label for="table" class="mr-4">Table</label>
+                <input type="radio" id="poster" value="poster" v-model="viewMode">
+                <label for="poster">Poster</label>
+            </div>
             <!-- Button to trigger popup -->
-            <button @click="showOptionsPopup = true" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300">
-             Actions
+            <button @click="showActionsMenu($event)"
+                    class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                Actions
             </button>
+
+            <MediaListActionMenu
+                v-if="showActionMenuComponent"
+                :event="actionMenuEvent"
+                ref="actionMenu"
+            />
         </div>
 
-      <table v-if="viewMode === 'table'" class="min-w-full bg-white rounded-lg shadow-md">
+
+        <table v-if="viewMode === 'table'" class="min-w-full bg-white rounded-lg shadow-md">
             <thead>
             <tr class="text-gray-600 text-left">
                 <th class="py-2 px-4">Select</th>
@@ -33,24 +41,24 @@
             </tr>
             </thead>
             <tbody>
-<!--            {{ mediaList.items}}-->
+            <!--            {{ mediaList.items}}-->
             <tr v-for="item in mediaList.items" :key="item.mediaItemId"
                 class="hover:bg-gray-100"
                 @contextmenu.prevent="handleRightClick($event, item)"
 
             >
 
-                    <td class="py-2 px-4">
-                        <!--&lt;!&ndash;                     {{ item}}&ndash;&gt; {{item}}-->
-                        <input type="checkbox">
-                    </td>
-                    <td class="py-2 px-4">
-                        <img :src="item?.item?.poster" :alt="item?.name" class="max-w-full h-20 mb-2">
-                    </td>
-                    <td class="py-2 px-4">{{ item?.item?.title }} ({{ item?.item?.year || item?.item?.releaseDate}})</td>
-                    <td class="py-2 px-4">{{ item?.item?.type }}</td>
-                    <td class="py-2 px-4">{{ item?.item?.sortTitle}}</td>
-                    <td class="py-2 px-4">{{ mediaList?.clientId }}</td>
+                <td class="py-2 px-4">
+                    <!--&lt;!&ndash;                     {{ item}}&ndash;&gt; {{item}}-->
+                    <input type="checkbox">
+                </td>
+                <td class="py-2 px-4">
+                    <img :src="item?.item?.poster" :alt="item?.name" class="max-w-full h-20 mb-2">
+                </td>
+                <td class="py-2 px-4">{{ item?.item?.title }} ({{ item?.item?.year || item?.item?.releaseDate }})</td>
+                <td class="py-2 px-4">{{ item?.item?.type }}</td>
+                <td class="py-2 px-4">{{ item?.item?.sortTitle }}</td>
+                <td class="py-2 px-4">{{ mediaList?.clientId }}</td>
 
 
                 <!-- Add other data fields as needed -->
@@ -59,24 +67,24 @@
         </table>
 
 
-      <!-- Poster View -->
-      <div v-else-if="viewMode === 'poster'" class="flex flex-wrap">
-        <div v-for="item in mediaList.items" :key="item.mediaItemId"
-             class="w-1/6 p-4 flex flex-col items-center"
-             @contextmenu.prevent="handleRightClick($event, item)"
+        <!-- Poster View -->
+        <div v-else-if="viewMode === 'poster'" class="flex flex-wrap">
+            <div v-for="item in mediaList.items" :key="item.mediaItemId"
+                 class="w-1/6 p-4 flex flex-col items-center"
+                 @contextmenu.prevent="handleRightClick($event, item)"
 
-        >
-          <img :src="item.item?.poster" :alt="item.item?.tagline" class="max-w-full h-auto mb-2">
-          <span class="text-center">{{ item.item.title }} ({{ item.item.year || item.item.releaseDate }})</span>
+            >
+                <img :src="item.item?.poster" :alt="item.item?.tagline" class="max-w-full h-auto mb-2">
+                <span class="text-center">{{ item.item.title }} ({{ item.item.year || item.item.releaseDate }})</span>
+            </div>
         </div>
-      </div>
 
-      <ContextMenu
-          :event="contextMenuEvent"
-          :items="contextMenuItems"
-          ref="contextMenu"
-      />
-      <MediaListOptionsPopup ref="requestModal" />
+        <ContextMenu
+            :event="contextMenuEvent"
+            :items="contextMenuItems"
+            ref="contextMenu"
+        />
+<!--        <MediaListOptionsPopup ref="requestModal"/>-->
 
         <!-- Popup for Media List Options -->
         <transition name="fade">
@@ -93,10 +101,12 @@
                         </label>
                         <!-- Add other form fields as needed -->
                         <div class="flex justify-end">
-                            <button type="submit" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300 mr-2">
+                            <button type="submit"
+                                    class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300 mr-2">
                                 Save
                             </button>
-                            <button @click="showOptionsPopup = false" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-300">
+                            <button @click="showOptionsPopup = false"
+                                    class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-300">
                                 Close
                             </button>
                         </div>
@@ -105,32 +115,27 @@
             </div>
         </transition>
 
-        <Modal
-<!--            :event="contextMenuEvent"
-            :items="contextMenuItems"
-            ref="contextMenu"-->
-        >
-        <MediaListOptionsPopup ref="requestModal" />
-        </Modal>
+
     </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue';
+import {defineComponent, ref} from 'vue';
 import {MediaListItem, MediaListOptions, MediaList, MediaItem} from "@/models";
 import ContextMenu from "@/components/ui/ContextMenu.vue";
+import MediaListActionMenu from "@/components/list/MediaListActionMenu.vue";
 import MediaListOptionsPopup from "@/components/list/MediaListOptionsPopup.vue";
 import {useListStore} from "@/store/listStore";
 
 export default defineComponent({
     name: 'MediaItemsList',
-  components: {MediaListOptionsPopup, ContextMenu},
+    components: {MediaListOptionsPopup, ContextMenu, MediaListActionMenu},
     props: {
         mediaList: {
             type: Object as () => MediaList,
             required: true,
-            default: () => ({ items: []})
-        } ,
+            default: () => ({items: []})
+        },
         mediaListOptions: {
             type: Object as () => MediaListOptions,
             required: true
@@ -144,92 +149,108 @@ export default defineComponent({
     },
     setup(props) {
         const showOptionsPopup = ref(false);
-      const contextMenuEvent = ref<Event | null>(null); // Store the event that triggers the context menu
-      const selectedItem = ref<MediaListItem | null>(null);  // Store the selected list item for context operations
-      const requestModal = ref<InstanceType<typeof MediaListOptionsPopup> | null>(null);
-      const viewMode = ref('table'); // Default view mode
-      const listStore = useListStore();
-      const mediaList = ref(props.mediaList);
+        const contextMenuEvent = ref<Event | null>(null); // Store the event that triggers the context menu
+        const actionMenuEvent = ref<Event | null>(null); // Store the event that triggers the context menu
+        const selectedItem = ref<MediaListItem | null>(null);  // Store the selected list item for context operations
+        const requestModal = ref<InstanceType<typeof MediaListOptionsPopup> | null>(null);
+        const viewMode = ref('table'); // Default view mode
 
-      function updateOptions() {
+        const listStore = useListStore();
+        const mediaList = ref(props.mediaList);
+
+        function updateOptions() {
             // Handle logic to update the MediaList options
             console.log("Updated options:", props.mediaListOptions);
             showOptionsPopup.value = false;
         }
 
         function handleRightClick(event: Event, item: MediaListItem) {
-          event.preventDefault();
-          contextMenuEvent.value = event;
-          selectedItem.value = item; // Store the selected list item for context operations
+            event.preventDefault();
+            contextMenuEvent.value = event;
+            selectedItem.value = item; // Store the selected list item for context operations
         }
 
+        const contextMenuItems = [
+            {
+                label: 'Edit',
+                action: async () => {
+                    // router.push(`/list/${selectedItem.value.mediaListId}/edit`);
+                }
+            },
+            {
+                label: 'Delete',
+                action: async () => {
+                    if (selectedItem.value && selectedItem.value.mediaItemId) {
+                        console.log("Deleting item:", selectedItem.value);
+                        // await deleteMediaListItem(selectedItem.value.mediaItemId);
+                        mediaList.value = await listStore.removeListItem(selectedItem.value.mediaListId, selectedItem.value.mediaItemId);
+                    }
+                }
+            },
+            {
+                label: 'Send to List',
+                action: async () => {
+                    console.log("Copying item to list:", selectedItem.value);
+                }
+            },
+            {
+                label: 'Edit Poster',
+                action: async () => {
+                    // default poster with path set to this posters path.
+                    console.log("Update Poster list:", selectedItem.value);
+                }
+            },
+            {
+                label: 'Get Provider Poster',
+                action: async () => {
+                    if (selectedItem.value && selectedItem.value.mediaItemId) {
+                        mediaList.value = await listStore.updateListItemPoster(selectedItem.value.mediaItemId);
 
-      const contextMenuItems = [
-        {
-          label: 'Edit',
-          action: async () => {
-            // router.push(`/list/${selectedItem.value.mediaListId}/edit`);
-          }
-        },
-        {
-          label: 'Delete',
-          action: async () => {
-            if(selectedItem.value && selectedItem.value.mediaItemId) {
-              console.log("Deleting item:", selectedItem.value);
-              // await deleteMediaListItem(selectedItem.value.mediaItemId);
-              mediaList.value = await listStore.removeListItem(selectedItem.value.mediaListId, selectedItem.value.mediaItemId);
-            }
-          }
-        },
-        {
-          label: 'Send to List',
-          action: async () => {
-            console.log("Copying item to list:", selectedItem.value);
-          }
-        },
-        {
-           label: 'Edit Poster',
-          action: async () => {
-               // default poster with path set to this posters path.
-            console.log("Update Poster list:", selectedItem.value);
-          }
-        },
-        {
-          label: 'Get Provider Poster',
-          action: async () => {
-            if(selectedItem.value && selectedItem.value.mediaItemId) {
-              mediaList.value = await listStore.updateListItemPoster(selectedItem.value.mediaItemId);
+                    }
+                }
+            },
+            {
+                label: 'IMDB',
+                action: async () => {
+                    console.log("Navigating to IMDB:", selectedItem.value);
+                    //TODO: add check for imdb for this label
+                    window.open(`https://www.imdb.com/title/${selectedItem?.value?.item?.providers?.imdbId}`, '_blank');
+                }
+            },
+            {
+                label: 'Add to Sonarr / Radarr',
+                action: async () => {
+                    // Todo: Implement this and have it check what type and if its a movie vs tv show and then add it to the correct agent
+                    console.log("Adding item to Sonarr / Radarr:", selectedItem.value);
+                    requestModal.value?.openModal(selectedItem.value);
+                }
+            },
 
-            }
-          }
-        },
-        {
-          label: 'IMDB',
-          action: async () => {
-            console.log("Navigating to IMDB:", selectedItem.value);
-            //TODO: add check for imdb for this label
-            window.open(`https://www.imdb.com/title/${selectedItem?.value?.item?.providers?.imdbId}`, '_blank');
-          }
-        },
-        {
-          label: 'Add to Sonarr / Radarr',
-          action: async () => {
-            // Todo: Implement this and have it check what type and if its a movie vs tv show and then add it to the correct agent
-            console.log("Adding item to Sonarr / Radarr:", selectedItem.value);
-            requestModal.value?.openModal(selectedItem.value);
-          }
-        },
+        ];
 
-      ];
+
+        const showActionMenuComponent = ref(false);  // To determine which context menu to display
+
+        // ... existing code ...
+
+        function showActionsMenu(event: Event) {
+            event.preventDefault();
+            actionMenuEvent.value = event;""
+            showActionMenuComponent.value = true;  // Display the MediaListActionMenu
+            console.log('showActionsMenu', showActionMenuComponent.value);
+        }
 
         return {
-          showOptionsPopup,
-          updateOptions,
-          requestModal,
-          viewMode,
-          contextMenuItems,
-          contextMenuEvent,
-          handleRightClick,
+            showOptionsPopup,
+            updateOptions,
+            requestModal,
+            showActionsMenu,
+            showActionMenuComponent,
+            actionMenuEvent,
+            viewMode,
+            contextMenuItems,
+            contextMenuEvent,
+            handleRightClick,
         };
     }
 });
@@ -239,7 +260,9 @@ export default defineComponent({
 .fade-enter-active, .fade-leave-active {
     transition: opacity 0.5s;
 }
-.fade-enter, .fade-leave-to /* .fade-leave-active in <2.1.8 */ {
+
+.fade-enter, .fade-leave-to /* .fade-leave-active in <2.1.8 */
+{
     opacity: 0;
 }
 </style>

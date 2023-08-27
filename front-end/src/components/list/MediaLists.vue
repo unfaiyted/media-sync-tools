@@ -46,8 +46,6 @@
         @close="showOptionsPopup = false"
     /> -->
 
-    <button @click="openRequestModal">Open Request Modal</button>
-
     <MediaListOptionsPopup ref="requestModal" />
 
     <!-- Popup for Media List Options -->
@@ -106,12 +104,7 @@ export default defineComponent({
       router.push(`/list/${listId}`);
     }
 
-    function handleRightClick(event: Event, item: MediaList) {
-      if(!item) return;
-      event.preventDefault();
-      contextMenuEvent.value = event;
-      selectedListItem.value = item; // Store the selected list item for context operations
-    }
+
 
     const editSelected = () => {
        if(selectedListItem.value)
@@ -144,7 +137,15 @@ export default defineComponent({
       }
     ];
 
-    const openRequestModal = (item: any) => {
+      function handleRightClick(event: Event, item: MediaList) {
+          if(!item) return;
+          event.preventDefault();
+          contextMenuEvent.value = event;
+          selectedListItem.value = item; // Store the selected list item for context operations
+      }
+
+
+      const openRequestModal = (item: any) => {
       // requestModal.value.sendSync();
       if(requestModal.value) requestModal.value.openModal(item);
       console.log("Request Modal:", requestModal.value)
