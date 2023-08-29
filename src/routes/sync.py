@@ -7,7 +7,7 @@ from src.models.configs import SyncOptions
 from src.models import MediaList, MediaListType
 from src.config import ConfigManager
 from src.create.toplists import sync_top_lists
-from src.sync.collections import sync_collections
+from src.sync.collections import sync_collections, emby_to_plex_sync_collection
 from src.create.lists import Lists
 from src.create.trakt import sync_trakt_user_lists
 from src.create.playlists import create_emby_playlist
@@ -78,7 +78,7 @@ async def trigger_sync_toplist():
 @router.get("/collections")
 async def trigger_sync_collection():
     settings = config.get_collection_settings()
-
+    emby_to_plex_sync_collection(config)
     try:
 
         print('Syncing Collections', settings['sync'])
@@ -138,15 +138,44 @@ async def handle_ratings(background_tasks: BackgroundTasks):
 
         # background_tasks.add_task(await sync_all_collecions_from_provider(payload=None), name="sync_all_lists_from_provider")
 
-        payload = {
-            'list_id': '9bab7eeb-fa54-4061-baa0-c1ec99ec95dd',
-        }
+        # payload = {
+        #     'list_id': '9bab7eeb-fa54-4061-baa0-c1ec99ec95dd',
+        # }
 
         # await sync_all_collections_from_provider(payload=None)
-        await sync_media_list_to_provider(payload)
+        # await sync_media_list_to_provider(payload)
         # Here, I'm assuming you want to process movie lists only. Adjust this if lists can be for other media types too.
         # list_builder = ListBuilder(config, list=details)
         # await list_builder.build()
+
+        details = {
+            "name": "Newly__ Popular Movies",
+            "sort_name": "!001_Newly Popular Movies",
+            "provider": "tmdb",
+            "filters": [
+                {"type": "sort_by", "value": "popularity.desc"},
+                {"type": "page", "value": "1"},
+                {"type": "language", "value": "en-US"},
+                {"type": "vote_average.gte", "value": "6"}
+            ],
+            "include": ["Movies"],
+            "options": {
+                "add_prev_watched": False,
+                "add_missing_to_library": True,
+                "limit": 50,
+                "sort": "random",
+                "poster": {
+                    "enabled": True,
+                    "bg_image_query": 'awesome people'
+                    # "icon": False,
+                    # "icon_path": '/resources/icons/mdb.png'
+                }
+            }
+        }
+
+        list_builder = ListBuilder(config, list=details)
+        list_builder = await list_builder.build()
+        list_builder = await list_builder.sync('emby')
 
         return JSONResponse(status_code=200, content={"message": "Test completed", })
     except Exception as e:

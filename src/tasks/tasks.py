@@ -193,6 +193,10 @@ async def sync_all_collections_from_provider(payload):
                 print('Error building list')
         print("All collections synced!")
 
+
+# To make this one function I need a method that will get all collections by client type
+
+
 async def sync_media_list_to_provider(payload):
     print("Syncing media list to provider!")
 

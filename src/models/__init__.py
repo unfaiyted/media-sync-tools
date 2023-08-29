@@ -111,6 +111,7 @@ class MediaList(BaseModel):
     name: str
     type: MediaListType
     sortName: str
+    description: Optional[str]
     filters: Optional[List[ForwardRef('Filter')]]
     items: Optional[List[ForwardRef('MediaListItem')]]
     createdAt: datetime

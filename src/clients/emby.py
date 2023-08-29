@@ -426,8 +426,6 @@ class Emby:
         response = self._get_request(url)
         return response.get('Items', [])
 
-    #	http://192.168.0.120:8096/emby/Sessions/0378c315c1302972182a1c00cf6bf265/Playing?ItemIds=12910&PlayCommand=PlayNow&X-Emby-Client=Emby Web&X-Emby-Device-Name=Firefox&X-Emby-Device-Id=8bb5b233-c701-4fa9-a948-3b21af5b93d0&X-Emby-Client-Version=4.7.13.0&X-Emby-Token=fd8eb5214cd74e01a3ee152207ff3b4d&X-Emby-Language=en-us
-
     def get_sessions(self):
         url = self._build_url(f'Sessions')
         response = self._get_request(url)

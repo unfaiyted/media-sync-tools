@@ -13,7 +13,7 @@ class PlexProvider:
         if filters is not None:
             self.id = filters[0].get('value', None)
 
-    def get_list(self):
+    async def get_list(self):
         if self.id is None:
             print('No list id provided. Cannot get list.')
             return None

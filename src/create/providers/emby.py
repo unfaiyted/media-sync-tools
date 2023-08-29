@@ -1,18 +1,20 @@
 import uuid
 from datetime import datetime
 
+from src.clients.emby import Emby
 from src.models import MediaList, MediaListItem, MediaType, MediaListType, MediaItem, MediaProviderIds
 
 from typing import Optional
 
 class EmbyProvider:
-    def __init__(self, config, filters=None, listType=MediaListType.COLLECTION):
+    def __init__(self, config, filters=None, details=None, listType=MediaListType.COLLECTION):
         self.config = config
-        self.client = config.get_client('emby')
+        self.client: Emby = config.get_client('emby')
         self.filters = filters
         self.server_url = self.client.server_url
         self.api_key = self.client.api_key
         self.listType = listType
+        self.details = details
 
         self.id, self.library_name = self.parse_filters(filters if filters is not None else [])
         print('id ',self.id)
@@ -69,18 +71,13 @@ class EmbyProvider:
                 creatorId=self.config.get_user().userId
             )
 
-
             db.media_lists.insert_one(media_list.dict())
-            primary_list = []
-
 
             for item in all_list_items:
                 print('-------------', item)
-                media_item = await self.create_media_item(item, media_list)
+                media_list.items.append(await self.create_media_item(item, media_list))
 
-
-
-            return primary_list
+            return media_list
         return None
 
     def process_list_items(self, list_items):
@@ -161,26 +158,66 @@ class EmbyProvider:
 
         db.media_list_items.insert_one(media_list_item.dict())
 
+        media_list_item.item = media_item
+
         return media_item
 
-    def search_emby_for_external_ids(self, media_item: MediaItem) -> list:
-        primary_list = []
-
+    def search_emby_for_external_ids(self, media_item: MediaItem) -> dict or None:
+        match = None
         def search_id(external_id: str) -> Optional[dict]:
             try:
-                search_results = self.client.search_media(external_id=external_id)
+                search_results = self.client.get_media(external_id=external_id)
                 if search_results and search_results[0]['Type'] != 'Trailer':
                     return search_results[0]
+                if search_results and search_results[0]['Type'] == 'Trailer':
+                    return search_results[1]
+
             except Exception as e:
                 print(f"Failed searching for {external_id} due to {e}")
             return None
 
         imdb_result = search_id(f"imdb.{media_item.providers.imdbId}")
         tvdb_result = search_id(f"tvdb.{media_item.providers.tvdbId}")
+        tmdb_result = search_id(f"Tmdb.{media_item.providers.tmdbId}")
 
         if imdb_result:
-            primary_list.append(imdb_result)
-        if tvdb_result:
-            primary_list.append(tvdb_result)
+           return imdb_result
+        elif tvdb_result:
+           return tvdb_result
+        elif tmdb_result:
+              return tmdb_result
 
-        return primary_list
+        return match
+
+    def upload_list(self, media_list: MediaList):
+        if(media_list is None):
+            print('no list provided')
+            return None
+
+        # Will expect a media_list object and upload it to the provider
+        # create a playlist or collection based on type
+        # add items to the playlist or collection
+        # return the playlist or collection id
+
+        print(media_list)
+        type = media_list.type
+
+        if type == MediaListType.COLLECTION:
+           list = self.client.create_collection(media_list.name, media_list.sortName)
+        elif type == MediaListType.PLAYLIST:
+           list = self.client.create_playlist(media_list.name, media_list.sortName)
+        else:
+            print('invalid list type')
+            return None
+
+        for media_list_item in media_list.items:
+            print(media_list_item)
+            embyItem = self.search_emby_for_external_ids(media_list_item)
+
+            if embyItem is None:
+                print('item not found')
+                continue
+
+            self.client.add_item_to_collection(list['Id'], embyItem['Id'])
+            return media_list
+

@@ -40,6 +40,26 @@ def sync_collections(config):
     #           create the collection
 
 
+def sync_provider_collections(config):
+
+    # get the collections from the config
+    collections = config.collections
+
+    # Get plex
+    plex = config.get_client('plex')
+
+
+
+
+    #   loop over the collections
+    for name, details in collections['lists'].items():
+        # print the collection info
+        print(f'Processing collection {name}')
+
+        list = ListBuilder(config, list=details)
+        list.build()
+
+
 def emby_to_plex_sync_collection(config):
     root_path = config.get_root_path()
     config_path = config.get_config_path()

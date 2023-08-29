@@ -6,7 +6,7 @@ from src.create.posters import PosterImageCreator
 from src.create.providers.ai import AiProvider
 from src.create.providers.mdb import MdbProvider
 from src.create.providers.trakt import TraktProvider
-from src.models import MediaListType
+from src.models import MediaListType, MediaList
 
 
 class ProcessedFilter:
@@ -72,12 +72,14 @@ class ListBuilder:
         self.rules = []
         self.filters = []
         self.title = None
+        self.sort_title = None
         self.type = list_type
         self.emby = config.get_client('emby')
         self.retry_count = 3
         self.description = f'Automatically generated {list_type} list'
         self.sort_title = self.title
         self.provider = None
+        self.name = None
         self.library_name = None
         self.media_types = None
         self.media_list = []  # list of media objects to reference when building the list
@@ -222,9 +224,9 @@ class ListBuilder:
             'ai': (lambda: AiProvider(self.media_types, self.description, self._process_filters('ai'), self.limit)),
             'mdb': (lambda: MdbProvider(self.config, self.filters, listType=self.type)),
             'trakt': (lambda: TraktProvider(self.config, self.filters, listType=self.type)),
-            'tmdb': (lambda: TMDBProvider(self.config, self.filters, listType=self.type)),
+            'tmdb': (lambda: TMDBProvider(self.config, self.filters, details=self, listType=self.type)),
             'plex': (lambda: PlexProvider(self.config, self.filters, listType=self.type)),
-            'emby': (lambda: EmbyProvider(self.config, self.filters, listType=self.type))
+            'emby': (lambda: EmbyProvider(self.config, self.filters, details=self, listType=self.type))
         }
 
         if self.provider in provider_mapping:
@@ -232,6 +234,7 @@ class ListBuilder:
                 print(f'Using {self.provider.capitalize()} list')
                 try:
                     self.media_list = await provider_mapping[self.provider]().get_list()
+                    return self.media_list
                 except Exception as e:
                     print(f'Error getting list from provider {self.provider}: {e}, {e.args}',)
                     import traceback
@@ -242,7 +245,37 @@ class ListBuilder:
         else:
             raise ValueError(f"Unknown provider: {self.provider}")
 
+        return None
+
+    async def _save_media_list_to_provider(self, provider: str):
+
+        provider_mapping = {
+            'self': (lambda: print('Using media list')),
+            'ai': (lambda: AiProvider(self.media_types, self.description, self._process_filters('ai'), self.limit)),
+            'mdb': (lambda: MdbProvider(self.config, self.filters, listType=self.type)),
+            'trakt': (lambda: TraktProvider(self.config, self.filters, listType=self.type)),
+            'tmdb': (lambda: TMDBProvider(self.config, self.filters, details=self, listType=self.type)),
+            'plex': (lambda: PlexProvider(self.config, self.filters, listType=self.type)),
+            'emby': (lambda: EmbyProvider(self.config, self.filters, details=self, listType=self.type))
+        }
+
+        if provider in provider_mapping:
+            if provider != 'self':
+                print(f'Using {provider.capitalize()} list')
+                print('Media List', self.media_list)
+                try:
+                   media_list = provider_mapping[provider]().upload_list(self.media_list)
+                except Exception as e:
+                    print(f'Error saving list to provider {provider}: {e}, {e.args}',)
+                    import traceback
+                    traceback.print_exc()
+            else:
+                provider_mapping[provider]()  # Only prints a message for 'self'
+        else:
+            raise ValueError(f"Unknown provider: {provider}")
+
         return self.media_list
+
 
     def _create_poster(self):
         if self.poster['enabled'] is False:
@@ -264,6 +297,13 @@ class ListBuilder:
         poster_location = f'{self.config.get_root_path()}/list-builder.png'
         poster.save(poster_location, quality=95)
         return poster_location
+    async def sync(self, provider: str):
+        if(self.media_list is None):
+            print('No media list found')
+            return self
+
+        await self._save_media_list_to_provider(provider)
+        return self
 
     async def build(self):
         # join the rules into a string
@@ -299,19 +339,18 @@ class ListBuilder:
 
         if self.new_list_id is None:
             print(f'Unable to create list {self.title}')
-            return
+            return self
 
-        media_list = await self._get_media_list_from_provider()
+        media_list: MediaList = await self._get_media_list_from_provider()
+
+        print('MEDIA_LIST', media_list)
 
         if media_list is None:
-            print(f'Unable to get media list')
-            return
+            print(f'ERROR: Unable to get media list!!!')
+            return self
 
         # add the media to the list
-        print(f'Adding {len(media_list)} items to {self.title}')
-        for media in media_list:
-            self.emby.add_item_to_collection(self.new_list_id, media['Id'])
-            print(f'Added {media["Name"]} to {self.title}')
-
+        print(f'Adding {len(media_list.items)} items to {self.title}')
         print('Completed list creation')
-        return media_list
+        self.media_list = media_list
+        return self

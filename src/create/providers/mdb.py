@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from src.models import MediaList, MediaListItem, MediaType, MediaListType
+from src.models import MediaList, MediaListItem, MediaType, MediaListType, MediaItem, MediaProviderIds
 
 
 class ListProviderResult:
@@ -10,6 +10,7 @@ class ListProviderResult:
         self.name = name
         self.description = description
         self.movies = movies
+
 
 class MdbProvider:
 
@@ -23,7 +24,7 @@ class MdbProvider:
             self.id = filters[0].get('value', None)
 
 
-    def get_list(self):
+    async def get_list(self):
         if self.id is None:
             print('No list id provided. Cannot get list.')
             return None
@@ -32,19 +33,15 @@ class MdbProvider:
         list_items = self.client.get_list_items(list['id'])
         db = self.config.get_db()
 
-        # print('LIST    sss',list)
-        # print('List Items', list_items)
-
         media_list = MediaList(
             mediaListId=str(uuid.uuid4()),
             name=list['name'],
-            type=MediaListType.COLLECTION,
+            type=self.listType,
             sortName=list['name'],
-            clientId='MDBLIST',
+            clientId='MDBCLIENTID',
             createdAt=datetime.now(),
-            creatorId="APPUSERID"
+            creatorId=self.config.get_user().userId
         )
-
 
         db.media_lists.insert_one(media_list.dict())
         print(media_list)
@@ -54,39 +51,53 @@ class MdbProvider:
         for item in list_items:
             print('-------------', item)
 
-
-            media_list_item = MediaListItem(
+            # poster_id = item['ImageTags'].get('Primary')
+            # poster_url = f"{self.server_url}/emby/Items/{item['Id']}/Images/Primary?api_key={self.api_key}&X-Emby-Token={self.api_key}" if poster_id else None
+            poster_url = f'https://image.tmdb.org/t/p/w500/{item["poster_path"]}'
+            media_item = MediaItem(
                 mediaItemId=str(uuid.uuid4()),
-                mediaListId=media_list.mediaListId,
-                sourceId=item['id'],
                 name=item['title'],
-                # poster=item['poster'],
-                type=MediaType.MOVIE if item['mediatype'] == 'movie' else MediaType.SHOW,
+                title=item.get('Name','TITLE MISSING'),
                 year=item['release_year'],
-                dateAdded=datetime.now(),
-                imdbId=item['imdb_id'],
-                tvdbId=item['tvdb_id']
+                type=MediaType.MOVIE if item['mediatype'] == 'movie' else MediaType.SHOW,
+                poster=poster_url,
+                providers=MediaProviderIds(
+                    imdbId=item['imdb_id'],
+                    tvdbId=item['tvdb_id']
+                ),
+                # ... add any other fields you need here ...
             )
+            # Check for existing mediaItem
+            existing_media_item = None
+            if media_item.providers.imdbId:
+                existing_media_item = await db.media_items.find_one({"providers.imdbId": media_item.providers.imdbId})
+            elif media_item.providers.tvdbId:
+                existing_media_item = await db.media_items.find_one({"providers.tvdbId": media_item.providers.tvdbId})
 
-            db.media_list_items.insert_one(media_list_item.dict())
+            if existing_media_item:
+                media_item.mediaItemId = existing_media_item['mediaItemId']
 
-            try:
-                # TODO: Replace with OmniClient
-                emby_search = self.config.get_client('emby').get_media(external_id='imdb.'+item['imdb_id'])
-                if emby_search[0]['Type'] == 'Trailer':
-                    continue
-                primary_list.append(emby_search[0])
-                continue
-            except:
-                print('not found-imdb')
+                db.media_items.update_one(
+                    {"mediaItemId": existing_media_item["mediaItemId"]},
+                    {"$set": media_item.dict()}
+                )
+            # media_item.dict()
+            else:
+                print('inserting new media item')
+                db.media_items.insert_one(media_item.dict())
 
-            try:
-                emby_search = self.config.get_clients('emby').get_media(external_id='tvdb.'+item['tvdb_id'])
-                if emby_search[0]['Type'] == 'Trailer':
-                    continue
-                primary_list.append(emby_search[0])
-            except:
-                print('not found-tvdb')
-                #emby.get_media(external_id='tvdb.'+item['tvdb_id'])
+                media_list_item = MediaListItem(
+                    mediaItemId=str(uuid.uuid4()),
+                    mediaListId=media_list.mediaListId,
+                    sourceId=item['id'],
+                    dateAdded=datetime.now(),
+                )
+
+                db.media_list_items.insert_one(media_list_item.dict())
+            primary_list.append(media_item.dict())
 
         return primary_list
+
+    async def upload_list(self, media_list: MediaList):
+       # TODO: implement
+         pass
