@@ -58,15 +58,16 @@ export const useAppConfigStore = defineStore({
                 configId = this.appConfig?.configId;
             }
 
+            if(!this.appConfig?.clients){
+                console.log("Fetching clients");
+                this.appConfig = await this.asyncWrapper(hydrateAPI, configId);
+            }
+
             if(this.appConfig?.clients) {
                 // Filter and return by type
-               return this.appConfig.clients.filter((configClient : ConfigClient) => configClient.configId === configId && configClient.client.type === type);
+                return this.appConfig.clients.filter((configClient : ConfigClient) => configClient.configId === configId && configClient.client.type === type);
             }
             // fetch clients
-            console.log("Fetching clients");
-             if(this.appConfig){
-                 this.appConfig.clients = await this.asyncWrapper(fetchConfigClientsByType, configId, type);
-             }
         },
         getConfigClientsByConfigId: async function (configId: string) {
             if(this.appConfig?.clients) {
