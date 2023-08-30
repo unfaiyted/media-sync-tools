@@ -96,6 +96,9 @@ class FilterTypes(BaseModel):
 
 class MediaListOptions(BaseModel):
     mediaListOptionsId: str
+    userId: str
+    type: MediaListType
+    clients: List[ForwardRef('ConfigClient')]
     mediaListId: str
     syncLibraryId: str
     sync: bool
@@ -109,7 +112,7 @@ class MediaList(BaseModel):
     clientId: str  # client provider
     creatorId: str
     name: str
-    poster: Optional[str]
+    poster: Optional[str] or Optional[ForwardRef('MediaPoster')]
     type: MediaListType
     sortName: str
     description: Optional[str]
@@ -124,7 +127,9 @@ class MediaProviderIds(BaseModel):
     tvdbId: Optional[str]
     tmdbId: Optional[str]
     traktId: Optional[str]
-    aniList: Optional[str]
+    tvRageId: Optional[str]
+    rottenTomatoesId: Optional[str]
+    aniListId: Optional[str]
 
 
 class MediaItemRatings(BaseModel):
@@ -145,7 +150,7 @@ class MediaItem(BaseModel):
     sortTitle: Optional[str]
     originalTitle: Optional[str]
     tagline: Optional[str]
-    poster: Optional[str] | Optional[MediaPoster]
+    poster: Optional[str]
     description: Optional[str]
     parentalRating: Optional[str]
     genres: Optional[List[str]]
@@ -159,6 +164,8 @@ class MediaListItem(BaseModel):
     mediaListItemId: str = None
     mediaListId: str
     mediaItemId: str
+    poster: Optional[ForwardRef('MediaPoster')]
+    mediaPosterId: Optional[str]
     item: Optional[ForwardRef('MediaItem')]
     sourceId: Optional[str]
     dateAdded: Optional[datetime]

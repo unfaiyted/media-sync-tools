@@ -444,7 +444,8 @@ class Emby:
     def get_movies(self, limit=50, is_played=None, is_favorite=None):
         return self.get_media(limit, "Movie", is_played, is_favorite)
 
-    def get_media(self, limit=50, item_types="Movie", genre=None, is_played=None, is_favorite=None, external_id=None):
+    def get_media(self, limit=50, item_types="Movie", genre=None, is_played=None, is_favorite=None,
+                  external_id=None, name=None, year=None):
 
         params = {'Recursive': 'true', 'IncludeItemTypes': item_types, "Limit": limit}
 
@@ -456,12 +457,17 @@ class Emby:
             params['Genres'] = genre
         if external_id is not None:
             params['AnyProviderIdEquals'] = external_id
+        if name is not None:
+            params['Name'] = name
+        if year is not None:
+            params['ProductionYear'] = str(year)
 
         url = self._build_url(f'Users/{self.user_id}/Items', params)
         response = self._get_request(url)
         items = response.get('Items', [])
         random.shuffle(items)
         return items[:limit]
+
 
     def get_liked_movies(self, limit=50):
         return self.get_movies(limit, is_favorite=True)
@@ -561,7 +567,7 @@ class Emby:
             self.delete_collection_items(playlist['Id'])
         return self.create_playlist_from_list(media_list)
 
-    def upload_image_from_url(self, sourceListId, poster):
+    def upload_image_from_url(self, sourceListId, poster, root_path):
         if poster is None:
             print('no poster provided')
             return None
@@ -575,7 +581,7 @@ class Emby:
             # Use BytesIO to convert the response content into a file-like object so it can be opened by PIL
             img = Image.open(BytesIO(response.content)).convert('RGBA')
 
-            poster_location = f'{self.config.get_root_path()}/poster.jpg'
+            poster_location = f'{root_path}/poster.png'
             img.save(poster_location, quality=95)
             self.upload_image(sourceListId, poster_location)
 

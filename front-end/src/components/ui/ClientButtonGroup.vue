@@ -15,7 +15,7 @@
                   v-for="client in clients"
                   :key="client.clientId"
                   :class="getButtonClass(client.clientId)"
-                  @click="toggleButton(client.clientId)"
+                  @click="toggleButton(client)"
               >
                 {{ client.label }}
               </button>
@@ -30,8 +30,7 @@
 <script lang="ts">
 import { defineComponent, ref, onBeforeMount } from 'vue';
 import {  fetchClientsByType,  } from '@/api/clients';
-import {fetchConfigClientsByConfigId, fetchConfigClientsByType} from '@/api/configs'
-import {ClientType, ConfigClient} from "@/models";
+import {ClientType, ConfigClient, Client} from "@/models";
 import {useAppConfigStore} from "@/store/appConfigStore"; // Adjust the path accordingly
 
 export default defineComponent({
@@ -47,7 +46,7 @@ export default defineComponent({
     },
       isConfig: {
         type: Boolean,
-          default: true
+          default: false
       },
     maxWidth: {
       type: String,
@@ -57,7 +56,7 @@ export default defineComponent({
   setup(props, context) {
     const clients = ref<(Client|ConfigClient)[]>([]);
     const selectedClientType = ref<ClientType>(ClientType.UNKNOWN);
-    const clientTypes = Object.values(ClientType);
+    // const clientTypes = Object.values(ClientType);
     const loading = ref(true);
     const toggledClients = ref<Record<string, boolean>>({}); // Store which clients are toggled
 
@@ -95,13 +94,16 @@ export default defineComponent({
 
     const fetchClients = async () => {
         const store = useAppConfigStore();
+        console.log('Loading', props)
         try {
             if (props.isConfig) {
+                console.log('Fetching Configured clients from store', props.type);
                 clients.value = await store.getConfigClientsByType(props.type);
             } else {
+                console.log('Fetching defined clients from API', props.type);
                 clients.value = await fetchClientsByType(props.type);
             }
-            console.log('got clients', clients.value, props.type);
+            // console.log('got clients', clients.value, props.type);
         } catch (error) {
             console.error("Error fetching clients:", error);
         }
@@ -117,6 +119,10 @@ export default defineComponent({
           const clientId = (client as ConfigClient).clientId || client.clientId;
           toggledClients.value[clientId] = !toggledClients.value[clientId];
           context.emit('update:toggledClients', toggledClients.value);
+
+          const selectedClientsArray = clients.value.filter(c => toggledClients.value[(c as ConfigClient).clientId || c.clientId]);
+          context.emit('selectedClientsChanged', selectedClientsArray);
+
       };
 
     onBeforeMount(fetchClients)
@@ -128,7 +134,7 @@ export default defineComponent({
         toggleButton,
       selectedClientType,
       loading,
-      clientTypes,
+      // clientTypes,
       buttonClass,
       getButtonClass,
       buttonContainerClass,

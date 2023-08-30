@@ -1,4 +1,4 @@
-import {Filter, ListType,  User} from "@/models";
+import {ConfigClient, Filter, ListType, MediaPoster, User} from "@/models";
 
 export enum MediaType {
     UNKNOWN = 'UNKNOWN',
@@ -8,10 +8,17 @@ export enum MediaType {
     SHOW = 'SHOW',
 }
 
+export enum MediaListType {
+    COLLECTION = "COLLECTION",
+    PLAYLIST = "PLAYLIST",
+    LIBRARY = "LIBRARY",
+}
 
 export interface MediaList {
     mediaListId?: string;
     name: string;
+    poster?: string | MediaPoster;
+    description?: string;
     type: ListType;
     createdAt: Date;
     sortName: string;
@@ -49,6 +56,7 @@ class MediaItemRatings {
     metacritic?: number;
     rottenTomatoes?: number;
     tvdb?: number;
+    tvRage?: number;
     aniList?: number;
 }
 
@@ -71,7 +79,7 @@ export interface MediaListItem {
     poster?: string;
     description?: string;
     year: string;
-    sourceListId?: string;
+    sourceId?: string;
     createdAt: Date;
     filters?: Filter[];
     item?: MediaItem;
@@ -81,8 +89,11 @@ export interface MediaListItem {
 export interface MediaListOptions {
     mediaListOptionsId: string;
     mediaListId: string;
+    userId: string;
+    type: MediaListType;
     syncLibraryId: string;
     sync: boolean;
+    clients: ConfigClient[];
     updateImages: boolean;
     deleteExisting: boolean;
 }

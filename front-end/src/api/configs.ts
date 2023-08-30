@@ -98,7 +98,7 @@ export const fetchFieldsValueByConfigId = async (configId: string | undefined) =
 // Hydrate app api call
 export const hydrateApp = async (userId: string | undefined) => {
     if(!userId) {
-        console.error("Config ID is blank");
+        console.error("User ID is blank", userId);
         return;
     }
     return (await apiClient.get(`/config/hydrate/${userId}`)).data;

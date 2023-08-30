@@ -118,7 +118,9 @@ export default defineComponent({
 
     const syncSelected = async () => {
       if(selectedListItem.value)
-      await syncListToClient('CLIENT_ID', selectedListItem.value.mediaListId||'');
+          // open modal with sync options
+          openRequestModal(selectedListItem.value)
+
 
     };
 

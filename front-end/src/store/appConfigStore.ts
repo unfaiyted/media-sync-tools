@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { Config, ConfigClient} from "@/models";
+import {ClientType, Config, ConfigClient, Library, MediaType, User} from "@/models";
 import {
     deleteConfigClient, fetchConfigClient, fetchConfigClientsByType,
     hydrateApp as hydrateAPI,
@@ -53,21 +53,30 @@ export const useAppConfigStore = defineStore({
                 return (this.appConfig.clients) ? this.appConfig.clients : this.appConfig.clients = await this.asyncWrapper(fetchConfigClient, configClient);
             }
         },
-        getConfigClientsByType: async function (type: string, configId: string | undefined = undefined){
+        getConfigUser: async function (): Promise<User> {
+            if (this.appConfig) {
+                console.log('USER', this.appConfig.user);
+                return this.appConfig.user;
+            }
+            return null;
+        },
+        getConfigClientsByType: async function (type: ClientType, configId: string | undefined = undefined){
             if (configId === undefined) {
                 configId = this.appConfig?.configId;
             }
 
             if(!this.appConfig?.clients){
                 console.log("Fetching clients");
-                this.appConfig = await this.asyncWrapper(hydrateAPI, configId);
+                this.appConfig = await this.asyncWrapper(hydrateAPI, this.appConfig?.user.userId);
             }
 
             if(this.appConfig?.clients) {
                 // Filter and return by type
+                 console.log(type, this.appConfig.clients)
                 return this.appConfig.clients.filter((configClient : ConfigClient) => configClient.configId === configId && configClient.client.type === type);
             }
             // fetch clients
+            return []
         },
         getConfigClientsByConfigId: async function (configId: string) {
             if(this.appConfig?.clients) {
@@ -85,10 +94,11 @@ export const useAppConfigStore = defineStore({
                 return this.appConfig.clients.filter((configClient : ConfigClient) => configClient.configId === configId);
             }
         },
-        getLibraries: async function () {
+        getLibraries: async function () : Promise<Library[]> {
             if(this.appConfig?.libraries) {
                 return this.appConfig.libraries
             }
+
             // fetch libraries
             console.log("Fetching libraries");
             this.appConfig.libraries = await this.asyncWrapper(fetchLibraries);

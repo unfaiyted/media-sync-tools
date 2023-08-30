@@ -6,7 +6,7 @@ from src.create.posters import PosterImageCreator
 from src.create.providers.ai import AiProvider
 from src.create.providers.mdb import MdbProvider
 from src.create.providers.trakt import TraktProvider
-from src.models import MediaListType, MediaList
+from src.models import MediaListType, MediaList, MediaPoster, MediaItem
 
 
 class ProcessedFilter:
@@ -66,7 +66,7 @@ class ProcessedFilter:
 
 class ListBuilder:
 
-    def __init__(self, config, list_type=MediaListType.COLLECTION, list=None):
+    def __init__(self, config, list_type=MediaListType.COLLECTION, list=None, media_list=None):
         self.config = config
         self._ai_list = []
         self.rules = []
@@ -95,6 +95,18 @@ class ListBuilder:
             'bg_color': 'magenta-purple',
 
         }
+
+        if(media_list is not None):
+            print(media_list)
+            MediaItem.update_forward_refs()
+            media_list = MediaList(**media_list)
+            print(f'Initializing list from media list {media_list.name}')
+            self.media_list = media_list
+            # self.description = media_list.description
+            self.title = media_list.name
+            self.sort_title = media_list.sortName
+            self.type = media_list.type
+
 
         if list is not None:
             self._init_list(list)
@@ -223,7 +235,7 @@ class ListBuilder:
             'self': (lambda: print('Using media list')),
             'ai': (lambda: AiProvider(self.media_types, self.description, self._process_filters('ai'), self.limit)),
             'mdb': (lambda: MdbProvider(self.config, self.filters, listType=self.type)),
-            'trakt': (lambda: TraktProvider(self.config, self.filters, listType=self.type)),
+            'trakt': (lambda: TraktProvider(self.config, self.filters,details=self, listType=self.type)),
             'tmdb': (lambda: TMDBProvider(self.config, self.filters, details=self, listType=self.type)),
             'plex': (lambda: PlexProvider(self.config, self.filters, listType=self.type)),
             'emby': (lambda: EmbyProvider(self.config, self.filters, details=self, listType=self.type))
@@ -253,7 +265,7 @@ class ListBuilder:
             'self': (lambda: print('Using media list')),
             'ai': (lambda: AiProvider(self.media_types, self.description, self._process_filters('ai'), self.limit)),
             'mdb': (lambda: MdbProvider(self.config, self.filters, listType=self.type)),
-            'trakt': (lambda: TraktProvider(self.config, self.filters, listType=self.type)),
+            'trakt': (lambda: TraktProvider(self.config, self.filters, details=self, listType=self.type)),
             'tmdb': (lambda: TMDBProvider(self.config, self.filters, details=self, listType=self.type)),
             'plex': (lambda: PlexProvider(self.config, self.filters, listType=self.type)),
             'emby': (lambda: EmbyProvider(self.config, self.filters, details=self, listType=self.type))
@@ -276,7 +288,7 @@ class ListBuilder:
 
         return self.media_list
 
-    def _save_poster_to_provider(self):
+    def _save_poster_to_provider(self, item_id: str, poster: MediaPoster or str):
 
         provider_mapping = {
             'self': (lambda: print('Using media list')),
@@ -289,7 +301,7 @@ class ListBuilder:
                 print(f'Using {self.provider.capitalize()} list')
                 print('Media List', self.media_list)
                 try:
-                    media_list = provider_mapping[self.provider]().save_poster(self.media_list)
+                    provider_mapping[self.provider]().save_poster(item_id, poster)
                 except Exception as e:
                     print(f'Error saving poster image to provider {self.provider}: {e}, {e.args}', )
                     import traceback
@@ -319,7 +331,8 @@ class ListBuilder:
         return poster_location
 
     async def sync(self, provider: str):
-        if (self.media_list is None):
+        print(f'Syncing list {self.title} with provider {provider}')
+        if self.media_list is None:
             print('No media list found')
             return self
 
@@ -331,36 +344,8 @@ class ListBuilder:
         rules_string = ','.join(self.rules)
         if self.delete_existing:
             print(f'Deleting existing list {self.title}')
-            # self.emby.delete_list_by_name(self.title)
 
-        # new_list = None
-        # create the list
         print(f'Creating {self.type} - {self.title}')
-        if self.type == MediaListType.COLLECTION:
-            self.print_list()
-            # new_list = self.emby.create_collection(self.title, self._get_media_type_for_emby(), self.sort_title)
-        elif self.type == MediaListType.PLAYLIST:
-            self.print_list()
-            # new_list = self.emby.create_playlist(self.title, self._get_media_type_for_emby())
-        elif self.type == MediaListType.LIBRARY:
-            self.print_list()
-            # new_list = self.emby.create_library(self.title, self._get_media_type_for_emby(), self.sort_title)
-            self.new_list_id = {
-                'Id': 'library_id',
-            }
-
-        # if new_list is not None:
-        #     self.new_list_id = new_list['Id']
-
-        # if the list already exists, delete it
-        poster_location = self._create_poster()
-
-        if poster_location is not None and not MediaListType.LIBRARY:
-            self.emby.upload_image(self.new_list_id, poster_location)
-
-        if self.new_list_id is None:
-            print(f'Unable to create list {self.title}')
-            return self
 
         media_list: MediaList = await self._get_media_list_from_provider()
 

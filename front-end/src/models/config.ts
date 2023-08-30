@@ -34,7 +34,6 @@ export interface Config {
     userId: string;
     clients?: ConfigClient[];
     libraries?: Library[];
-
     sync?: SyncOptions;
 }
 

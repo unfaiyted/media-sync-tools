@@ -38,29 +38,28 @@ class MdbProvider:
             name=list['name'],
             type=self.listType,
             sortName=list['name'],
+            items=[],
             clientId='MDBCLIENTID',
             createdAt=datetime.now(),
             creatorId=self.config.get_user().userId
         )
 
         db.media_lists.insert_one(media_list.dict())
-        print(media_list)
+        # print(media_list)
 
-        primary_list = []
 
         for item in list_items:
             print('-------------', item)
 
             # poster_id = item['ImageTags'].get('Primary')
             # poster_url = f"{self.server_url}/emby/Items/{item['Id']}/Images/Primary?api_key={self.api_key}&X-Emby-Token={self.api_key}" if poster_id else None
-            poster_url = f'https://image.tmdb.org/t/p/w500/{item["poster_path"]}'
+            # poster_url = f'https://image.tmdb.org/t/p/w500/{item["poster_path"]}'
             media_item = MediaItem(
                 mediaItemId=str(uuid.uuid4()),
-                name=item['title'],
-                title=item.get('Name','TITLE MISSING'),
+                title=item['title'],
                 year=item['release_year'],
                 type=MediaType.MOVIE if item['mediatype'] == 'movie' else MediaType.SHOW,
-                poster=poster_url,
+                # poster=poster_url,
                 providers=MediaProviderIds(
                     imdbId=item['imdb_id'],
                     tvdbId=item['tvdb_id']
@@ -73,30 +72,39 @@ class MdbProvider:
                 existing_media_item = await db.media_items.find_one({"providers.imdbId": media_item.providers.imdbId})
             elif media_item.providers.tvdbId:
                 existing_media_item = await db.media_items.find_one({"providers.tvdbId": media_item.providers.tvdbId})
+            elif media_item.title and media_item.year:
+                existing_media_item = await db.media_items.find_one({"title": media_item.title, "year": media_item.year})
 
             if existing_media_item:
+                print('updating existing media item')
                 media_item.mediaItemId = existing_media_item['mediaItemId']
+
+                # Filter out fields in the media item that are not valid
+                valid_fields = {k: v for k, v in media_item.dict().items() if v}
 
                 db.media_items.update_one(
                     {"mediaItemId": existing_media_item["mediaItemId"]},
-                    {"$set": media_item.dict()}
+                    {"$set": valid_fields}
                 )
             # media_item.dict()
             else:
                 print('inserting new media item')
                 db.media_items.insert_one(media_item.dict())
 
-                media_list_item = MediaListItem(
-                    mediaItemId=str(uuid.uuid4()),
+
+            print('adding media_list_items')
+            media_list_item = MediaListItem(
+                    mediaListItemId=str(uuid.uuid4()),
+                    mediaItemId=media_item.mediaItemId,
                     mediaListId=media_list.mediaListId,
                     sourceId=item['id'],
                     dateAdded=datetime.now(),
-                )
+            )
 
-                db.media_list_items.insert_one(media_list_item.dict())
-            primary_list.append(media_item.dict())
+            db.media_list_items.insert_one(media_list_item.dict())
+            media_list.items.append(media_item.dict())
 
-        return primary_list
+        return media_list
 
     async def upload_list(self, media_list: MediaList):
        # TODO: implement

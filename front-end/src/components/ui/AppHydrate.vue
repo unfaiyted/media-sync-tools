@@ -33,6 +33,7 @@ export default {
             const store = useAppConfigStore();
             try {
                 const userId = 'APP-DEFAULT-USER'; // You'd retrieve this from somewhere in your app, e.g., user authentication
+                console.log('Hydrating app for user', userId);
                 store.appConfig = store.hydrateApp(userId)
                 this.appConfig = store.appConfig;
             } catch (err) {

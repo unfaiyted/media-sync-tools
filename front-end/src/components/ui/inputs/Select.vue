@@ -17,7 +17,11 @@
 </template>
 
 <script lang="ts">
+
+
+
 import { ref, defineComponent, computed } from 'vue';
+import {SelectOption} from "@/models/ui";
 
 export default defineComponent({
   name: 'VSelect',
@@ -25,7 +29,7 @@ export default defineComponent({
   props: {
     modelValue: [String, Number],
     options: {
-      type: [Array, String],
+      type: Object as () => SelectOption[] | string,
       required: true
     },
     isDisabled: {

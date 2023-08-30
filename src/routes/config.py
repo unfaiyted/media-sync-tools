@@ -426,7 +426,7 @@ async def hydrate_config(user_id: str, db: AsyncIOMotorDatabase = Depends(config
     for config_client in config_clients:
         config_client['clientFields'] = [field for field in client_fields if field['clientId'] == config_client['clientId']]
         config_client['clientFieldValues'] = [value for value in await db.config_client_fields_values.find({"configClientId": config_client['configClientId']}).to_list(length=None)]
-
+        config_client['client'] = [client for client in clients if client['clientId'] == config_client['clientId']][0]
     sync_options = await db.sync_options.find_one({"configId": appConfig.configId})
 
 

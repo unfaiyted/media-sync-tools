@@ -134,8 +134,17 @@ class TraktClient:
     def get_list_items(self, username, list_id_or_slug):
         return self.request_with_retry("GET", f"/users/{username}/lists/{list_id_or_slug}/items")
 
+    def get_list_items_by_id(self, list_id):
+        return self.request_with_retry("GET", f"/lists/{list_id}/items")
+
     def get_user_lists(self, username):
         return self.request_with_retry("GET", f"/users/{username}/lists")
+
+    def get_trending_lists(self):
+        return self.request_with_retry("GET", "/lists/trending")
+
+    def get_popular_lists(self):
+        return self.request_with_retry("GET", "/lists/popular")
 
     def get_favorites(self, type, sort):
         return self.request_with_retry("GET", f"/sync/favorites/{type}/{sort}")

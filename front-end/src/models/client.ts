@@ -17,7 +17,7 @@ export interface ClientField {
 }
 
 export interface Client {
-    clientId?: string;
+    clientId: string;
     label: string;
     type: ClientType;
     name: string;

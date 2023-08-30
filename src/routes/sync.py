@@ -2,14 +2,16 @@ import asyncio
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from starlette.background import BackgroundTasks
 
+from src.create.plex import sync_plex_collections, sync_plex_playlists
+from src.db.queries import media_list_queries
 from src.create import ListBuilder
 from src.models.configs import SyncOptions
-from src.models import MediaList, MediaListType
+from src.models import MediaList, MediaListType, MediaListOptions
 from src.config import ConfigManager
 from src.create.toplists import sync_top_lists
 from src.sync.collections import sync_collections, emby_to_plex_sync_collection
 from src.create.lists import Lists
-from src.create.trakt import sync_trakt_user_lists
+from src.create.trakt import sync_trakt_user_lists, sync_trakt_popular_lists, sync_trakt_trending_lists
 from src.create.playlists import create_emby_playlist
 
 from starlette.responses import JSONResponse
@@ -68,7 +70,7 @@ async def trigger_sync_playlist():
 @router.get("/topLists")
 async def trigger_sync_toplist():
     try:
-        sync_top_lists(config)
+        await sync_top_lists(config)
 
         return JSONResponse(status_code=200, content={"message": "Sync watchlist started successfully."})
     except Exception as e:
@@ -93,11 +95,23 @@ async def trigger_sync_collection():
         return JSONResponse(status_code=500, content={"message": str(e)})
 
 
+@router.get("/plex")
+async def trigger_sync_plex():
+    try:
+        # await sync_plex_collections(config)
+        await sync_plex_playlists(config)
+
+        return JSONResponse(status_code=200, content={"message": "Sync plex libraries successfully."})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": str(e)})
+
 @router.get('/trakt')
 async def handle_trakt():
     try:
 
-        sync_trakt_user_lists(config, 'faiyt')
+        # await sync_trakt_user_lists(config, 'faiyt')
+        await sync_trakt_popular_lists(config)
+        await sync_trakt_trending_lists(config)
 
         return JSONResponse(status_code=200, content={"message": "User lists synced from Trakt", })
     except Exception as e:
@@ -106,7 +120,6 @@ async def handle_trakt():
 
 @router.get('/ratings')
 async def handle_ratings(background_tasks: BackgroundTasks):
-
     try:
 
         # Create new list with listBuilder
@@ -196,6 +209,59 @@ async def sync_list_to_client(list_id: str, client_id: str, db: AsyncIOMotorData
 
     if client is None:
         raise HTTPException(status_code=404, detail="Client not found")
+
+
+@router.post("/list/", response_model=MediaListOptions)
+async def sync_media_list_to_provider(payload: MediaListOptions, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+    # Add a record to the database if it doesn't exist for MediaListOptions each user should have a unique record
+    # for each list they want to sync.
+
+
+    # Check which clients are selected for sync. We will loop over each client and sync the list to that client.
+
+    # Collection where MediaListOptions are stored
+    collection = db.media_list_options
+
+    # Assuming you have user_id and list_name as unique identifiers in your model
+    existing_record = await collection.find_one({
+        "userId": payload.userId,
+        "mediaListId": payload.mediaListId
+    })
+
+    if not existing_record:
+        # If the record doesn't exist, insert it
+        await collection.insert_one(payload.dict())
+
+    if existing_record:
+        # If the record exists, update it
+        payload.mediaListOptionsId = existing_record['mediaListOptionsId']
+
+        await collection.replace_one({
+            "userId": payload.userId,
+            "mediaListId": payload.mediaListId
+        }, payload.dict())
+
+    # Fetch the clients for syncing. Assuming this is a field in your MediaListOptions model.
+    clients_to_sync = payload.clients
+
+    # get media list based on mediaListId
+    media_list = await media_list_queries.get_media_list_with_items(db, payload.mediaListId)
+
+
+    print(f'Found {len(clients_to_sync)} clients to sync to.')
+    print(f'Found {len(media_list["items"])} items to sync.')
+
+    # Loop over clients and sync
+    for client in clients_to_sync:
+        # print(client)
+        list = ListBuilder(config, media_list=media_list)
+        print(f'Syncing list to client {client.client.name}')
+        await list.sync(client.client.name.lower())
+
+
+        #   Your syncing logic here. For example:
+        # await sync_to_client(client, payload)
+    return payload
 
 
 # CRUD operations for SyncOptions

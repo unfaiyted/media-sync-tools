@@ -1,9 +1,10 @@
 <template>
 
-    <div v-if="config">
+    <div v-if="isHydrated">
+        hello?
+      <ClientButtonGroup :type="ClientType.MEDIA_SERVER" :is-config="true" />
+      <ClientButtonGroup :type="ClientType.UTILITY" />
     </div>
-  <ClientButtonGroup :type="ClientType.MEDIA_SERVER" :is-config="true" />
-  <ClientButtonGroup :type="ClientType.UTILITY" />
 
 </template>
 
@@ -33,14 +34,32 @@ export default defineComponent({
     },
     data() {
         return {
-            config: {
-                configId: 'APP-DEFAULT-CONFIG'
-            } as Config,
+            config: Object as unknown as Config,
+            isHydrated: false,
         }
     },
     async mounted() {
       const store = useAppConfigStore();
         this.config = await store.getAppConfig('APP-DEFAULT-CONFIG');
+        this.isHydrated = true;
+
+
+        // Watching for changes in config
+        watch(() => this.config, (newValue, oldValue) => {
+            if (newValue !== oldValue) {
+                // Handle the change here
+                console.log('changes')
+                // Update the template or perform any other side effect
+            }
+        });
+
+    },
+    setup() {
+
+
+        return {
+            ClientType
+        }
     },
     methods: {}
 });

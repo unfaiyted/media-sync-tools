@@ -12,6 +12,7 @@ import {
     createMediaListItem, fetchMediaListItem, updateMediaListItem, deleteMediaListItem
 } from "@/api/lists";
 import {requestPosterForItem} from "@/api/posters";
+import {syncListToProviders} from "@/api/sync";
 
 interface ListState {
     mediaLists: MediaList[];
@@ -111,6 +112,16 @@ export const useListStore = defineStore({
             if (index >= 0) this.mediaLists[index] = updatedList;
         },
 
+        syncListToProviders: async function(listOptions: MediaListOptions) {
+            const newListOptions = await this.asyncWrapper(syncListToProviders, listOptions);
+
+            // check if options already exist for this list
+            const index = this.mediaListOptions.findIndex(options => options.mediaListOptionsId === newListOptions.mediaListOptionsId);
+            if (index >= 0) {
+                // if they do, update the existing options
+                this.mediaListOptions[index] = newListOptions;
+            } else this.mediaListOptions.push(newListOptions);
+        },
         removeList: async function(listId: string) : Promise<MediaList[]> {
             this.asyncWrapper(deleteMediaList, listId);
             const index = this.mediaLists.findIndex(list => list.mediaListId === listId);

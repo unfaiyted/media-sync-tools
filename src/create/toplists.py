@@ -1,7 +1,7 @@
 from src.create.list_builder import ListBuilder
 
 
-def sync_top_lists(config):
+async def sync_top_lists(config):
 
     mdb_list_api = config.get_client('mdb')
 
@@ -11,7 +11,7 @@ def sync_top_lists(config):
 
     top_lists = mdb_list_api.get_top_lists()
     print('Top Lists ======================')
-    print(top_lists)
+    # print(top_lists)
 
     for top_list in top_lists[:100]:
         print(top_list['name'], top_list['id'], top_list['description'], top_list['items'])
@@ -38,8 +38,7 @@ def sync_top_lists(config):
 
         if top_list['mediatype'] == 'movie':
             list = ListBuilder(config, list=details)
-
-            list.build()
+            await list.build()
         # elif top_list['mediatype'] == 'tv':
 
 

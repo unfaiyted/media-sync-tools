@@ -134,14 +134,14 @@ class EmbyProvider:
 
         if existing_media_item:
             media_item.mediaItemId = existing_media_item['mediaItemId']
-
+            valid_fields = {k: v for k, v in media_item.dict().items() if v}
             # Update missing fields
             # for field, value in media_item.dict().items():
             #     if value and not existing_media_item.get(field):
             #         existing_media_item[field] = value
             db.media_items.update_one(
                 {"mediaItemId": existing_media_item["mediaItemId"]},
-                {"$set": media_item.dict()}
+                {"$set": valid_fields }
             )
          # media_item.dict()
         else:
@@ -163,7 +163,7 @@ class EmbyProvider:
 
         return media_item
 
-    def search_emby_for_external_ids(self, media_item: MediaItem) -> dict or None:
+    def search_emby_for_external_ids(self, media_list_item: MediaListItem) -> dict or None:
         match = None
         def search_id(external_id: str) -> Optional[dict]:
             try:
@@ -177,17 +177,32 @@ class EmbyProvider:
                 print(f"Failed searching for {external_id} due to {e}")
             return None
 
-        imdb_result = search_id(f"imdb.{media_item.providers.imdbId}")
-        tvdb_result = search_id(f"tvdb.{media_item.providers.tvdbId}")
-        tmdb_result = search_id(f"Tmdb.{media_item.providers.tmdbId}")
+        imdb_result = search_id(f"imdb.{media_list_item.item.providers.imdbId}")
+        tvdb_result = search_id(f"tvdb.{media_list_item.item.providers.tvdbId}")
+        tmdb_result = search_id(f"Tmdb.{media_list_item.item.providers.tmdbId}")
 
         if imdb_result:
            return imdb_result
         elif tvdb_result:
            return tvdb_result
         elif tmdb_result:
-              return tmdb_result
+           return tmdb_result
 
+            #emby_media_items = self.emby.search(media.title, emby_type)
+            # for emby_media in emby_media_items:
+                # try:
+                    # if emby_media['ProductionYear'] == media.year:
+
+        emby_type = 'Movie' if media_list_item.item.type == MediaType.MOVIE else 'Series'
+        # Fallback to name and year
+        search_results = self.client.search(media_list_item.item.title, emby_type)
+        print('SEARCH RESULTS::::', search_results)
+        if search_results:
+                for result in search_results:
+                    if int(result['ProductionYear']) == int(media_list_item.item.year):
+                        match = result
+                        break
+                return match
         return match
 
     def upload_list(self, media_list: MediaList):
@@ -200,7 +215,7 @@ class EmbyProvider:
         # add items to the playlist or collection
         # return the playlist or collection id
 
-        print(media_list)
+        # print(media_list)
         type = media_list.type
 
         if type == MediaListType.COLLECTION:
@@ -211,19 +226,31 @@ class EmbyProvider:
             print('invalid list type')
             return None
 
+
+        # Main List Poster
+        self.save_poster(media_list.sourceListId, media_list.poster)
+
+        print(f'adding {len(media_list.items)} items to list {list["Name"]}')
         for media_list_item in media_list.items:
-            print(media_list_item)
+            print(f'adding item {media_list_item.item.title} to list {list["Name"]}')
             embyItem = self.search_emby_for_external_ids(media_list_item)
 
             if embyItem is None:
                 print('item not found')
                 continue
 
-            self.client.add_item_to_collection(list['Id'], embyItem['Id'])
-            return media_list
+            if type == MediaListType.PLAYLIST:
+                self.client.add_item_to_playlist(list['Id'], embyItem['Id'])
+            elif type == MediaListType.COLLECTION:
+                self.client.add_item_to_collection(list['Id'], embyItem['Id'])
 
-    def save_poster(self, media_list: MediaList):
-        if media_list.poster is None:
+            poster = (media_list_item.poster if media_list_item.poster is not None else media_list_item.item.poster)
+            # Item Poster
+            self.save_poster(embyItem['Id'], poster)
+        return media_list
+
+    def save_poster(self, item_id: str, poster: MediaPoster or str):
+        if poster is None:
             print('no poster provided')
             return None
 
@@ -231,18 +258,18 @@ class EmbyProvider:
         # if the media_list.poster is a file path, upload the image to the provider
         # through the PosterImage class and upload it to the provider
 
-        if media_list.poster.startswith('http'):
+        if poster.startswith('http'):
             print('downloading image from url')
-            self.client.upload_image_from_url(media_list.sourceListId, media_list.poster)
-        elif media_list.poster.startswith('/'):
+            self.client.upload_image_from_url(item_id, poster, root_path=self.config.get_root_path())
+        elif poster.startswith('/'):
             print('uploading image from local')
-            self.client.upload_image(media_list.sourceListId, media_list.poster)
-        # if the media_list.poster is a MediaPoster object, process the image
-        elif isinstance(media_list.poster, MediaPoster):
+            self.client.upload_image(item_id, poster)
+        # if the poster is a MediaPoster object, process the image
+        elif isinstance(poster, MediaPoster):
             print('uploading image from MediaPoster')
             # create image from MediaPoster
-            poster = MediaPosterImageCreator(media_list.poster)
+            poster = MediaPosterImageCreator(poster)
             poster = poster.create()
-            poster_location = f'{self.config.get_root_path()}/poster.jpg'
+            poster_location = f'{self.config.get_root_path()}/poster.png'
             poster.save(poster_location)
-            self.client.upload_image(media_list.sourceListId, poster_location)
+            self.client.upload_image(item_id, poster_location)
