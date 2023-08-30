@@ -446,8 +446,7 @@ class MediaPosterImageCreator:
         # For simplicity, let's assume you've a method implemented to fetch an image from a URL.
         # If not, you can use libraries like 'requests' to fetch the image.
         response = requests.get(url)
-        img = Image.open(io.BytesIO(response.content)).convert('RGBA')
-        return img
+        return Image.open(io.BytesIO(response.content)).convert('RGBA')
 
     def _process_fetched_image(self, background_image):
         base_aspect_ratio = self.image.width / self.image.height
@@ -455,20 +454,16 @@ class MediaPosterImageCreator:
         aspect_ratio_threshold = 0.1
 
         if abs(base_aspect_ratio - background_aspect_ratio) < aspect_ratio_threshold:
-            background_image = background_image.resize(self.image.size, Image.LANCZOS)
+            pass
         elif background_image.width > self.image.width:
             left = (background_image.width - self.image.width) / 2
             right = left + self.image.width
             background_image = background_image.crop((int(left), 0, int(right), background_image.height))
-            background_image = background_image.resize(self.image.size, Image.LANCZOS)
         elif background_image.height > self.image.height:
             top = (background_image.height - self.image.height) / 2
             bottom = top + self.image.height
             background_image = background_image.crop((0, int(top), background_image.width, int(bottom)))
-            background_image = background_image.resize(self.image.size, Image.LANCZOS)
-        else:
-            background_image = background_image.resize(self.image.size, Image.LANCZOS)
-
+        background_image = background_image.resize(self.image.size, Image.LANCZOS)
         return background_image
 
     def _blend_with_background(self, background_image, blend_alpha=0.5):

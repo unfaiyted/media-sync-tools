@@ -2,7 +2,7 @@
 
     <div v-if="config">
     </div>
-  <ClientButtonGroup :type="ClientType.MEDIA_SERVER" />
+  <ClientButtonGroup :type="ClientType.MEDIA_SERVER" :is-config="true" />
   <ClientButtonGroup :type="ClientType.UTILITY" />
 
 </template>

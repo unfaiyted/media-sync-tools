@@ -133,7 +133,7 @@ async def delete_media_poster(media_poster_id: str, db: AsyncIOMotorDatabase = D
 @router.get("/icons/")
 async def list_icons(root_path: str = Depends(config.get_root_path)):
     try:
-        files = os.listdir(root_path + "/resources/icons")
+        files = os.listdir(f"{root_path}/resources/icons")
         return {"filenames": files}
     except Exception as e:
         return {"error": str(e)}
@@ -142,12 +142,12 @@ async def list_icons(root_path: str = Depends(config.get_root_path)):
 async def list_uploads(config_path: str = Depends(config.get_config_path)):
     try:
 
-        path = config_path + "/uploads"
+        path = f"{config_path}/uploads"
         files = os.listdir(path)
 
 
         # loop over files and map them to text and value objects
-        files = list(map(lambda x: {"text": x, "value": path +"/"+ x}, files))
+        files = list(map(lambda x: {"text": x, "value": f"{path}/{x}"}, files))
 
         return {"files": files}
     except Exception as e:

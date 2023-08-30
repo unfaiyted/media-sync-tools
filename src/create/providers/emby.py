@@ -2,7 +2,8 @@ import uuid
 from datetime import datetime
 
 from src.clients.emby import Emby
-from src.models import MediaList, MediaListItem, MediaType, MediaListType, MediaItem, MediaProviderIds
+from src.create.posters import MediaPosterImageCreator
+from src.models import MediaList, MediaListItem, MediaType, MediaListType, MediaItem, MediaProviderIds, MediaPoster
 
 from typing import Optional
 
@@ -190,7 +191,7 @@ class EmbyProvider:
         return match
 
     def upload_list(self, media_list: MediaList):
-        if(media_list is None):
+        if media_list is None:
             print('no list provided')
             return None
 
@@ -221,3 +222,27 @@ class EmbyProvider:
             self.client.add_item_to_collection(list['Id'], embyItem['Id'])
             return media_list
 
+    def save_poster(self, media_list: MediaList):
+        if media_list.poster is None:
+            print('no poster provided')
+            return None
+
+        # if the media_list.poster is a url, download the image and upload it to the provider
+        # if the media_list.poster is a file path, upload the image to the provider
+        # through the PosterImage class and upload it to the provider
+
+        if media_list.poster.startswith('http'):
+            print('downloading image from url')
+            self.client.upload_image_from_url(media_list.sourceListId, media_list.poster)
+        elif media_list.poster.startswith('/'):
+            print('uploading image from local')
+            self.client.upload_image(media_list.sourceListId, media_list.poster)
+        # if the media_list.poster is a MediaPoster object, process the image
+        elif isinstance(media_list.poster, MediaPoster):
+            print('uploading image from MediaPoster')
+            # create image from MediaPoster
+            poster = MediaPosterImageCreator(media_list.poster)
+            poster = poster.create()
+            poster_location = f'{self.config.get_root_path()}/poster.jpg'
+            poster.save(poster_location)
+            self.client.upload_image(media_list.sourceListId, poster_location)

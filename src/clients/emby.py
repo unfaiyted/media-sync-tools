@@ -560,3 +560,22 @@ class Emby:
         if playlist:
             self.delete_collection_items(playlist['Id'])
         return self.create_playlist_from_list(media_list)
+
+    def upload_image_from_url(self, sourceListId, poster):
+        if poster is None:
+            print('no poster provided')
+            return None
+
+        # if the media_list.poster is a url, download the image and upload it to the provider
+
+        print('downloading image from url')
+        response = requests.get(poster, stream=True)
+        if response.status_code == 200:
+            # Assuming _get_request is using the requests library.
+            # Use BytesIO to convert the response content into a file-like object so it can be opened by PIL
+            img = Image.open(BytesIO(response.content)).convert('RGBA')
+
+            poster_location = f'{self.config.get_root_path()}/poster.jpg'
+            img.save(poster_location, quality=95)
+            self.upload_image(sourceListId, poster_location)
+

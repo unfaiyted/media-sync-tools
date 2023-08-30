@@ -21,9 +21,6 @@
           </select>
         </div>
 
-
-
-
         <div class="flex-1">
           <label class="block text-white text-sm font-bold mb-2" for="tags">Tags</label>
           <input type="text" class="appearance-none block w-full bg-gray-700 text-white border border-gray-600 rounded py-2 px-4 mb-3 leading-tight focus:outline-none focus:bg-gray-600 focus:border-gray-500" id="tags" placeholder="Enter tags">

@@ -31,7 +31,8 @@
 import { defineComponent, ref, onBeforeMount } from 'vue';
 import {  fetchClientsByType,  } from '@/api/clients';
 import {fetchConfigClientsByConfigId, fetchConfigClientsByType} from '@/api/configs'
-import {ClientType, ConfigClient} from "@/models"; // Adjust the path accordingly
+import {ClientType, ConfigClient} from "@/models";
+import {useAppConfigStore} from "@/store/appConfigStore"; // Adjust the path accordingly
 
 export default defineComponent({
   name: 'ClientButtonGroup',
@@ -93,9 +94,10 @@ export default defineComponent({
     }));
 
     const fetchClients = async () => {
+        const store = useAppConfigStore();
         try {
             if (props.isConfig) {
-                clients.value = await fetchConfigClientsByType(config.configId, props.type);
+                clients.value = await store.getConfigClientsByType(props.type);
             } else {
                 clients.value = await fetchClientsByType(props.type);
             }

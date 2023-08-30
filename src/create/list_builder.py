@@ -236,7 +236,7 @@ class ListBuilder:
                     self.media_list = await provider_mapping[self.provider]().get_list()
                     return self.media_list
                 except Exception as e:
-                    print(f'Error getting list from provider {self.provider}: {e}, {e.args}',)
+                    print(f'Error getting list from provider {self.provider}: {e}, {e.args}', )
                     import traceback
                     traceback.print_exc()
                 print('Media List', self.media_list)
@@ -264,9 +264,9 @@ class ListBuilder:
                 print(f'Using {provider.capitalize()} list')
                 print('Media List', self.media_list)
                 try:
-                   media_list = provider_mapping[provider]().upload_list(self.media_list)
+                    media_list = provider_mapping[provider]().upload_list(self.media_list)
                 except Exception as e:
-                    print(f'Error saving list to provider {provider}: {e}, {e.args}',)
+                    print(f'Error saving list to provider {provider}: {e}, {e.args}', )
                     import traceback
                     traceback.print_exc()
             else:
@@ -276,6 +276,26 @@ class ListBuilder:
 
         return self.media_list
 
+    def _save_poster_to_provider(self):
+
+        provider_mapping = {
+            'self': (lambda: print('Using media list')),
+            'plex': (lambda: PlexProvider(self.config, self.filters, listType=self.type)),
+            'emby': (lambda: EmbyProvider(self.config, self.filters, details=self, listType=self.type))
+        }
+
+        if self.provider in provider_mapping:
+            if self.provider != 'self':
+                print(f'Using {self.provider.capitalize()} list')
+                print('Media List', self.media_list)
+                try:
+                    media_list = provider_mapping[self.provider]().save_poster(self.media_list)
+                except Exception as e:
+                    print(f'Error saving poster image to provider {self.provider}: {e}, {e.args}', )
+                    import traceback
+                    traceback.print_exc()
+            else:
+                provider_mapping[self.provider]()
 
     def _create_poster(self):
         if self.poster['enabled'] is False:
@@ -297,8 +317,9 @@ class ListBuilder:
         poster_location = f'{self.config.get_root_path()}/list-builder.png'
         poster.save(poster_location, quality=95)
         return poster_location
+
     async def sync(self, provider: str):
-        if(self.media_list is None):
+        if (self.media_list is None):
             print('No media list found')
             return self
 
@@ -312,15 +333,15 @@ class ListBuilder:
             print(f'Deleting existing list {self.title}')
             # self.emby.delete_list_by_name(self.title)
 
-        new_list = None
+        # new_list = None
         # create the list
         print(f'Creating {self.type} - {self.title}')
         if self.type == MediaListType.COLLECTION:
             self.print_list()
-            new_list = self.emby.create_collection(self.title, self._get_media_type_for_emby(), self.sort_title)
+            # new_list = self.emby.create_collection(self.title, self._get_media_type_for_emby(), self.sort_title)
         elif self.type == MediaListType.PLAYLIST:
             self.print_list()
-            new_list = self.emby.create_playlist(self.title, self._get_media_type_for_emby())
+            # new_list = self.emby.create_playlist(self.title, self._get_media_type_for_emby())
         elif self.type == MediaListType.LIBRARY:
             self.print_list()
             # new_list = self.emby.create_library(self.title, self._get_media_type_for_emby(), self.sort_title)
@@ -328,8 +349,8 @@ class ListBuilder:
                 'Id': 'library_id',
             }
 
-        if new_list is not None:
-            self.new_list_id = new_list['Id']
+        # if new_list is not None:
+        #     self.new_list_id = new_list['Id']
 
         # if the list already exists, delete it
         poster_location = self._create_poster()

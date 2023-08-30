@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia';
 import { Config, ConfigClient} from "@/models";
 import {
-    deleteConfigClient,  fetchConfigClient,
+    deleteConfigClient, fetchConfigClient, fetchConfigClientsByType,
     hydrateApp as hydrateAPI,
-     updateConfigClient
+    updateConfigClient
 } from "@/api/configs";
 import {fetchLibraries} from "@/api/libraries";
 
@@ -53,11 +53,20 @@ export const useAppConfigStore = defineStore({
                 return (this.appConfig.clients) ? this.appConfig.clients : this.appConfig.clients = await this.asyncWrapper(fetchConfigClient, configClient);
             }
         },
-        getConfigClientByType: async function (configId: string, type: string) {
+        getConfigClientsByType: async function (type: string, configId: string | undefined = undefined){
+            if (configId === undefined) {
+                configId = this.appConfig?.configId;
+            }
+
             if(this.appConfig?.clients) {
                 // Filter and return by type
                return this.appConfig.clients.filter((configClient : ConfigClient) => configClient.configId === configId && configClient.client.type === type);
             }
+            // fetch clients
+            console.log("Fetching clients");
+             if(this.appConfig){
+                 this.appConfig.clients = await this.asyncWrapper(fetchConfigClientsByType, configId, type);
+             }
         },
         getConfigClientsByConfigId: async function (configId: string) {
             if(this.appConfig?.clients) {

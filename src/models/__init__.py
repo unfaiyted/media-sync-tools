@@ -109,6 +109,7 @@ class MediaList(BaseModel):
     clientId: str  # client provider
     creatorId: str
     name: str
+    poster: Optional[str]
     type: MediaListType
     sortName: str
     description: Optional[str]
@@ -144,7 +145,7 @@ class MediaItem(BaseModel):
     sortTitle: Optional[str]
     originalTitle: Optional[str]
     tagline: Optional[str]
-    poster: Optional[str]
+    poster: Optional[str] | Optional[MediaPoster]
     description: Optional[str]
     parentalRating: Optional[str]
     genres: Optional[List[str]]
