@@ -36,8 +36,12 @@
          do-action-text="Add Provider"
          @cancel-action="showProviderManagerModal = false">
     <ProviderManager :config="config" ref="providerManager" />
-
   </Modal>
+
+
+
+  <MediaListCreator ref="mediaListCreator"/>
+
 
 </template>
 <script lang="ts">

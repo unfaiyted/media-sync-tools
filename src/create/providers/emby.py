@@ -66,6 +66,7 @@ class EmbyProvider:
                 type=self.listType,
                 sourceListId=list_['Id'],
                 # filters=self.filters,
+                items=[],  # Will be populated later
                 sortName=list_['SortName'],
                 clientId='EMBYCLIENTID',
                 createdAt=datetime.now(),

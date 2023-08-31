@@ -45,8 +45,18 @@ export const useAppConfigStore = defineStore({
             this.appConfig = await this.asyncWrapper(hydrateAPI, userId);
             console.log('hydrated', this.appConfig);
         },
-        getAppConfig: async function (userId: string) {
+        getAppConfig: async function (userId: string): Promise<Config> {
             return (this.appConfig) ? this.appConfig : this.appConfig = await this.asyncWrapper(hydrateAPI, userId);
+        },
+        getClients: async function (): Promise<Client[]> {
+            const clients = []
+
+            if (this.appConfig?.clients) {
+               for(let i = 0; i < this.appConfig.clients.length; i++){
+                   clients.push(this.appConfig.clients[i].client);
+               }
+           }
+           return clients;
         },
         getConfigClient: async function (configClient: ConfigClient) {
             if (this.appConfig) {

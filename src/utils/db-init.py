@@ -150,7 +150,9 @@ class DatabaseInitializer:
             "lovedTracks": False,
             "topLists": False,
             "watched": False,
-            "ratings": False
+            "ratings": False,
+            "libraries": False,
+            "trakt": False,
         }
 
         sync = SyncOptions(**sync_options)

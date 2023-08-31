@@ -33,6 +33,7 @@
 import SyncOptions from "@/components/config/SyncOptions.vue";
 import {Config} from "@/models";
 import {fetchConfig} from "@/api/configs";
+import {useAppConfigStore} from "@/store/appConfigStore";
 
 
 export default defineComponent({
@@ -48,7 +49,8 @@ export default defineComponent({
         }
     },
     async mounted() {
-        this.config = await fetchConfig(this.configId);
+      const store = useAppConfigStore();
+        // this.config = await store.getAppConfig('APP-DEFAULT-CONFIG')
         console.log(this.config);
     },
     methods: {}

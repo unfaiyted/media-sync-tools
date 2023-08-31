@@ -102,7 +102,7 @@ class PlexProvider:
     def _extract_external_ids(self, movie: Movie):
         ids = {}
 
-        print('[[movie guid]]', movie.guid)
+        # print('[[movie guid]]', movie.guid)
 
         if not movie.guid:
             return ids
@@ -130,12 +130,12 @@ class PlexProvider:
         external_ids = self._extract_external_ids(item)
 
 
-        print('ITEM ==============', item)
+        # print('ITEM ==============', item)
         # poster_id = item['ImageTags'].get('Primary')
         # poster_url = f"{self.server_url}/emby/Items/{item['Id']}/Images/Primary?api_key={self.api_key}&X-Emby-Token={self.api_key}" if poster_id else None
 
         poster_url = item.thumbUrl if item.thumbUrl else None
-        print('poster url', poster_url)
+        # print('poster url', poster_url)
 
         media_item = MediaItem(
             mediaItemId=str(uuid.uuid4()),

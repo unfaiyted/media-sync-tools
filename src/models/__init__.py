@@ -67,14 +67,16 @@ class Config(BaseModel):
 
 
 class SyncOptions(BaseModel):
-    syncOptionsId: str = None
+    syncOptionsId: str
     configId: str
     collections: bool
     playlists: bool
     lovedTracks: bool
-    topLists: bool
+    topLists: bool # mdb lists
+    trakt: bool
     watched: bool
     ratings: bool
+    libraries: bool
     relatedConfig: Optional[ForwardRef('Config')]
 
 

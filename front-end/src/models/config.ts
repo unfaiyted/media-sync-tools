@@ -46,5 +46,7 @@ export interface SyncOptions {
     topLists: boolean;
     watched: boolean;
     ratings: boolean;
+    libraries: boolean;
+    trakt: boolean;
     relatedConfig?: Config;
 }

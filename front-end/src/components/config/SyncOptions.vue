@@ -95,7 +95,9 @@ export default defineComponent({
             }
 
             try {
-                const options = await fetchSyncOptionsByConfigId(props.config.configId);
+                const options: SyncOptions = await fetchSyncOptionsByConfigId(props.config.configId);
+
+                console.log('Fetched sync options:', options);
                 syncOptions.value = options;
                 booleanOptionKeys.value = Object.keys(options).filter(key => typeof options[key] === 'boolean');
             } catch (error) {

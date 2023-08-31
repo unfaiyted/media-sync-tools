@@ -33,6 +33,8 @@ class SyncOptions(BaseModel):
     topLists: bool
     watched: bool
     ratings: bool
+    trakt: bool
+    libraries: bool
     relatedConfig: Optional[Config]
 
 

@@ -94,6 +94,14 @@ async def trigger_sync_collection():
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": str(e)})
 
+@router.get("/libraries")
+async def trigger_sync_libraries():
+    try:
+        await sync_libraries_from_provider(config)
+
+        return JSONResponse(status_code=200, content={"message": "Sync libraries successfully."})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"message": str(e)})
 
 @router.get("/plex")
 async def trigger_sync_plex():
@@ -286,6 +294,7 @@ async def read_sync_options(sync_options_id: str, db: AsyncIOMotorDatabase = Dep
 @router.get("/options/config/{config_id}", response_model=SyncOptions)
 async def read_sync_options_by_config_id(config_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
     sync_option = await db.sync_options.find_one({"configId": config_id})
+    print(sync_option)
     if sync_option is None:
         raise HTTPException(status_code=404, detail="SyncOption not found")
     return sync_option
