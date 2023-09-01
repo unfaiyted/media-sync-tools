@@ -5,8 +5,11 @@ from enum import Enum
 
 from PIL.Image import Image
 from pydantic import BaseModel, validator
-from typing import List, Optional, ForwardRef, Tuple
+from typing import List, Optional, ForwardRef, Tuple, Union
 from bson import ObjectId
+
+from src.models.filters import TmdbFilters, TraktFilters, JellyfinFilters, PlexFilters, EmbyFilters, \
+    Filters
 
 
 class MediaListType(str, Enum):
@@ -114,14 +117,29 @@ class MediaList(BaseModel):
     clientId: str  # client provider
     creatorId: str
     name: str
-    poster: Optional[str] or Optional[ForwardRef('MediaPoster')]
+    poster: Optional[Union[str,ForwardRef('MediaPoster')]]
     type: MediaListType
     sortName: str
     description: Optional[str]
-    filters: Optional[List[ForwardRef('Filter')]]
+    filters: Optional[Filters]
     items: Optional[List[ForwardRef('MediaListItem')]]
     createdAt: datetime
     creator: Optional[ForwardRef('User')]
+
+    @property
+    def as_dict(self):
+        return {
+            'mediaListId': self.mediaListId,
+            'name': self.name,
+            'type': self.type,
+            'description': self.description,
+            'sortName': self.sortName,
+            'clientId': self.clientId,
+            'createdAt': self.createdAt,
+            'creatorId': self.creatorId,
+            'items': self.items,
+            'filters': [filter.as_dict for filter in self.filters] if isinstance(self.filters, list) else self.filters,
+        }
 
 
 class MediaProviderIds(BaseModel):

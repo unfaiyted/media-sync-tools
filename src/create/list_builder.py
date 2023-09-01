@@ -66,7 +66,7 @@ class ProcessedFilter:
 
 class ListBuilder:
 
-    def __init__(self, config, list_type=MediaListType.COLLECTION, list=None, media_list=None):
+    def __init__(self, config, list_type=MediaListType.COLLECTION, list=None, media_list: MediaList = None):
         self.config = config
         self._ai_list = []
         self.rules = []
@@ -99,11 +99,12 @@ class ListBuilder:
         if(media_list is not None):
             print(media_list)
             MediaItem.update_forward_refs()
-            media_list = MediaList(**media_list)
+            # media_list = MediaList(**media_list)
             print(f'Initializing list from media list {media_list.name}')
             self.media_list = media_list
             # self.description = media_list.description
             self.title = media_list.name
+            self.provider = media_list.clientId
             self.sort_title = media_list.sortName
             self.type = media_list.type
 
@@ -237,7 +238,7 @@ class ListBuilder:
             'mdb': (lambda: MdbProvider(self.config, self.filters, listType=self.type)),
             'trakt': (lambda: TraktProvider(self.config, self.filters,details=self, listType=self.type)),
             'tmdb': (lambda: TMDBProvider(self.config, self.filters, details=self, listType=self.type)),
-            'plex': (lambda: PlexProvider(self.config, self.filters, listType=self.type)),
+            'plex': (lambda: PlexProvider(self.config, media_list=self.media_list)),
             'emby': (lambda: EmbyProvider(self.config, self.filters, details=self, listType=self.type))
         }
 
@@ -349,7 +350,7 @@ class ListBuilder:
 
         media_list: MediaList = await self._get_media_list_from_provider()
 
-        print('MEDIA_LIST', media_list)
+        # print('MEDIA_LIST', media_list)
 
         if media_list is None:
             print(f'ERROR: Unable to get media list!!!')

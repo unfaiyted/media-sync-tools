@@ -1,108 +1,173 @@
 import uuid
+from dataclasses import asdict
 from datetime import datetime
-
+from typing import Dict, List
+from plexapi.library import LibrarySection
 from plexapi.server import PlexServer
 from plexapi.video import Movie, Show
+import re
 
 from src.models import MediaList, MediaListItem, MediaType, MediaListType, MediaItem, MediaProviderIds
 
 
-class PlexProvider:
-    def __init__(self, config, filters=None, listType=MediaListType.COLLECTION):
-        self.config = config
-        self.client: PlexServer = config.get_client('plex')  # Retrieve the Plex client
-        self.filters = filters
-
-        self.id, self.library_name, self.list_type = (
-            self.parse_filters(filters if filters is not None else []))
-        if filters is not None:
-            self.id = filters[0].get('value', None)
+class PlexSearcher:
+    def __init__(self, config):
+        self.plex = config.get_client('plex')
+        # Consider having invalid_keys and key_mapping as class variables if they are constant.
+        # Else, you can set them in __init__ based on some config or dynamically.
+        self.invalid_keys = ['filtersId', 'clientId', 'filterType']  # Update this with actual invalid keys.
+        self.key_mapping = {
+            'offset': 'container_start',
+            'limit': 'maxresults',
+            'type': 'libtype',
+            # Add other key mappings if required.
+        }
 
     @staticmethod
-    def parse_filters(filters):
-        id_value = None
-        library_value = None
-        list_type_value = None
+    def to_snake_case(string):
+        s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', string)
+        return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
-        for f in filters:
+    def remove_invalid_keys(self, filters: Dict[str, str]):
+        for key in self.invalid_keys:
+            filters.pop(key, None)
+        return filters
+
+    def parse_filters(self, filters):
+        parsed_filters = {}
+
+        filters = filters.dict()
+        filters = self.remove_invalid_keys(filters)
+
+        for key, value in filters.items():
+            # Remove invalid keys
+            # Rename keys if needed
+            new_key = self.key_mapping.get(key, key)
+            # Convert camelCase to snake_case
+            new_key = self.to_snake_case(new_key)
+            parsed_filters[new_key] = value
+        return parsed_filters
+
+    def search_libraries(self, filters):
+        # print('searching libraries', filters)
+        parsed_filters = self.parse_filters(filters)
+
+        parsed_filters = {k: v for k, v in parsed_filters.items() if v is not None}
+        print('parsed filters', parsed_filters)
+        # Define a set of valid filter fields for the Plex API
+        valid_filters = {
+            'title', 'studio', 'genre', 'contentRating', 'decade',
+            'genre', 'actor', 'country', 'studio', 'actor', 'libtype'
+            'director', 'resolution', 'producer', 'actor', 'country',
+            'addedAt', 'sort', 'year','maxresults','libtype'
+        }
+        # Remove any keys not in valid_filters
+        parsed_filters = {k: v for k, v in parsed_filters.items() if k in valid_filters}
+        print('valid filters', parsed_filters)
+
+        if('sort' not in parsed_filters):
+            parsed_filters['sort'] = 'titleSort:asc'
+
+
+        if 'maxresults' not in parsed_filters or parsed_filters['maxresults'] is None:
+            parsed_filters['maxresults'] = 100  # Set a default value if you want
+
+        combined_results = []
+
+        libraries: List[LibrarySection] = self.plex.library.sections()
+        for library in libraries:
             try:
-                if f['type'] == 'list_id': # rating_key in plex
-                    id_value = f.get('value')
-                elif f['type'] == 'library':
-                    library_value = f.get('value')
-                elif f['type'] == 'list_type':
-                    list_type_value = f.get('value')
-            except KeyError:
-                print(f"Key 'name' missing in filter: {f}")
+                print('searching library', library.title)
+                search_results = library.search(**parsed_filters)
+                combined_results.extend(search_results)
+                print('added results', len(search_results))
+            except Exception as e:
+                print('error searching library', e)
+                continue
 
-        return id_value, library_value, list_type_value
+        return combined_results
 
-
-    def _get_media_by_id(self, id):
+    def search_lists(self, listId, type):
         try:
-            if self.list_type == MediaListType.COLLECTION:
-                return self.client.fetchItem(id)
-            elif self.list_type == MediaListType.PLAYLIST:
-                return self.client.playlist(title=id)
-        except:
-            print('not item found')
+            if type == MediaListType.COLLECTION:
+                # print('searching collection', listId)
+                return self.plex.fetchItem(int(listId))
+            elif type == MediaListType.PLAYLIST:
+                return self.plex.playlist(title=listId)
+        except Exception as e:
+            print('not item found',e)
+            print(f"Type: {type(e).__name__}")
+            print(f"Arguments: {e.args}")
             return None
 
-    def _get_list_items(self, media):
-        if self.list_type == MediaListType.COLLECTION:
+    def search_list_items(self, media, type):
+        # print('search list items', media, type)
+        if type == MediaListType.COLLECTION:
             if media:
                 if hasattr(media, 'children'):
-                    print('has children', media.children)
+                    # print('has children', media.children)
                     return media.children
-        elif self.list_type == MediaListType.PLAYLIST:
+        elif type == MediaListType.PLAYLIST:
             if media:
-                    return media.items()
+                return media.items()
         return []
 
+class PlexProvider:
+    def __init__(self, config, media_list=None):
+        self.config = config
+        self.client: PlexServer = config.get_client('plex')  # Retrieve the Plex client
+        self.media_list = media_list
+        self.filters = media_list.filters if media_list else {}
+        self.list_type = self.media_list.type if self.media_list else MediaListType.COLLECTION
 
     async def get_list(self):
-        if self.id is None or self.list_type is None:
-            print('No list id or type provided. Cannot get list.')
-            return None
+        plex_search = PlexSearcher(self.config)
+        list = None
 
+        # print(self.filters)
         # The logic to retrieve the list and list items from Plex.
         # This might be different from MDB, so adjust accordingly.
-        list = self._get_media_by_id(self.id)  # Assume your Plex client has a method called getList
+        if self.filters.listId:
+            print('searching list', self.filters.listId, self.list_type)
+            list = plex_search.search_lists(self.filters.listId, self.list_type)  # Assume your Plex client has a method called getList
 
-        list_items = self._get_list_items(list)
+            if list is None:
+                print('ERROR: list didnt return anything')
+                return None
 
+            list_items = plex_search.search_list_items(list, self.list_type)
+        else:
+            list_items = plex_search.search_libraries(self.filters)
 
         db = self.config.get_db()
 
-        media_list = MediaList(
-            mediaListId=str(uuid.uuid4()),
-            name=list.title,  # Plex typically uses 'title' instead of 'name'
-            type=self.list_type,
-            sortName=list.title,
-            description=list.summary,
-            clientId='PLEXCLIENTID',
-            items=[],
-            creatorId=self.config.get_user().userId,
-            createdAt=datetime.now(),
+        if list is not None:
+            # print(dir(list))
+            self.media_list.name = list.title
+            self.media_list.type = self.list_type
+            self.media_list.sortName = list.titleSort
+            self.media_list.description = list.summary
+        else:
+            self.media_list.name = self.media_list.name
+            self.media_list.type = self.list_type or self.filters.listType
+            self.media_list.sortName = self.media_list.sortName
+            self.media_list.description = self.media_list.description
 
-        )
+        self.media_list.creatorId = self.config.get_user().userId
+        self.media_list.createdAt = datetime.now()
 
-        db.media_lists.insert_one(media_list.dict())
-        print(media_list)
-
+        db.media_lists.insert_one(self.media_list.dict())
+        print(self.media_list)
 
         for item in list_items:
-            print('-------------', dir(item))
-            media_list.items.append(await self.create_media_item(item, media_list))
+            # print('-------------', dir(item))
+            self.media_list.items.append(await self.create_media_item(item, self.media_list))
             # Adjust the logic based on how Plex's client class methods and responses are structured.
 
-
-        return media_list
+        return self.media_list
 
     def _extract_external_ids(self, movie: Movie):
         ids = {}
-
-        # print('[[movie guid]]', movie.guid)
 
         if not movie.guid:
             return ids
@@ -116,19 +181,16 @@ class PlexProvider:
             ids['tmdb'] = movie.guid.split('themoviedb://')[1].split('?')[0]
 
         # You can continue adding checks for other ID types in a similar manner...
-    # Check for TVDB
+        # Check for TVDB
         if "thetvdb://" in movie.guid:
             ids['tvdb'] = movie.guid.split('thetvdb://')[1].split('?')[0]
 
         return ids
 
-
-
     async def create_media_item(self, item: Movie or Show, media_list):
         db = self.config.get_db()
 
         external_ids = self._extract_external_ids(item)
-
 
         # print('ITEM ==============', item)
         # poster_id = item['ImageTags'].get('Primary')
@@ -151,20 +213,19 @@ class PlexProvider:
             # ... add any other fields you need here ...
         )
 
+        # # media_list_item = MediaListItem(
+        #      mediaItemId=str(uuid.uuid4()),
+        #      mediaListId=media_list.mediaListId,
+        #      sourceId=item['ratingKey'],
+        #      name=item['title'],
+        #      type=MediaType.MOVIE if item['type'] == 'movie' else MediaType.SHOW,
+        #      year=item.get('year', None),  # Plex provides the 'year' directly
+        #      dateAdded=datetime.now(),
+        #      imdbId=item.get('guid', None),  # 'guid' often contains external ids like imdb or tvdb
+        #      # Plex may not have a direct 'tvdb_id', so you might need some parsing logic from 'guid'
+        #      tvdbId=None
 
-           # # media_list_item = MediaListItem(
-           #      mediaItemId=str(uuid.uuid4()),
-           #      mediaListId=media_list.mediaListId,
-           #      sourceId=item['ratingKey'],
-           #      name=item['title'],
-           #      type=MediaType.MOVIE if item['type'] == 'movie' else MediaType.SHOW,
-           #      year=item.get('year', None),  # Plex provides the 'year' directly
-           #      dateAdded=datetime.now(),
-           #      imdbId=item.get('guid', None),  # 'guid' often contains external ids like imdb or tvdb
-           #      # Plex may not have a direct 'tvdb_id', so you might need some parsing logic from 'guid'
-           #      tvdbId=None
-
-          #  db.media_list_items.insert_one(media_list_item.dict())
+        #  db.media_list_items.insert_one(media_list_item.dict())
 
         # Check for existing mediaItem
         existing_media_item = None
@@ -175,7 +236,6 @@ class PlexProvider:
         elif media_item.title and media_item.year:
             existing_media_item = await db.media_items.find_one({"title": media_item.title, "year": media_item.year})
 
-
         if existing_media_item:
             media_item.mediaItemId = existing_media_item['mediaItemId']
             valid_fields = {k: v for k, v in media_item.dict().items() if v}
@@ -185,7 +245,7 @@ class PlexProvider:
             #         existing_media_item[field] = value
             db.media_items.update_one(
                 {"mediaItemId": existing_media_item["mediaItemId"]},
-                {"$set": valid_fields }
+                {"$set": valid_fields}
             )
         # media_item.dict()
         else:

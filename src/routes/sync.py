@@ -2,7 +2,7 @@ import asyncio
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from starlette.background import BackgroundTasks
 
-from src.create.plex import sync_plex_collections, sync_plex_playlists
+from src.create.plex import sync_plex_collections, sync_plex_playlists, sync_plex_sample_searches
 from src.db.queries import media_list_queries
 from src.create import ListBuilder
 from src.models.configs import SyncOptions
@@ -107,7 +107,8 @@ async def trigger_sync_libraries():
 async def trigger_sync_plex():
     try:
         # await sync_plex_collections(config)
-        await sync_plex_playlists(config)
+        #await sync_plex_playlists(config)
+        await sync_plex_sample_searches(config)
 
         return JSONResponse(status_code=200, content={"message": "Sync plex libraries successfully."})
     except Exception as e:

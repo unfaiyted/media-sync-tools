@@ -1,5 +1,5 @@
 import random
-from typing import Optional
+from typing import Optional, Dict, Any
 
 from PIL import Image
 from io import BytesIO
@@ -9,6 +9,7 @@ from mimetypes import guess_type
 import base64
 import time
 
+from src.models import EmbyFilters
 from src.models import MediaList, MediaItem
 from src.create.posters import PosterImageCreator
 
@@ -426,6 +427,49 @@ class Emby:
         response = self._get_request(url)
         return response.get('Items', [])
 
+    @staticmethod
+    def build_query_parameters(filter_data: EmbyFilters) -> Dict[str, Any]:
+        filter_dict = filter_data.dict(exclude_none=True)
+
+        # Remap keys as necessary
+        remapped_keys = {
+            'search': 'SearchTerm',
+            'limit': 'Limit',
+            'listId': 'ParentId',
+            'offset': 'StartIndex',
+            # ... add other remapped keys here ...
+        }
+
+        for key, new_key in remapped_keys.items():
+            if key in filter_dict:
+                filter_dict[new_key] = filter_dict.pop(key)
+
+        # Special handling for Filters
+        filters_list = []
+
+        if 'isPlayed' in filter_dict:
+            filters_list.append('IsUnplayed' if not filter_dict['isPlayed'] else 'IsPlayed')
+            del filter_dict['isPlayed']
+
+        if 'isFavorite' in filter_dict and filter_dict['isFavorite']:
+            filters_list.append('IsFavorite')
+            del filter_dict['isFavorite']
+
+        if filters_list:
+            filter_dict['Filters'] = ','.join(filters_list)
+
+        # Capitalizing the first letter of each key in the dictionary
+        filter_dict = {key.capitalize(): value for key, value in filter_dict.items()}
+
+        return filter_dict
+
+    def filter_search(self, filters: EmbyFilters) -> Dict[str, Any]:
+        # Building the request URL
+        url = self._build_url(f'Users/{self.user_id}/Items', self.build_query_parameters(filters))
+
+        response = self._get_request(url)
+        return response.get('Items', [])
+
     def get_sessions(self):
         url = self._build_url(f'Sessions')
         response = self._get_request(url)
@@ -467,7 +511,6 @@ class Emby:
         items = response.get('Items', [])
         random.shuffle(items)
         return items[:limit]
-
 
     def get_liked_movies(self, limit=50):
         return self.get_movies(limit, is_favorite=True)
@@ -525,17 +568,16 @@ class Emby:
 
     def create_collection_from_list(self, media_list: MediaList):
         collection = self.create_collection(media_list.name, media_list.type, media_list.sortName)
-            # search emby for the items
-            # add the first result to the collection
+        # search emby for the items
+        # add the first result to the collection
 
         print('-------------', media_list.items)
         for item in media_list.items:
             print('-------------', item)
             media_item = self.search_for_external_ids(item)
             if media_item:
-                    self.add_item_to_collection(collection['Id'], media_item['Id'])
+                self.add_item_to_collection(collection['Id'], media_item['Id'])
         return collection
-
 
     def delete_collection_items(self, collection_id):
         items = self.get_collection_items(collection_id)
@@ -584,4 +626,3 @@ class Emby:
             poster_location = f'{root_path}/poster.png'
             img.save(poster_location, quality=95)
             self.upload_image(sourceListId, poster_location)
-

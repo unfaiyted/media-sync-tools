@@ -1,6 +1,6 @@
 <template>
   <div class="p-6 bg-gray-100">
-    <h1 class="text-2xl font-semibold mb-6">Create a New Media List</h1>
+    <h1 class="text-2xl font-semibold mb-6">Create a New Media List from Provider</h1>
     <form @submit.prevent="createMediaList">
       <!-- Name -->
       <div class="mb-4">
@@ -18,7 +18,8 @@
       <!-- Description -->
       <div class="mb-4">
         <label for="description" class="block mb-2">Description:</label>
-        <textarea v-model="mediaList.description" id="description" rows="4" class="p-2 w-full rounded border"></textarea>
+        <textarea v-model="mediaList.description" id="description" rows="4"
+                  class="p-2 w-full rounded border"></textarea>
       </div>
 
       <!-- Type -->
@@ -37,17 +38,15 @@
 
       <!-- Client ID -->
       <div class="mb-4">
-        <label for="clientId" class="block mb-2">Client:</label>
-        <select v-model="mediaList.clientId" id="clientId" class="p-2 w-full rounded border">
-          <option v-for="client in clients"
-                  :key="client.clientId" :value="client.clientId">{{ client.label }}</option>
-        </select>
+<!--        <select v-model="mediaList.clientId" id="clientId" class="p-2 w-full rounded border">-->
+<!--          <option v-for="client in clients" :key="client.clientId" :value="client.clientId">{{ client.label }}</option>-->
+<!--        </select>-->
+        <VSelect :options="clients" label="Provider:" v-model="mediaList.clientId"/>
       </div>
-
-      <!-- User ID (you might want to handle this differently, for example by selecting from a list of users or fetching the current user's ID) -->
+    {{mediaList.clientId}}
       <div class="mb-4">
-        <label for="userId" class="block mb-2">User ID:</label>
-        <input v-model="mediaList.userId" type="text" id="userId" class="p-2 w-full rounded border">
+        <label for="clientId" class="block mb-2">Filters:</label>
+        <MediaListCreatorFilters :filterType="filterType"/>
       </div>
 
       <!-- Submit Button -->
@@ -58,30 +57,59 @@
 
 
 <script lang="ts">
-import { ref } from 'vue';
-import { MediaList, ListType } from "@/models";
+import {ref} from 'vue';
+import {MediaList, ListType} from "@/models";
 import {useAppConfigStore} from "@/store/appConfigStore";
+import MediaListCreatorFilters from "@/components/list/MediaListCreatorFilters.vue";
+import VSelect from "@/components/ui/inputs/Select.vue";
+import {SelectOption} from "@/models/ui";
 
 export default {
   name: 'MediaListCreator',
+  components: {VSelect, MediaListCreatorFilters},
   setup() {
     const store = useAppConfigStore();
     const mediaList = ref<Partial<MediaList>>({
       name: "",
-      type: ListType.COLLECTION,  // Choose a default or make it an empty string
+      type: ListType.COLLECTION,
+      clientId: '',// Choose a default or make it an empty string
       // Initialize other fields with default values or empty strings
     });
-    const clients = ref<Client[]>([]);
+
+    const filterType = ref('EMBY'); // Default value
+
+    const clients = ref<SelectOption[]>([]);
 
     onMounted(async () => {
-      clients.value = await store.getClients(); // Replace 'getClients' with your action name if different
+      const clientsData = await store.getClients(); // Replace 'getClients' with your action name if different
+
+      clients.value = clientsData.map(client => ({
+        text: client.label,
+        value: client.clientId
+      } as SelectOption));
+
+      console.log(clientsData)
     });
+
+
     const listTypes = Object.values(ListType);  // Assuming ListType is an enum
 
-    const createMediaList = () => {
-      // Logic to create a new media list
-      // For example, call an API to save the media list
+    const selectedClientName = computed(() => {
+      const selectedClient = clients.value.find(client => client.clientId === mediaList.clientId);
+      return selectedClient ? selectedClient.label : 'EMBY'; // default to 'EMBY'
+    });
 
+    watch(mediaList, (newValue) => {
+      console.log('mediaList changed:', newValue);
+      const selectedClient = clients.value.find(client => client.value === newValue.clientId);
+      console.log('Selected client:', selectedClient);
+      filterType.value = selectedClient ? selectedClient.text.toUpperCase() : 'EMBY';
+      console.log('filterType:', filterType.value);
+      // if we change filter types we should reset the filters
+    }, { deep: true });
+
+
+    const createMediaList = () => {
       // Reset form after submission (optional)
       mediaList.value = {
         name: "",
@@ -90,10 +118,14 @@ export default {
       };
     };
 
+
+
     return {
       mediaList,
       listTypes,
       clients,
+      filterType,
+      selectedClientName,
       createMediaList
     };
   }
