@@ -212,7 +212,7 @@ async def delete_config(config_id: str, db: AsyncIOMotorDatabase = Depends(confi
 @router.get("/client/", response_model=List[ConfigClient])
 async def get_config_clients_by_config_id(configId: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
     print('configId', configId)
-    config_clients = await config_queries.get_config_clients_with_client_by_config_id(config_id=configId)
+    config_clients = await config_queries.get_full_config_clients_by_config_id(db, config_id=configId)
     print(config_clients)
     if not config_clients:
         raise HTTPException(status_code=404, detail="Config Clients not found")

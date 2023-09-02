@@ -112,3 +112,101 @@ def get_media_list_by_id(db, list_id):
     collections = db['media_lists']
     media_list = collections.find_one({'mediaListId': list_id})
     return media_list if media_list else None
+
+async def find_lists_containing_item(db, media_item_id: str):
+    # The MongoDB aggregation might look something like this (depending on your schema)
+    pipeline = [
+        {"$match": {"mediaItemId": media_item_id}},
+        {
+            "$lookup": {
+                "from": "media_lists",
+                "localField": "mediaListId",
+                "foreignField": "mediaListId",
+                "as": "containingList"
+            }
+        },
+        {"$unwind": "$containingList"}
+    ]
+
+    results = await db.media_list_items.aggregate(pipeline).to_list(length=None)
+    print(results)
+
+    # Parse the results into the desired format
+    item_name = results[0]['item']['name'] if results else None
+    item_year = results[0]['itemYear'] if results else None
+
+    containing_lists = [
+        {
+            "listId": str(list_entry['mediaListId']),
+            "name": list_entry['containingList']['name'],
+            "poster": list_entry['containingList']['poster']
+        } for list_entry in results
+    ]
+
+    return {
+        "mediaItemId": media_item_id,
+        "title": item_name,
+        "year": item_year,
+        "containingLists": containing_lists
+    }
+
+
+
+async def find_lists_containing_items(db: AsyncIOMotorDatabase, media_item_ids: List[str]):
+
+    pipeline = [
+        {
+            "$match": {"mediaItemId": {"$in": media_item_ids}}
+        },
+        {
+            "$lookup": {
+                "from": "media_items",
+                "localField": "mediaItemId",
+                "foreignField": "mediaItemId",
+                "as": "mediaItemDetails"
+            }
+        },
+        {
+            "$lookup": {
+                "from": "media_lists",
+                "localField": "mediaListId",
+                "foreignField": "mediaListId",
+                "as": "mediaListDetails"
+            }
+        },
+        {
+            "$unwind": "$mediaItemDetails"
+        },
+        {
+            "$unwind": "$mediaListDetails"
+        },
+        {
+            "$group": {
+                "_id": "$mediaItemId",
+                "lists": {
+                    "$push": {
+                        "listId": "$mediaListDetails.mediaListId",
+                        "name": "$mediaListDetails.name",
+                        "poster": "$mediaListDetails.poster"
+                    }
+                },
+                "itemDetails": {"$first": "$mediaItemDetails"}
+            }
+        },
+        {
+            "$project": {
+                "mediaItemId": "$_id",
+                "title": "$itemDetails.title",
+                "year": "$itemDetails.year",
+                "containingLists": "$lists"
+            }
+        }
+    ]
+
+    cursor = db.media_list_items.aggregate(pipeline)
+    return await cursor.to_list(None)
+
+# # Sample usage
+# media_item_ids = ["item_id_1", "item_id_2"]
+# result = await find_lists_containing_items(media_item_ids)
+# print(result)ef find_lists_containing_item(db, media_item_id):

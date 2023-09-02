@@ -1,7 +1,6 @@
 import uuid
 from datetime import datetime
 
-from src.clients.emby import Emby
 from src.create.posters import MediaPosterImageCreator
 from src.models import MediaList, MediaListItem, MediaType, MediaListType, MediaItem, MediaProviderIds, MediaPoster
 

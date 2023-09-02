@@ -7,15 +7,6 @@ from src.models import Library
 from src.models import User
 
 
-class Config(BaseModel):
-    configId: str = None
-    user: Optional[User]
-    userId: str
-    clients: Optional[List[ConfigClient]]
-    libraries: Optional[List[Library]]
-    sync: Optional[SyncOptions]
-
-
 class ConfigClientFieldsValue(BaseModel):
     configClientFieldValueId: Optional[str] = None
     configClientFieldId: str
@@ -35,7 +26,6 @@ class SyncOptions(BaseModel):
     ratings: bool
     trakt: bool
     libraries: bool
-    relatedConfig: Optional[Config]
 
 
 class ConfigClient(BaseModel):
@@ -43,7 +33,6 @@ class ConfigClient(BaseModel):
     label: str
     client: Optional[Client]
     clientId: str
-    relatedConfig: Optional[Config]
     configId: str
     clientFields: Optional[List[ClientField]]
     clientFieldValues: Optional[List[ConfigClientFieldsValue]]

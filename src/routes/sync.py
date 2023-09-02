@@ -294,6 +294,7 @@ async def read_sync_options(sync_options_id: str, db: AsyncIOMotorDatabase = Dep
 # Get Sync Options by Config ID
 @router.get("/options/config/{config_id}", response_model=SyncOptions)
 async def read_sync_options_by_config_id(config_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+    SyncOptions.update_forward_refs()
     sync_option = await db.sync_options.find_one({"configId": config_id})
     print(sync_option)
     if sync_option is None:

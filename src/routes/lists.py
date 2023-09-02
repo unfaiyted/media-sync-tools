@@ -1,6 +1,8 @@
 from typing import List
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
+from pydantic import BaseModel
+
 from src.models import MediaList, MediaListItem, MediaListOptions
 from src.config import ConfigManager
 from fastapi import APIRouter, HTTPException, Depends, Query
@@ -55,6 +57,7 @@ async def read_lists_for_user(user_id: str, db: AsyncIOMotorDatabase = Depends(c
     if not lists:
         raise HTTPException(status_code=404, detail="List not found")
     return lists
+
 
 @router.delete("/{list_id}", response_model=MediaList)
 async def delete_list(list_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
@@ -118,17 +121,15 @@ async def create_listitem(item: MediaListItem, db: AsyncIOMotorDatabase = Depend
 # get all list items for a give listId
 @router.get("/items/{list_id}", response_model=MediaList)
 async def read_media_list_items(
-    list_id: str,
-    skip: int = Query(0, alias="skip", description="Number of records to skip"),
-    limit: int = Query(10, alias="limit", description="Max number of records to return"),
-    db: AsyncIOMotorDatabase = Depends(config.get_db)
+        list_id: str,
+        skip: int = Query(0, alias="skip", description="Number of records to skip"),
+        limit: int = Query(10, alias="limit", description="Max number of records to return"),
+        db: AsyncIOMotorDatabase = Depends(config.get_db)
 ):
     items = await media_list_queries.get_media_list_with_items(db, list_id, skip, limit)
     if not items:
         raise HTTPException(status_code=404, detail="ListItem not found")
     return items
-
-
 
 
 @router.get("/item/{list_item_id}", response_model=MediaListItem)
@@ -157,3 +158,27 @@ async def delete_listitem(media_list_id: str, db: AsyncIOMotorDatabase = Depends
         raise HTTPException(status_code=404, detail="ListItem not found")
     await db.media_list_items.delete_one({"mediaItemId": media_list_id})
     return existing_item
+
+
+class MediaListInfo(BaseModel):
+    listId: str
+    name: str
+    poster: str
+
+class MediaItemResponse(BaseModel):
+    mediaItemId: str
+    title: str
+    year: str
+    containingLists: List[MediaListInfo]
+
+class SingleMediaItemResponse(BaseModel):
+    mediaItemId: str
+    title: str
+    year: str
+    containingLists: List[MediaListInfo]
+
+@router.get("/item/{media_item_id}/in", response_model=SingleMediaItemResponse)
+async def find_lists_containing_item(media_item_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+    mlq = await media_list_queries.find_lists_containing_item(db, media_item_id)
+    print(mlq)
+    return mlq

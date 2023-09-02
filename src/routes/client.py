@@ -10,6 +10,7 @@ from fastapi import APIRouter, HTTPException, Depends
 router = APIRouter()
 config = ConfigManager.get_manager()
 
+
 @router.post("/", response_model=Client)
 async def create_client(client: Client, db: AsyncIOMotorDatabase = Depends(config.get_db)):
     print('client', client)
@@ -22,6 +23,7 @@ async def create_client(client: Client, db: AsyncIOMotorDatabase = Depends(confi
         print(e)
         raise HTTPException(status_code=400, detail="Client insert issue.")
 
+
 @router.get("/", response_model=List[Client])
 async def read_all_clients(db: AsyncIOMotorDatabase = Depends(config.get_db)):
     clients = []
@@ -31,6 +33,7 @@ async def read_all_clients(db: AsyncIOMotorDatabase = Depends(config.get_db)):
     if clients is None:
         raise HTTPException(status_code=404, detail="Client not found")
     return clients
+
 
 @router.get("/{client_id}", response_model=Client)
 async def read_client(client_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
@@ -50,7 +53,6 @@ async def read_all_clients_by_type(client_type: str, db: AsyncIOMotorDatabase = 
     if clients is None:
         raise HTTPException(status_code=404, detail="Client not found")
     return clients
-
 
 
 @router.put("/{client_id}", response_model=Client)
@@ -73,7 +75,6 @@ async def delete_client(client_id: str, db: AsyncIOMotorDatabase = Depends(confi
     return existing_client
 
 
-
 # Get all fields for a given clientId
 @router.get("/field/", response_model=List[ClientField])
 async def read_all_client_fields_by_client_id(clientId: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
@@ -85,6 +86,7 @@ async def read_all_client_fields_by_client_id(clientId: str, db: AsyncIOMotorDat
         raise HTTPException(status_code=404, detail="Client Field not found")
     return client_fields
 
+
 @router.post("/field/", response_model=ClientField)
 async def create_client_field(client_field: ClientField, db: AsyncIOMotorDatabase = Depends(config.get_db)):
     print('client_field', client_field)
@@ -93,6 +95,7 @@ async def create_client_field(client_field: ClientField, db: AsyncIOMotorDatabas
     client_field_dict = client_field.dict()
     result = await db.client_fields.insert_one(client_field_dict)
     return client_field_dict
+
 
 @router.get("/field/{client_field_id}", response_model=ClientField)
 async def read_client_field(client_field_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
@@ -115,7 +118,8 @@ async def read_by_client_id(client_id: str, db: AsyncIOMotorDatabase = Depends(c
 
 
 @router.put("/field/{client_field_id}", response_model=ClientField)
-async def update_client_field(client_field_id: str, client_field: ClientField, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def update_client_field(client_field_id: str, client_field: ClientField,
+                              db: AsyncIOMotorDatabase = Depends(config.get_db)):
     existing_client_field = await db.client_fields.find_one({"clientFieldId": client_field_id})
     if existing_client_field is None:
         raise HTTPException(status_code=404, detail="Client Field not found")
@@ -124,6 +128,7 @@ async def update_client_field(client_field_id: str, client_field: ClientField, d
     await db.client_fields.replace_one({"clientFieldId": client_field_id}, client_field_dict)
     return client_field_dict
 
+
 @router.delete("/field/{client_field_id}", response_model=ClientField)
 async def delete_client_field(client_field_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
     existing_client_field = await db.client_fields.find_one({"clientFieldId": client_field_id})
@@ -131,7 +136,6 @@ async def delete_client_field(client_field_id: str, db: AsyncIOMotorDatabase = D
         raise HTTPException(status_code=404, detail="Client Field not found")
     await db.client_fields.delete_one({"clientFieldId": client_field_id})
     return existing_client_field
-
 
 
 # Filter Types Admin
@@ -143,12 +147,14 @@ async def create_filter(filter_item: FilterType, db: AsyncIOMotorDatabase = Depe
     await db.filters.insert_one(filter_dict)
     return filter_dict
 
+
 @router.get("/filter/{filter_id}", response_model=FilterType)
 async def read_filter(filter_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
     filter_item = await db.filters.find_one({"filterId": filter_id})
     if filter_item is None:
         raise HTTPException(status_code=404, detail="FilterType not found")
     return filter_item
+
 
 @router.put("/filter/{filter_id}", response_model=FilterType)
 async def update_filter(filter_id: str, filter_item: FilterType, db: AsyncIOMotorDatabase = Depends(config.get_db)):
@@ -160,6 +166,7 @@ async def update_filter(filter_id: str, filter_item: FilterType, db: AsyncIOMoto
     await db.filters.replace_one({"filterId": filter_id}, filter_dict)
     return filter_dict
 
+
 @router.delete("/filter/{filter_id}", response_model=FilterType)
 async def delete_filter(filter_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
     existing_filter = await db.filters.find_one({"filterId": filter_id})
@@ -167,6 +174,7 @@ async def delete_filter(filter_id: str, db: AsyncIOMotorDatabase = Depends(confi
         raise HTTPException(status_code=404, detail="FilterType not found")
     await db.filters.delete_one({"filterId": filter_id})
     return existing_filter
+
 
 # Get all filters by clientId
 @router.get("/filter/client/{clientId}", response_model=List[FilterType])

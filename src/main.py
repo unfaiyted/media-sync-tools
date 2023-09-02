@@ -4,7 +4,7 @@ import os
 
 from src.routes import poster, images, sync, utils, config, client, lists, users, library, tasks
 from src.tasks.scheduler import start_scheduler, stop_scheduler
-
+from src.utils.db_init import DatabaseInitializer
 # Get the absolute path of the 'src' folder
 src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'src'))
 
@@ -46,6 +46,11 @@ app.include_router(tasks.router, prefix="/task", tags=["tasks"])
 @app.on_event("startup")
 async def on_startup():
     start_scheduler()
+    # get root path to src
+    root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..','config'))
+    await DatabaseInitializer(f'{root_path}/config.yml').run()
+    print("Database Initialized..")
+
 
 @app.on_event("shutdown")
 async def on_shutdown():

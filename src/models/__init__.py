@@ -3,7 +3,6 @@ from __future__ import annotations  # Use this to enable postponed evaluation of
 from datetime import datetime
 from enum import Enum
 
-from PIL.Image import Image
 from pydantic import BaseModel, validator
 from typing import List, Optional, ForwardRef, Tuple, Union
 from bson import ObjectId
@@ -65,7 +64,6 @@ class Config(BaseModel):
     userId: str
     clients: Optional[List[ForwardRef('ConfigClient')]]
     libraries: Optional[List[ForwardRef('Library')]]
-
     sync: Optional[ForwardRef('SyncOptions')]
 
 
@@ -80,8 +78,6 @@ class SyncOptions(BaseModel):
     watched: bool
     ratings: bool
     libraries: bool
-    relatedConfig: Optional[ForwardRef('Config')]
-
 
 class Filter(BaseModel):
     filterId: str = None
@@ -125,21 +121,6 @@ class MediaList(BaseModel):
     items: Optional[List[ForwardRef('MediaListItem')]]
     createdAt: datetime
     creator: Optional[ForwardRef('User')]
-
-    @property
-    def as_dict(self):
-        return {
-            'mediaListId': self.mediaListId,
-            'name': self.name,
-            'type': self.type,
-            'description': self.description,
-            'sortName': self.sortName,
-            'clientId': self.clientId,
-            'createdAt': self.createdAt,
-            'creatorId': self.creatorId,
-            'items': self.items,
-            'filters': [filter.as_dict for filter in self.filters] if isinstance(self.filters, list) else self.filters,
-        }
 
 
 class MediaProviderIds(BaseModel):

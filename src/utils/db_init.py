@@ -5,8 +5,8 @@ import motor
 from pymongo import MongoClient
 from typing import Optional
 
-from src.config import ConfigManager
-from src.models import ClientType, Config, FieldType, ClientField, SyncOptions, User
+from src.models import ClientType, Config, FieldType, ClientField, SyncOptions, User, ConfigClientFieldsValue, \
+    ConfigClient
 
 # Provided clients and their fields
 clients_data = {
@@ -95,16 +95,23 @@ clients_data = {
 # as well as the clients_data
 import asyncio
 import uuid
-
+import yaml
 from typing import Optional
 from src.config import ConfigManager
 
 
 # ... [keep your clients_data unchanged] ...
 
+def read_config_yml(file_path: str) -> dict:
+    with open(file_path, 'r') as file:
+        config = yaml.safe_load(file)
+    return config
 
 class DatabaseInitializer:
-    def __init__(self, config, database_name: str = 'sync-tools-db'):
+    def __init__(self, ymlFile: str, database_name: str = 'sync-tools-db'):
+        config = ConfigManager.get_manager()
+        self.yml_config = read_config_yml(ymlFile)
+        print(self.yml_config)
         self.db = config.get_db()
         self.users = self.db["users"]
         self.configs = self.db["configs"]
@@ -133,6 +140,7 @@ class DatabaseInitializer:
             "configId": 'APP-DEFAULT-CONFIG',
             "userId": user['userId'],
             "clients": [],
+            "libraries": [],
             "sync": None
         }
         await self.configs.insert_one(default_config)
@@ -159,18 +167,74 @@ class DatabaseInitializer:
         await self.sync_options.insert_one(sync.dict())
         return sync_options
 
+    async def create_config_client_field_values(self, clientId: str, client_key: str):
+        client_config = self.yml_config.get('clients', {}).get(client_key, {})
+        client_field_values = []
+
+        for field_name, field_value in client_config.items():
+            # We need to retrieve the `clientFieldId` corresponding to this field_name
+            client_field = await self.db.client_fields.find_one({
+                "clientId": clientId,
+                "name": field_name
+            })
+
+            if client_field:  # If found
+                field_value_entry = {
+                    "configClientFieldValueId": str(uuid.uuid4()),
+                    "configClientFieldId": client_field["clientFieldId"],
+                    "configClientId": clientId,
+                    "value": field_value,
+                    "clientField": client_field
+                    # If you want to keep a reference to the whole field object, but can be omitted to reduce redundancy
+                }
+
+                client_field_value = ConfigClientFieldsValue(**field_value_entry)
+                client_field_values.append(client_field_value.dict())
+
+        if client_field_values:
+            await self.db.config_client_field_values.insert_many(client_field_values)
+
+    async def create_config_client_and_fields(self, clientId: str, client_key: str, configId: str):
+        client_config = self.yml_config.get('clients', {}).get(client_key, {})
+        client = await self.db.clients.find_one({"clientId": clientId})
+
+        # Create ConfigClient
+        config_client_data = {
+            "configClientId": str(uuid.uuid4()),
+            "label": client["label"],
+            "client": client,
+            "clientId": clientId,
+            "configId": configId
+        }
+        config_client = ConfigClient(**config_client_data)
+        await self.db.config_clients.insert_one(config_client.dict())
+
+        # Create ConfigClientFieldsValue for each field
+        client_field_values = []
+        for field_name, field_value in client_config.items():
+            client_field = await self.db.client_fields.find_one({
+                "clientId": clientId,
+                "name": field_name
+            })
+
+            if client_field:  # If found
+                field_value_entry = {
+                    "configClientFieldValueId": str(uuid.uuid4()),
+                    "configClientFieldId": client_field["clientFieldId"],
+                    "configClientId": config_client.configClientId,
+                    "value": field_value
+                }
+
+                client_field_value = ConfigClientFieldsValue(**field_value_entry)
+                client_field_values.append(client_field_value.dict())
+
+        if client_field_values:
+            await self.db.config_client_field_values.insert_many(client_field_values)
+
     async def run(self):
-        user = await self.get_user()
-        if not user:
-            user = await self.create_admin_user()
-
-        config = await self.get_config()
-        if not config:
-            config = await self.create_default_config(user)
-
-        sync_options = await self.get_sync_options()
-        if not sync_options:
-            sync_options = await self.create_default_sync_options(config)
+        user = await self.get_user() or await self.create_admin_user()
+        config = await self.get_config() or await self.create_default_config(user)
+        sync_options = await self.get_sync_options() or await self.create_default_sync_options(config)
 
         client_collection_exists = await self.db.list_collection_names(filter={"name": "clients"})
         if not client_collection_exists or await self.db.clients.count_documents({}) == 0:
@@ -203,9 +267,14 @@ class DatabaseInitializer:
             await self.db.clients.insert_many(client_entries)
             await self.db.client_fields.insert_many(client_field_entries)
 
+            # Now, after initializing clients and client_fields
+            config = await self.get_config()  # Assuming you have a config object in db
+            for key in clients_data.keys():
+                client_in_db = await self.db.clients.find_one({"name": key.upper()})
+                if client_in_db:
+                    await self.create_config_client_and_fields(client_in_db["clientId"], key, config["configId"])
 
-# To run
-loop = asyncio.get_event_loop()
-config_setup = ConfigManager.get_manager()
-dbinit = DatabaseInitializer(config=config_setup)
-loop.run_until_complete(dbinit.run())
+# # To run
+# loop = asyncio.get_event_loop()
+# dbinit = DatabaseInitializer()
+# loop.run_until_complete(dbinit.run())
