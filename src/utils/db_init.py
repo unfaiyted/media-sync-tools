@@ -107,6 +107,7 @@ def read_config_yml(file_path: str) -> dict:
         config = yaml.safe_load(file)
     return config
 
+
 class DatabaseInitializer:
     def __init__(self, ymlFile: str, database_name: str = 'sync-tools-db'):
         config = ConfigManager.get_manager()
@@ -120,6 +121,57 @@ class DatabaseInitializer:
     async def get_user(self) -> Optional[dict]:
         return await self.users.find_one()
 
+    async def create_indexes(self):
+        # Index for users collection
+        await self.users.create_index("userId", unique=True)
+
+        # Index for configs collection
+        await self.configs.create_index("configId", unique=True)
+
+        # Index for sync_options collection
+        await self.sync_options.create_index("syncOptionsId", unique=True)
+
+        # Index for clients collection
+        clients_collection = self.db["clients"]
+        await clients_collection.create_index("clientId", unique=True)
+
+        # Index for client_fields collection
+        client_fields_collection = self.db["client_fields"]
+        await client_fields_collection.create_index("clientFieldId", unique=True)
+
+        # Index for config_clients collection
+        config_clients_collection = self.db["config_clients"]
+        await config_clients_collection.create_index("configClientId", unique=True)
+
+        # Index for config_client_field_values collection
+        config_client_field_values_collection = self.db["config_client_field_values"]
+        await config_client_field_values_collection.create_index("configClientFieldValueId", unique=True)
+
+        await self.db["media_list_items"].create_index("mediaItemId")
+        await self.db["media_list_items"].create_index("mediaListId")
+
+        # Indexes for the media_items collection
+        await self.db["media_items"].create_index("mediaItemId", unique=True)
+
+        # Indexes for the media_lists collection
+        await self.db["media_lists"].create_index("mediaListId", unique=True)
+        print("Indexes created successfully!")
+
+
+    async def list_indexes(self):
+         db = self.db
+         for collection_name in await db.list_collection_names():
+            print('collection_name', collection_name)
+            collection = db[str(collection_name)]
+            indexes = collection.list_indexes()
+
+            print(f"Indexes for {collection_name}:")
+            index_list = await indexes.to_list(length=None)  # Get all the items
+            for index in index_list:
+                print(f"  - {index['name']}: {index['key']}")
+                print("\n")
+
+
     async def create_admin_user(self):
         admin_user = {
             "userId": 'APP-DEFAULT-USER',
@@ -132,8 +184,10 @@ class DatabaseInitializer:
         await self.users.insert_one(admin.dict())
         return admin_user
 
+
     async def get_config(self) -> Optional[dict]:
         return await self.configs.find_one()
+
 
     async def create_default_config(self, user):
         default_config = {
@@ -146,8 +200,10 @@ class DatabaseInitializer:
         await self.configs.insert_one(default_config)
         return default_config
 
+
     async def get_sync_options(self) -> Optional[dict]:
         return await self.sync_options.find_one()
+
 
     async def create_default_sync_options(self, config):
         sync_options = {
@@ -166,6 +222,7 @@ class DatabaseInitializer:
         sync = SyncOptions(**sync_options)
         await self.sync_options.insert_one(sync.dict())
         return sync_options
+
 
     async def create_config_client_field_values(self, clientId: str, client_key: str):
         client_config = self.yml_config.get('clients', {}).get(client_key, {})
@@ -193,6 +250,7 @@ class DatabaseInitializer:
 
         if client_field_values:
             await self.db.config_client_field_values.insert_many(client_field_values)
+
 
     async def create_config_client_and_fields(self, clientId: str, client_key: str, configId: str):
         client_config = self.yml_config.get('clients', {}).get(client_key, {})
@@ -230,6 +288,7 @@ class DatabaseInitializer:
 
         if client_field_values:
             await self.db.config_client_field_values.insert_many(client_field_values)
+
 
     async def run(self):
         user = await self.get_user() or await self.create_admin_user()
@@ -274,7 +333,10 @@ class DatabaseInitializer:
                 if client_in_db:
                     await self.create_config_client_and_fields(client_in_db["clientId"], key, config["configId"])
 
-# # To run
-# loop = asyncio.get_event_loop()
-# dbinit = DatabaseInitializer()
-# loop.run_until_complete(dbinit.run())
+            # Create indexes
+        await self.create_indexes()
+        # await self.list_indexes()
+    # # To run
+    # loop = asyncio.get_event_loop()
+    # dbinit = DatabaseInitializer()
+    # loop.run_until_complete(dbinit.run())

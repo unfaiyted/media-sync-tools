@@ -81,7 +81,6 @@ export interface MediaListItem {
     year: string;
     sourceId?: string;
     createdAt: Date;
-    filters?: Filter[];
     item?: MediaItem;
     dateAdded?: Date;
 }

@@ -125,15 +125,24 @@ async def find_lists_containing_item(db, media_item_id: str):
                 "as": "containingList"
             }
         },
-        {"$unwind": "$containingList"}
+        {"$unwind": "$containingList"},
+        {
+            "$lookup": {
+                "from": "media_items",
+                "localField": "mediaItemId",
+                "foreignField": "mediaItemId",
+                "as": "item"
+            }
+        },
+        {"$unwind": "$item"},
     ]
 
     results = await db.media_list_items.aggregate(pipeline).to_list(length=None)
     print(results)
 
     # Parse the results into the desired format
-    item_name = results[0]['item']['name'] if results else None
-    item_year = results[0]['itemYear'] if results else None
+    item_name = results[0]['item']['title'] if results else None
+    item_year = results[0]['item']['year'] if results else None
 
     containing_lists = [
         {
@@ -152,7 +161,9 @@ async def find_lists_containing_item(db, media_item_id: str):
 
 
 
-async def find_lists_containing_items(db: AsyncIOMotorDatabase, media_item_ids: List[str]):
+async def find_lists_containing_items(db: AsyncIOMotorDatabase, media_list_id: str):
+
+    media_item_ids = await db["media_list_items"].find({"mediaListId": media_list_id}).distinct("mediaItemId")
 
     pipeline = [
         {
@@ -187,6 +198,7 @@ async def find_lists_containing_items(db: AsyncIOMotorDatabase, media_item_ids: 
                     "$push": {
                         "listId": "$mediaListDetails.mediaListId",
                         "name": "$mediaListDetails.name",
+                        "type": "$mediaListDetails.type",
                         "poster": "$mediaListDetails.poster"
                     }
                 },

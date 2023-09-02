@@ -414,11 +414,13 @@ async def hydrate_config(user_id: str, db: AsyncIOMotorDatabase = Depends(config
 
     # Fetch ConfigClient data based on the found clients
     config_clients = await db.config_clients.find({"configId": appConfig.configId}).to_list(length=None)
-    library_clients = await db.library_clients.find({"libraryId": {"$in": [library['libraryId'] for library in libraries]}}).to_list(length=None)
 
+    if libraries is not None:
+        print('libraries', libraries)
+        library_clients = await db.library_clients.find({"libraryId": {"$in": [library['libraryId'] for library in libraries]}}).to_list(length=None)
 
-    for library in libraries:
-        library['clients'] = [library_client for library_client in library_clients if library_client['libraryId'] == library['libraryId']]
+        for library in libraries:
+            library['clients'] = [library_client for library_client in library_clients if library_client['libraryId'] == library['libraryId']]
 
     # Fetch ClientField data based on the found clients
     client_fields = await db.client_fields.find({"clientId": {"$in": [client['clientId'] for client in config_clients]}}).to_list(length=None)

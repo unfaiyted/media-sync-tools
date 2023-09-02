@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import BaseModel
@@ -163,7 +163,8 @@ async def delete_listitem(media_list_id: str, db: AsyncIOMotorDatabase = Depends
 class MediaListInfo(BaseModel):
     listId: str
     name: str
-    poster: str
+    type: str
+    poster: Optional[str]
 
 class MediaItemResponse(BaseModel):
     mediaItemId: str
@@ -180,5 +181,11 @@ class SingleMediaItemResponse(BaseModel):
 @router.get("/item/{media_item_id}/in", response_model=SingleMediaItemResponse)
 async def find_lists_containing_item(media_item_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
     mlq = await media_list_queries.find_lists_containing_item(db, media_item_id)
+    print(mlq)
+    return mlq
+
+@router.get("/{media_list_id}/in", response_model=List[MediaItemResponse])
+async def find_lists_containing_item(media_list_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+    mlq = await media_list_queries.find_lists_containing_items(db, media_list_id=media_list_id)
     print(mlq)
     return mlq
