@@ -1,6 +1,7 @@
 <template>
     <div class="bg-gray-100 p-6">
         <div v-if="mediaList">
+          <MediaCarousel :media-list="mediaList" :items-to-show="5" />
             <MediaItemsList :media-list="mediaList" :media-list-options="mediaListOptions"/>
         </div>
 
@@ -18,9 +19,10 @@ import { defineComponent, ref, onMounted, onBeforeUnmount } from 'vue';
 import {MediaList} from "@/models";
 import MediaItemsList from "@/components/list/MediaItemsList.vue";
 import { useListStore } from "@/store/listStore";
+import MediaCarousel from "@/components/ui/MediaCarousel.vue";
 
 export default defineComponent({
-    components: { MediaItemsList},
+    components: {MediaCarousel, MediaItemsList},
     setup(props, { emit }) {
         // get list id from route params
         const route = useRoute();

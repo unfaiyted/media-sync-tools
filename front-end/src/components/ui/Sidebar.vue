@@ -1,5 +1,5 @@
 <template>
-    <div :class="sidebarClass" class="bg-gray-900 text-white min-h-screen px-4 py-6 space-y-4 transition-all duration-300">
+    <div :class="sidebarClass" class="bg-gray-900 text-white min-h-screen px-4 py-6 space-y-4 transition-all duration-300 sidebar">
         <router-link v-for="(link, index) in sidebarLinks" :key="index" :to="link.to" class="flex items-center py-2 px-3 rounded hover:bg-gray-700">
             <component :is="link.icon" class="w-5 h-5 mr-2" />
             <span>{{ link.text }}</span>
@@ -73,4 +73,8 @@ export default defineComponent({
 
 <style scoped>
 /* Add your custom styles here */
+.sidebar {
+  width: 250px;
+  min-width: 250px;
+}
 </style>

@@ -3,26 +3,8 @@
         <!-- Table for Media List Details -->
         <!-- View Mode Toggle -->
       <div class="space-y-4">
-        <div class="flex space-x-4">
-          <button class="bg-blue-500 text-white p-2 rounded">Add Provider</button>
-          <div class="mb-4 flex space-x-2">
-            <button @click="addLibrary" class="bg-green-500 text-white px-4 py-2 rounded">Add Library</button>
-            <button @click="addProvider" class="bg-blue-500 text-white px-4 py-2 rounded">Add Provider</button>
-          </div>
 
-          <!-- Add more buttons for other actions -->
-        </div>
 
-        <!-- Example card for Providers -->
-        <div class="p-4 border rounded shadow space-y-2">
-          <h2 class="text-lg font-bold">Provider Name</h2>
-          <p>Type: Streaming</p>
-          <p>Status: Enabled</p>
-          <div class="flex space-x-4">
-            <button class="bg-blue-500 text-white p-2 rounded">Edit</button>
-            <button class="bg-red-500 text-white p-2 rounded">Delete</button>
-          </div>
-        </div>
 
       </div>
         <div class="flex justify-between items-center mb-4">
@@ -66,7 +48,7 @@
                 <td class="py-2 px-4">{{ item?.item?.title }} ({{ item?.item?.year || item?.item?.releaseDate }})</td>
                 <td class="py-2 px-4">
                   {{ item?.item?.type }}
-                  <MediaListContainedInListTooltip :containedInLists="listDataForThisItem" />
+<!--                  <MediaListContainedInListTooltip :containedInLists="listDataForThisItem" />-->
                 </td>
                 <td class="py-2 px-4">{{ item?.item?.sortTitle }}</td>
                 <td class="py-2 px-4">{{ mediaList?.clientId }}</td>

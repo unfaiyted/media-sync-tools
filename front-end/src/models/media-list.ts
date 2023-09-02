@@ -1,4 +1,4 @@
-import {ConfigClient, Filter, ListType, MediaPoster, User} from "@/models";
+import {ConfigClient, Filters, ListType, MediaPoster, User} from "@/models";
 
 export enum MediaType {
     UNKNOWN = 'UNKNOWN',
@@ -23,7 +23,7 @@ export interface MediaList {
     createdAt: Date;
     sortName: string;
     clientId: string;
-    filters?: Filter[];
+    filters?: Filters;
     items?: MediaListItem[];
     userId: string;
     user?: User;

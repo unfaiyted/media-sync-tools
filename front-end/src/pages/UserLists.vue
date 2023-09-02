@@ -1,7 +1,9 @@
 <template>
   <div class="bg-gray-100 p-6">
 
-    <div v-if="mediaLists">
+    <div v-if="mediaLists && mediaLists[0]">
+
+
       <MediaLists :media-lists="mediaLists"/>
     </div>
 
@@ -12,9 +14,10 @@
 <script lang="ts">
 import MediaLists from "@/components/list/MediaLists.vue";
 import {useListStore} from "@/store/listStore";
+import MediaCarousel from "@/components/ui/MediaCarousel.vue";
 
 export default defineComponent({
-  components: {MediaLists},
+  components: {MediaCarousel, MediaLists},
   props: {
     items: {
       type: Array,
