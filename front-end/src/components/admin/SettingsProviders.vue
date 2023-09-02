@@ -40,9 +40,6 @@
 
 
 
-  <MediaListCreator ref="mediaListCreator"/>
-
-
 </template>
 <script lang="ts">
 import { ref, onMounted } from 'vue';
@@ -53,56 +50,56 @@ import ProviderManager from "@/components/config/ProviderManager.vue";
 import {useAppConfigStore} from "@/store/appConfigStore";
 
 export default {
-    name: 'Providers',
-    components: {Modal, LibraryManager, ProviderManager},
+  name: 'SettingsProviders',
+  components: {Modal, LibraryManager, ProviderManager},
 
-    setup() {
-        const config = ref({
-            configId: 'APP-DEFAULT-CONFIG'
-        });
-        const libraries = ref<Library[]>([]);
-        const showLibraryManagerModal = ref<boolean>(false);
-        const showProviderManagerModal = ref<boolean>(false);
+  setup() {
+    const config = ref({
+      configId: 'APP-DEFAULT-CONFIG'
+    });
+    const libraries = ref<Library[]>([]);
+    const showLibraryManagerModal = ref<boolean>(false);
+    const showProviderManagerModal = ref<boolean>(false);
 
-        const libraryManager = ref<InstanceType<typeof LibraryManager> | null>(null);
-        const providerManager = ref<InstanceType<typeof ProviderManager> | null>(null);
+    const libraryManager = ref<InstanceType<typeof LibraryManager> | null>(null);
+    const providerManager = ref<InstanceType<typeof ProviderManager> | null>(null);
 
-        onMounted(async () => {
-            const store = useAppConfigStore();
-            libraries.value = (await store.getLibraries()) || [];
-            config.value = await store.getAppConfig('APP-DEFAULT-USER');
-        });
+    onMounted(async () => {
+      const store = useAppConfigStore();
+      libraries.value = (await store.getLibraries()) || [];
+      config.value = await store.getAppConfig('APP-DEFAULT-USER');
+    });
 
-        const addProvider = () => {
-            showProviderManagerModal.value = true;
-            providerManager.value?.createConfigClient();
-        };
+    const addProvider = () => {
+      showProviderManagerModal.value = true;
+      providerManager.value?.createConfigClient();
+    };
 
-        const addLibrary = () => {
-            showLibraryManagerModal.value = true;
-            libraryManager.value?.createLib();
-        };
+    const addLibrary = () => {
+      showLibraryManagerModal.value = true;
+      libraryManager.value?.createLib();
+    };
 
-        const closeProviderModal = () => {
-            showProviderManagerModal.value = false;
-        };
+    const closeProviderModal = () => {
+      showProviderManagerModal.value = false;
+    };
 
-        const closeLibraryModal = () => {
-            showLibraryManagerModal.value = false;
-        };
+    const closeLibraryModal = () => {
+      showLibraryManagerModal.value = false;
+    };
 
-        return {
-            config,
-            libraries,
-            showLibraryManagerModal,
-            showProviderManagerModal,
-            libraryManager,
-            providerManager,
-            addProvider,
-            addLibrary,
-            closeProviderModal,
-            closeLibraryModal
-        };
-    }
+    return {
+      config,
+      libraries,
+      showLibraryManagerModal,
+      showProviderManagerModal,
+      libraryManager,
+      providerManager,
+      addProvider,
+      addLibrary,
+      closeProviderModal,
+      closeLibraryModal
+    };
+  }
 };
 </script>

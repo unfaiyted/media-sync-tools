@@ -2,7 +2,29 @@
     <div class="p-6 bg-gray-100 min-h-screen" v-if="mediaList.items">
         <!-- Table for Media List Details -->
         <!-- View Mode Toggle -->
+      <div class="space-y-4">
+        <div class="flex space-x-4">
+          <button class="bg-blue-500 text-white p-2 rounded">Add Provider</button>
+          <div class="mb-4 flex space-x-2">
+            <button @click="addLibrary" class="bg-green-500 text-white px-4 py-2 rounded">Add Library</button>
+            <button @click="addProvider" class="bg-blue-500 text-white px-4 py-2 rounded">Add Provider</button>
+          </div>
 
+          <!-- Add more buttons for other actions -->
+        </div>
+
+        <!-- Example card for Providers -->
+        <div class="p-4 border rounded shadow space-y-2">
+          <h2 class="text-lg font-bold">Provider Name</h2>
+          <p>Type: Streaming</p>
+          <p>Status: Enabled</p>
+          <div class="flex space-x-4">
+            <button class="bg-blue-500 text-white p-2 rounded">Edit</button>
+            <button class="bg-red-500 text-white p-2 rounded">Delete</button>
+          </div>
+        </div>
+
+      </div>
         <div class="flex justify-between items-center mb-4">
             <h1 class="text-lg font-semibold">{{ mediaList.name }}</h1>
 
@@ -42,7 +64,10 @@
                     <img :src="item?.item?.poster" :alt="item?.name" class="max-w-full h-20 mb-2">
                 </td>
                 <td class="py-2 px-4">{{ item?.item?.title }} ({{ item?.item?.year || item?.item?.releaseDate }})</td>
-                <td class="py-2 px-4">{{ item?.item?.type }}</td>
+                <td class="py-2 px-4">
+                  {{ item?.item?.type }}
+                  <MediaListContainedInListTooltip :containedInLists="listDataForThisItem" />
+                </td>
                 <td class="py-2 px-4">{{ item?.item?.sortTitle }}</td>
                 <td class="py-2 px-4">{{ mediaList?.clientId }}</td>
 
@@ -81,10 +106,11 @@ import MediaListActionMenu from "@/components/list/MediaListActionMenu.vue";
 import MediaListOptionsPopup from "@/components/list/MediaListOptionsPopup.vue";
 import {useListStore} from "@/store/listStore";
 import MediaListContextMenu from "@/components/list/MediaListContextMenu.vue";
+import MediaListContainedInListTooltip from "@/components/list/MediaListContainedInListTooltip.vue";
 
 export default defineComponent({
     name: 'MediaItemsList',
-    components: {MediaListContextMenu, MediaListOptionsPopup, ContextMenu, MediaListActionMenu},
+    components: {MediaListContainedInListTooltip, MediaListContextMenu, MediaListOptionsPopup, ContextMenu, MediaListActionMenu},
     props: {
         mediaList: {
             type: Object as () => MediaList,

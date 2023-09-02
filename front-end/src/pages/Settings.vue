@@ -1,9 +1,9 @@
 <template>
 
     <div v-if="isHydrated">
-        hello?
-      <ClientButtonGroup :type="ClientType.MEDIA_SERVER" :is-config="true" />
-      <ClientButtonGroup :type="ClientType.UTILITY" />
+<!--      <ClientButtonGroup :type="ClientType.MEDIA_SERVER" :is-config="true" />-->
+<!--      <ClientButtonGroup :type="ClientType.UTILITY" />-->
+      <SettingsTabs/>
     </div>
 
 </template>
@@ -18,6 +18,7 @@ import SyncOptions from "@/components/config/SyncOptions.vue";
 import {ClientType, Config} from "@/models";
 import {fetchConfig} from "@/api/configs";
 import {useAppConfigStore} from "@/store/appConfigStore";
+import SettingsTabs from "@/components/admin/SettingsTabs.vue";
 export default defineComponent({
   computed: {
     ClientType() {
@@ -25,6 +26,7 @@ export default defineComponent({
     }
   },
     components: {
+      SettingsTabs,
         ClientFieldManagement,
         UserManagement,
         ListEditor,
@@ -40,7 +42,7 @@ export default defineComponent({
     },
     async mounted() {
       const store = useAppConfigStore();
-        this.config = await store.getAppConfig('APP-DEFAULT-CONFIG');
+        this.config = await store.getAppConfig('APP-DEFAULT-USER');
         this.isHydrated = true;
 
 

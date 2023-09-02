@@ -255,10 +255,11 @@ async def sync_media_list_to_provider(payload: MediaListOptions, db: AsyncIOMoto
 
     # get media list based on mediaListId
     media_list = await media_list_queries.get_media_list_with_items(db, payload.mediaListId)
+    media_list = MediaList(**media_list)
 
 
     print(f'Found {len(clients_to_sync)} clients to sync to.')
-    print(f'Found {len(media_list["items"])} items to sync.')
+    print(f'Found {len(media_list.items)} items to sync.')
 
     # Loop over clients and sync
     for client in clients_to_sync:

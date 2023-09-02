@@ -6,7 +6,7 @@
         <div v-if="error">
             An error occurred: {{ errorMessage }}
         </div>
-        <div v-if="appConfig">
+        <div v-if="!loading">
             <!-- Display hydrated data as needed or pass it to child components -->
             <slot></slot>
         </div>
@@ -34,8 +34,9 @@ export default {
             try {
                 const userId = 'APP-DEFAULT-USER'; // You'd retrieve this from somewhere in your app, e.g., user authentication
                 console.log('Hydrating app for user', userId);
-                store.appConfig = store.hydrateApp(userId)
+                store.appConfig = await store.hydrateApp(userId)
                 this.appConfig = store.appConfig;
+                console.log(this.appConfig)
             } catch (err) {
                 this.error = true;
                 this.errorMessage = err.response ? err.response.data.detail : 'An unexpected error occurred';
