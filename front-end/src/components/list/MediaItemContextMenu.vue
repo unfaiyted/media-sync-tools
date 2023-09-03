@@ -1,43 +1,47 @@
 <template v-if="event">
-    <ContextMenu :event="event" :items="menu" />
+    <ContextMenu :event="event" :items="menu"/>
+    <MediaItemOptionsPopup
+        v-if="selectedItem"
+        :selectedItem="selectedItem"
+        ref="optionsPopup"
+    />
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue';
+import {defineComponent, ref, watch,computed} from 'vue';
 import ContextMenu from '@/components/ui/ContextMenu.vue';
 import {MenuRow} from "@/models/menu";
 import {MenuItem} from "@headlessui/vue";
-import {MediaListItem, } from "@/models";
+import {MediaListItem,} from "@/models";
 import {useListStore} from "@/store/listStore";
+import MediaItemOptionsPopup from "@/components/list/MediaItemOptionsPopup.vue";
 
-export default defineComponent( {
-    name: "MediaListContextMenu",
+export default defineComponent({
+    name: "MediaItemContextMenu",
     components: {
+        MediaItemOptionsPopup,
         ContextMenu
     },
     props: {
-        event: Object as () => Event | null,
-        selectedItem: Object as () => MediaListItem | null,
-
+        event: Object as () => Event | null
     },
-    setup({event, selectedItem}) {
+    setup({event}) {
         const listStore = useListStore();
+        const showOptionsPopup = ref(false);
+        const optionsPopup = ref<InstanceType<typeof MediaItemOptionsPopup> | null>(null);
+        const selectedItem = computed(() => listStore.getLastSelectedItem());
 
 
-        const contextMenuItems = [
+        watch(() => event, (newVal, oldVal) => {
+            console.log("Event changed", newVal, oldVal);
+        })
+        // const addToGrabber = async () => {
+
+        const contextMenuItems = computed(() => [
             {
-                label: 'Clone list',
+                label: 'Edit',
                 action: async () => {
                     // router.push(`/list/${selectedItem.value.mediaListId}/edit`);
-                    // update sourceListId as mediaListId
-                    // update mediaListId as new mediaListId
-                }
-            },
-            {
-                label: 'Edit list',
-                action: async () => {
-                    // router.push(`/list/${selectedItem.value.mediaListId}/edit`);
-
                 }
             },
             {
@@ -51,6 +55,12 @@ export default defineComponent( {
                 }
             },
             {
+                label: 'Send to List',
+                action: async () => {
+                    console.log("Copying item to list:", selectedItem);
+                }
+            },
+            {
                 label: 'Edit Poster',
                 action: async () => {
                     // default poster with path set to this posters path.
@@ -58,9 +68,18 @@ export default defineComponent( {
                 }
             },
             {
-                label: 'Go to Provider',
+                label: 'Get Provider Poster',
                 action: async () => {
-                    console.log("Navigating to Provider list", selectedItem);
+                    if (selectedItem && selectedItem.mediaItemId) {
+                        await listStore.updateListItemPoster(selectedItem.mediaItemId);
+
+                    }
+                }
+            },
+            {
+                label: 'IMDB',
+                action: async () => {
+                    console.log("Navigating to IMDB:", selectedItem);
                     //TODO: add check for imdb for this label
                     window.open(`https://www.imdb.com/title/${selectedItem?.item?.providers?.imdbId}`, '_blank');
                 }
@@ -68,17 +87,29 @@ export default defineComponent( {
             {
                 label: 'Add to Sonarr / Radarr',
                 action: async () => {
+                    if (!optionsPopup.value) {
+                        console.log("No options popup found");
+                        return;
+                    }
+
+                    if (!selectedItem) {
+                        console.log("No selected item found");
+                        return;
+                    }
                     // Todo: Implement this and have it check what type and if its a movie vs tv show and then add it to the correct agent
                     console.log("Adding item to Sonarr / Radarr:", selectedItem);
                     // ue?.openModal(selectedItem);
+                    optionsPopup.value.openModal(selectedItem);
                 }
             },
 
-        ];
+        ]);
 
 
         return {
             menu: contextMenuItems,
+            selectedItem,
+            optionsPopup
         };
     }
 });

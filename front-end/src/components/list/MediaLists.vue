@@ -153,7 +153,6 @@ export default defineComponent({
           // open modal with sync options
         openRequestModal(selectedListItem.value)
 
-
     };
 
     const contextMenuItems = [

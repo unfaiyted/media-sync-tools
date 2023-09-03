@@ -1,7 +1,12 @@
 <template>
+    <div class="flex justify-between">
 
-  <div class="button-group flex justify-end">
-    <button
+    <div class="flex">
+        <h2 class="text-black text-lg font-semibold mb-4">{{ mediaList.name }}</h2>
+    </div>
+    <div class="button-group flex justify-end">
+
+        <button
         v-if="currentIndex !== 0"
         @click="previous"
         class="transition-opacity group-hover:opacity-100 mr-1 mb-1 circle-btn">
@@ -11,10 +16,12 @@
     <button
         v-if="currentIndex + itemsToShow < mediaList.items.length"
         @click="next"
-        class="transition-opacity group-hover:opacity-100 circle-btn">
+        class="transition-opacity group-hover:opacity-100 mr-3 mb-1 circle-btn">
       <ChevronRightIcon class="w-8 h-8 text-black"/>
     </button>
   </div>
+
+    </div>
   <div ref="carouselContainer" class="flex justify-between items-center carousel-container">
 
 

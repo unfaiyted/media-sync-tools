@@ -111,9 +111,14 @@ export const useAppConfigStore = defineStore({
 
             // fetch libraries
             console.log("Fetching libraries");
-            this.appConfig.libraries = await this.asyncWrapper(fetchLibraries);
-            return this.appConfig.libraries;
-        },
+
+            if(this.appConfig) {
+                this.appConfig.libraries = await this.asyncWrapper(fetchLibraries);
+                return this.appConfig.libraries || []
+            } else {
+                return []
+            }
+            },
         updateConfigClient: async function (configClient: ConfigClient) {
             // Update the config client in the appConfig
             if(this.appConfig?.clients) {

@@ -1,28 +1,38 @@
 <template>
-  <div class="media-item-poster relative cursor-pointer hover:opacity-80" :style="mediaItem.poster && !imageError ? {} : randomGradient">
-    <!-- Conditional Image Poster based on whether it's loaded successfully -->
-    <div class="image-container">
-      <img v-preload :src="mediaItem.poster" alt="Media Item Poster">
+    <div class="media-item-poster relative cursor-pointer hover:opacity-80" :style="mediaItem.poster && !imageError ? {} : randomGradient">
+        <!-- Conditional Image Poster based on whether it's loaded successfully -->
+        <div class="image-container">
+            <img v-preload :src="mediaItem.poster" alt="Media Item Poster">
+        </div>
+        <!-- Hover Overlay -->
+        <div class="absolute inset-0 p-2 flex flex-col justify-center items-center bg-black bg-opacity-75 opacity-0 hover:opacity-100 transition-opacity">
+            <div class="flex flex-col text-left mb-8 h-full">  <!-- Added 'mb-8' for some spacing between the text and buttons -->
+                <!-- Display title -->
+                <h2 class="text-white text-lg font-semibold mb-2">{{ mediaItem.title }}</h2>
+                <!-- Display first 100 characters of the description -->
+                <p class="text-white mb-4">{{ mediaItem?.description?.slice(0, 100) }}</p>
+            </div>
+            <!-- Options or Actions -->
+            <div class="space-y-2">
+                <button class="border-red-500 text-white bg-opacity-30 border-2 px-3 py-1.5 rounded hover:bg-red-500 hover:bg-opacity-60 hover:text-white transition-all">
+                    Add to Library
+                </button>
+                <button class="border-grey-500 text-white  px-3 py-1.5 rounded hover:bg-blue-500 hover:bg-opacity-60 hover:text-white transition-all">
+                    <Cog8ToothIcon class="w-5 h-5 w-[18px] text-white"/>
+                </button>
+                <!-- Add more options or customize as needed -->
+            </div>
+        </div>
     </div>
-    <!-- Hover Overlay -->
-    <div class="absolute inset-0 flex flex-col justify-center items-center bg-black bg-opacity-50 opacity-0 hover:opacity-100 transition-opacity">
-      <!-- Display title -->
-      <h2 class="text-white text-lg font-semibold mb-4">{{ mediaItem.title }}</h2>
-      <!-- Options or Actions -->
-      <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mb-2">
-        Option 1
-      </button>
-      <button class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
-        Option 2
-      </button>
-      <!-- Add more options or customize as needed -->
-    </div>
-  </div>
 </template>
+
+
+
 
 <script lang="ts">
 import { defineComponent, PropType, ref, watch } from 'vue';
 import { MediaItem } from "@/models";  // Adjust the path as necessary
+import {Cog8ToothIcon} from "@heroicons/vue/24/solid";
 
 const preload = {
   mounted(el) {
@@ -38,6 +48,9 @@ const preload = {
 
 export default defineComponent({
   name: 'MediaItemPoster',
+    components: {
+        Cog8ToothIcon
+    },
   props: {
     mediaItem: {
       type: Object as PropType<MediaItem>,
@@ -96,6 +109,7 @@ export default defineComponent({
 img {
   opacity: 0;
   transition: opacity 0.3s ease-in-out;
+    border-radius: 3px;
 }
 img.loaded {
   opacity: 1;

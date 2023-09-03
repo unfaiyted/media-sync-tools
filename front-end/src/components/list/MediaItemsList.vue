@@ -5,7 +5,6 @@
       <div class="space-y-4">
 
 
-
       </div>
         <div class="flex justify-between items-center mb-4">
             <h1 class="text-lg font-semibold">{{ mediaList.name }}</h1>
@@ -71,10 +70,9 @@
 
 
 
-        <MediaListContextMenu
+        <MediaItemContextMenu
             :event="contextMenuEvent"
-            :selectedItem="selectedItem"
-            ref="contextMenu"   />
+        />
 
 
     </div>
@@ -87,12 +85,12 @@ import ContextMenu from "@/components/ui/ContextMenu.vue";
 import MediaListActionMenu from "@/components/list/MediaListActionMenu.vue";
 import MediaListOptionsPopup from "@/components/list/MediaListOptionsPopup.vue";
 import {useListStore} from "@/store/listStore";
-import MediaListContextMenu from "@/components/list/MediaListContextMenu.vue";
+import MediaItemContextMenu from "@/components/list/MediaItemContextMenu.vue";
 import MediaListContainedInListTooltip from "@/components/list/MediaListContainedInListTooltip.vue";
 
 export default defineComponent({
     name: 'MediaItemsList',
-    components: {MediaListContainedInListTooltip, MediaListContextMenu, MediaListOptionsPopup, ContextMenu, MediaListActionMenu},
+    components: {MediaListContainedInListTooltip, MediaItemContextMenu, MediaListOptionsPopup, ContextMenu, MediaListActionMenu},
     props: {
         mediaList: {
             type: Object as () => MediaList,
@@ -117,17 +115,16 @@ export default defineComponent({
         const requestModal = ref<InstanceType<typeof MediaListOptionsPopup> | null>(null);
         const viewMode = ref('table'); // Default view mode
 
-        function updateOptions() {
-            // Handle logic to update the MediaList options
-            console.log("Updated options:", props.mediaListOptions);
-            showOptionsPopup.value = false;
-        }
 
         function handleRightClick(event: Event, item: MediaListItem) {
+            const store = useListStore();
             event.preventDefault();
+            console.log("Right click", event, item)
             contextMenuEvent.value = event;
-            selectedItem.value = item; // Store the selected list item for context operations
+            store.setSelectedItem(item);
         }
+
+
 
 
         return {

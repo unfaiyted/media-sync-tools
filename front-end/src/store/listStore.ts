@@ -17,6 +17,8 @@ import {syncListToProviders} from "@/api/sync";
 interface ListState {
     mediaLists: MediaList[];
     mediaListOptions: MediaListOptions[];
+    selectedList: MediaList | null;
+    selectedItem: MediaListItem | null;
     loading: boolean;
     error: boolean;
     errorMessage: string;
@@ -28,6 +30,8 @@ export const useListStore = defineStore({
         return {
             mediaLists: [],
             mediaListOptions: [],
+            selectedItem: null,
+            selectedList: null,
             loading: true,
             error: false,
             errorMessage: '',
@@ -164,8 +168,22 @@ export const useListStore = defineStore({
 
             return this.getListWithItems(updatedItem.mediaListId);
         },
+        getLastSelectedItem: function() {
+            return this.selectedItem;
+        },
+        setSelectedItem: function(item: MediaListItem) {
+            this.selectedItem = item;
+        },
+        setSelectedList: function(list: MediaList) {
+            this.selectedList = list;
+        },
+        getSelectedList: function() {
+            return this.selectedList;
+        },
         resetState() {
             this.mediaLists = [];
+            this.selectedList = null;
+            this.selectedItem = null;
             this.mediaListOptions = [];
             this.loading = true;
             this.error = false;
