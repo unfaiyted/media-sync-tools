@@ -9,7 +9,7 @@ scheduler = AsyncIOScheduler()
 
 async def check_and_execute_tasks():
 
-    config = ConfigManager().get_manager()
+    config = await ConfigManager().get_manager()
     db = config.get_db()  # Get your database connection, similar to what's in your routes
     now = datetime.now()
 

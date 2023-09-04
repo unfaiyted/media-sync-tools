@@ -49,9 +49,11 @@ class RadarrInteractions:
         print('Adding with profile id: ', self.quality_profile_id, ' and root dir: ', self.root_dir)
         # Add the movie to Radarr
         try:
-            added_movie = self.client.add_movie(selected_movie, root_dir=self.root_dir, quality_profile_id=self.quality_profile_id)
-
-            return added_movie
+            return self.client.add_movie(
+                selected_movie,
+                root_dir=self.root_dir,
+                quality_profile_id=self.quality_profile_id,
+            )
         except Exception as e:
             print('Error adding movie to Radarr. Potentially already added.', e)
             return None

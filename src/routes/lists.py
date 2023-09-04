@@ -14,7 +14,8 @@ config = ConfigManager.get_manager()
 
 # LISTS main CRUD operations for List
 @router.post("/", response_model=MediaList)
-async def create_list(list: MediaList, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def create_list(list: MediaList):
+    db = (await ConfigManager.get_manager()).get_db()
     if await db.media_lists.find_one({"mediaListId": list.mediaListId}):
         raise HTTPException(status_code=400, detail="List already exists")
     list_dict = list.dict()
@@ -23,7 +24,8 @@ async def create_list(list: MediaList, db: AsyncIOMotorDatabase = Depends(config
 
 
 @router.get("/", response_model=List[MediaList])
-async def read_lists(db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def read_list():
+    db = (await ConfigManager.get_manager()).get_db()
     lists = await db.media_lists.find({}).to_list(length=10000)
     if lists is None:
         raise HTTPException(status_code=404, detail="List not found")
@@ -31,7 +33,8 @@ async def read_lists(db: AsyncIOMotorDatabase = Depends(config.get_db)):
 
 
 @router.get("/{list_id}", response_model=MediaList)
-async def read_list(list_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def read_list(list_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
     list_item = await db.media_lists.find_one({"mediaListId": list_id})
     if list_item is None:
         raise HTTPException(status_code=404, detail="List not found")
@@ -39,7 +42,8 @@ async def read_list(list_id: str, db: AsyncIOMotorDatabase = Depends(config.get_
 
 
 @router.put("/{list_id}", response_model=MediaList)
-async def update_list(list_id: str, list: MediaList, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def update_list(list_id: str, list: MediaList):
+    db = (await ConfigManager.get_manager()).get_db()
     existing_list = await db.media_lists.find_one({"mediaListId": list_id})
     if existing_list is None:
         raise HTTPException(status_code=404, detail="List not found")
@@ -51,7 +55,8 @@ async def update_list(list_id: str, list: MediaList, db: AsyncIOMotorDatabase = 
 
 # get all lists for a user
 @router.get("/user/{user_id}", response_model=List[MediaList])
-async def read_lists_for_user(user_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def read_lists_for_user(user_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
     cursor = db.media_lists.find({"creatorId": user_id})
     lists = await cursor.to_list(length=1000)  # adjust the length as per your needs
     if not lists:
@@ -60,7 +65,8 @@ async def read_lists_for_user(user_id: str, db: AsyncIOMotorDatabase = Depends(c
 
 
 @router.delete("/{list_id}", response_model=MediaList)
-async def delete_list(list_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def delete_list(list_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
     existing_list = await db.media_lists.find_one({"mediaListId": list_id})
     if existing_list is None:
         raise HTTPException(status_code=404, detail="List not found")
@@ -71,7 +77,8 @@ async def delete_list(list_id: str, db: AsyncIOMotorDatabase = Depends(config.ge
 # OPTIONS =  CRUD operations for ListOptions
 @router.post("options/", response_model=MediaListOptions)
 async def create_list_options(list_option: MediaListOptions,
-                              db: AsyncIOMotorDatabase = Depends(config.get_db)):
+                        ):
+    db = (await ConfigManager.get_manager()).get_db()
     if await db.listTypeOptions.find_one({"mediaListId": list_option.mediaListId}):
         raise HTTPException(status_code=400, detail="ListOption already exists")
     list_option_dict = list_option.dict()
@@ -80,7 +87,8 @@ async def create_list_options(list_option: MediaListOptions,
 
 
 @router.get("options/{list_option_id}", response_model=MediaListOptions)
-async def read_list_options(list_option_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def read_list_options(list_option_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
     list_option = await db.listTypeOptions.find_one({"listId": list_option_id})
     if list_option is None:
         raise HTTPException(status_code=404, detail="ListOption not found")
@@ -89,7 +97,8 @@ async def read_list_options(list_option_id: str, db: AsyncIOMotorDatabase = Depe
 
 @router.put("options/{list_option_id}", response_model=MediaListOptions)
 async def update_list_options(list_option_id: str, list_option: MediaListOptions,
-                              db: AsyncIOMotorDatabase = Depends(config.get_db)):
+                        ):
+    db = (await ConfigManager.get_manager()).get_db()
     existing_list_option = await db.listTypeOptions.find_one({"listId": list_option_id})
     if existing_list_option is None:
         raise HTTPException(status_code=404, detail="ListOption not found")
@@ -100,7 +109,8 @@ async def update_list_options(list_option_id: str, list_option: MediaListOptions
 
 
 @router.delete("options/{list_option_id}", response_model=MediaListOptions)
-async def delete_list_options(list_option_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def delete_list_options(list_option_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
     existing_list_option = await db.listTypeOptions.find_one({"listId": list_option_id})
     if existing_list_option is None:
         raise HTTPException(status_code=404, detail="ListOption not found")
@@ -110,7 +120,8 @@ async def delete_list_options(list_option_id: str, db: AsyncIOMotorDatabase = De
 
 # ITEMS = CRUD operations for ListItems
 @router.post("/item/", response_model=MediaListItem)
-async def create_listitem(item: MediaListItem, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def create_listitem(item: MediaListItem):
+    db = (await ConfigManager.get_manager()).get_db()
     if await db.media_list_items.find_one({"mediaListItemId": item.mediaListItemId}):
         raise HTTPException(status_code=400, detail="ListItem already exists")
     item_dict = item.dict()
@@ -118,22 +129,24 @@ async def create_listitem(item: MediaListItem, db: AsyncIOMotorDatabase = Depend
     return item_dict
 
 
-# get all list items for a give listId
 @router.get("/items/{list_id}", response_model=MediaList)
 async def read_media_list_items(
         list_id: str,
         skip: int = Query(0, alias="skip", description="Number of records to skip"),
-        limit: int = Query(10, alias="limit", description="Max number of records to return"),
-        db: AsyncIOMotorDatabase = Depends(config.get_db)
+        limit: int = Query(10, alias="limit", description="Max number of records to return")
 ):
+
+    db = (await ConfigManager.get_manager()).get_db()
     items = await media_list_queries.get_media_list_with_items(db, list_id, skip, limit)
     if not items:
         raise HTTPException(status_code=404, detail="ListItem not found")
     return items
+# get all list items for a give listId
 
 
 @router.get("/item/{list_item_id}", response_model=MediaListItem)
-async def read_listitem(list_item_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def read_listitem(list_item_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
     listItem = await media_list_queries.get_media_list_item_with_media(db, list_item_id)
     if listItem is None:
         raise HTTPException(status_code=404, detail="ListItem not found")
@@ -141,7 +154,8 @@ async def read_listitem(list_item_id: str, db: AsyncIOMotorDatabase = Depends(co
 
 
 @router.put("/item/{item_id}", response_model=MediaListItem)
-async def update_listitem(list_item_id: str, item: MediaListItem, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def update_listitem(list_item_id: str, item: MediaListItem):
+    db = (await ConfigManager.get_manager()).get_db()
     existing_item = await db.media_list_items.find_one({"mediaListItemId": list_item_id})
     if existing_item is None:
         raise HTTPException(status_code=404, detail="ListItem not found")
@@ -152,7 +166,8 @@ async def update_listitem(list_item_id: str, item: MediaListItem, db: AsyncIOMot
 
 
 @router.delete("/item/{media_item_id}", response_model=MediaListItem)
-async def delete_listitem(media_list_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def delete_listitem(media_list_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
     existing_item = await db.media_list_items.find_one({"mediaListItemId": media_list_id})
     if existing_item is None:
         raise HTTPException(status_code=404, detail="ListItem not found")
@@ -179,13 +194,15 @@ class SingleMediaItemResponse(BaseModel):
     containingLists: List[MediaListInfo]
 
 @router.get("/item/{media_item_id}/in", response_model=SingleMediaItemResponse)
-async def find_lists_containing_item(media_item_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def find_lists_containing_item(media_item_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
     mlq = await media_list_queries.find_lists_containing_item(db, media_item_id)
     print(mlq)
     return mlq
 
 @router.get("/{media_list_id}/in", response_model=List[MediaItemResponse])
-async def find_lists_containing_item(media_list_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def find_lists_containing_item(media_list_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
     mlq = await media_list_queries.find_lists_containing_items(db, media_list_id=media_list_id)
     print(mlq)
     return mlq

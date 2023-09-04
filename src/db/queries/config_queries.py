@@ -4,6 +4,140 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from src.models import Library, LibraryType, ConfigClient, Config
 
 
+async def get_full_config(db: AsyncIOMotorDatabase, config_id: str) -> Config | None:
+    """
+    Retrieve a library and its associated clients.
+    :param db:
+    :param config_id:
+    :return:
+    """
+    pipeline = [
+        {
+            "$match": {"configId": config_id}
+        },
+        {
+            "$lookup": {
+                "from": "config_clients",
+                "localField": "configId",
+                "foreignField": "configId",
+                "as": "clients"
+            }
+        },
+      # {
+      #       "$lookup": {
+      #           "from": "config_client_field_values",
+      #           "localField": "clients.configClientId",
+      #           "foreignField": "configClientId",
+      #           "as": "clients.clientFieldValues"
+      #       }
+      #   },
+      #   {
+      #       "$lookup": {
+      #           "from": "client",
+      #           "localField": "clientId",
+      #           "foreignField": "clientId",
+      #           "as": "clients.client"
+      #       }
+      #   },
+        {
+            "$lookup": {
+                "from": "libraries",
+                "localField": "configId",
+                "foreignField": "configId",
+                "as": "libraries"
+            }
+        },
+        {
+            "$lookup": {
+                "from": "sync_options",
+                "localField": "configId",
+                "foreignField": "configId",
+                "as": "sync"
+            }
+        },
+        {
+            "$lookup": {
+                "from": "users",
+                "localField": "userId",
+                "foreignField": "userId",
+                "as": "user"
+            }
+        },
+        # Use $unwind if you expect one-to-one relations and want to get rid of arrays
+        {
+            "$unwind": "$user"
+        },
+        {
+            "$unwind": "$sync"
+        }
+    ]
+
+    # print('pipeline', pipeline)
+    configs = await db.configs.aggregate(pipeline).to_list(length=1)
+    # print('configs', configs)
+
+    # Since we used to_list, the result is a list. Return the first (and only) element.
+
+    # If no configs found, return None
+    if not configs:
+        return None
+    config_data = configs[0]
+
+    # If there are clients in the config data, fetch their details
+    if 'clients' in config_data:
+        detailed_clients = []
+
+        for client in config_data['clients']:
+            # Fetch additional details for the client
+            client_details = await get_client_details(db, client)
+
+            # Merge the basic client info with the detailed info
+            merged_client = {**client, **client_details}
+            detailed_clients.append(merged_client)
+
+        # Replace the original clients list with the detailed one
+        config_data['clients'] = detailed_clients
+
+    return Config.parse_obj(config_data)
+
+
+async def get_client_details(db: AsyncIOMotorDatabase, client: dict) -> dict:
+    client_details = {}
+
+    # Fetch clientFieldValues
+    field_values = await db.config_client_field_values.find({
+        "configClientId": client["configClientId"]
+    }).to_list(None)  # Fetches all matching documents
+
+    # Add to details if data found
+    if field_values:
+        client_details['clientFieldValues'] = field_values
+
+    # Fetch client object (assuming there's a unique identifier for it in client data)
+    client_object = await db.clients.find_one({
+        "clientId": client["clientId"]
+    })
+
+    client_fields = await db.client_fields.find({
+        "clientId": client["clientId"]
+    }).to_list(None)
+
+    if client_fields:
+        client_details['clientFields'] = client_fields
+
+    for field in field_values:
+        for client_field in client_fields:
+            if field['configClientFieldId'] == client_field['clientFieldId']:
+                field['clientField'] = client_field
+
+    # Add to details if data found
+    if client_object:
+        client_details['client'] = client_object
+
+    return client_details
+
+
+
 async def get_config_client_with_client(db: AsyncIOMotorDatabase, config_client_id: str) -> Config | None:
     """
     Retrieve a library and its associated clients.

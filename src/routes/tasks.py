@@ -1,10 +1,6 @@
 from bson import ObjectId
 from fastapi import FastAPI, HTTPException, Depends, APIRouter
-from typing import List, Optional
 
-from motor.motor_asyncio import AsyncIOMotorDatabase
-from pydantic import BaseModel
-from datetime import datetime
 from typing import List, Optional, Dict, Any, Union
 from src.models.tasks import Task
 
@@ -12,7 +8,6 @@ from src.config import ConfigManager
 from src.tasks.tasks import execute_task
 
 router = APIRouter()
-config = ConfigManager.get_manager()
 
 
 # Assuming you've already defined the Pydantic models in the same file (or you can import them)
@@ -50,7 +45,8 @@ async def delete_task(task_id: int):
     return tasks_db.pop(task_id)
 
 @router.post("/tasks/{task_id}/trigger")
-async def trigger_task_on_demand(task_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def trigger_task_on_demand(task_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
     # Fetch the task from the database
     task = await db.scheduledTasks.find_one({"_id": ObjectId(task_id)})
 

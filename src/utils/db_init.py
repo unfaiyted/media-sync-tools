@@ -109,11 +109,10 @@ def read_config_yml(file_path: str) -> dict:
 
 
 class DatabaseInitializer:
-    def __init__(self, ymlFile: str, database_name: str = 'sync-tools-db'):
-        config = ConfigManager.get_manager()
+    def __init__(self, ymlFile: str, db):
         self.yml_config = read_config_yml(ymlFile)
         print(self.yml_config)
-        self.db = config.get_db()
+        self.db = db
         self.users = self.db["users"]
         self.configs = self.db["configs"]
         self.sync_options = self.db["sync_options"]

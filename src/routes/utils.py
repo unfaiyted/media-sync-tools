@@ -7,9 +7,12 @@ from starlette.responses import JSONResponse
 from starlette.requests import Request
 from fastapi import APIRouter
 router = APIRouter()
-config_manager = ConfigManager.get_manager()
+
+
 @router.get("/examples")
+
 async def trigger_examples():
+    config_manager = ConfigManager.get_manager()
     try:
         list = Lists(config_manager)
 

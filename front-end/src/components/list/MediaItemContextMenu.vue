@@ -1,7 +1,6 @@
 <template v-if="event">
     <ContextMenu :event="event" :items="menu"/>
     <MediaItemOptionsPopup
-        v-if="selectedItem"
         :selectedItem="selectedItem"
         ref="optionsPopup"
     />
@@ -10,9 +9,6 @@
 <script lang="ts">
 import {defineComponent, ref, watch,computed} from 'vue';
 import ContextMenu from '@/components/ui/ContextMenu.vue';
-import {MenuRow} from "@/models/menu";
-import {MenuItem} from "@headlessui/vue";
-import {MediaListItem,} from "@/models";
 import {useListStore} from "@/store/listStore";
 import MediaItemOptionsPopup from "@/components/list/MediaItemOptionsPopup.vue";
 
@@ -35,7 +31,6 @@ export default defineComponent({
         watch(() => event, (newVal, oldVal) => {
             console.log("Event changed", newVal, oldVal);
         })
-        // const addToGrabber = async () => {
 
         const contextMenuItems = computed(() => [
             {

@@ -9,7 +9,8 @@ config = ConfigManager.get_manager()
 
 
 @router.post("/", response_model=User)
-async def create_user(user: User, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def create_user(user: User):
+    db = (await ConfigManager.get_manager()).get_db()
     print('user', user)
     if await db.users.find_one({"userId": user.userId}):
         raise HTTPException(status_code=400, detail="User already registered")
@@ -44,7 +45,8 @@ async def create_user(user: User, db: AsyncIOMotorDatabase = Depends(config.get_
 
 # Get all users
 @router.get("/", response_model=list[User])
-async def read_all_users(db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def read_all_users():
+    db = (await ConfigManager.get_manager()).get_db()
     users = []
     async for user_doc in db.users.find({}):
         # Create a User instance from the retrieved document
@@ -55,7 +57,8 @@ async def read_all_users(db: AsyncIOMotorDatabase = Depends(config.get_db)):
 
 
 @router.get("/{user_id}", response_model=User)
-async def read_user(user_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def read_user(user_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
     user = await db.users.find_one({"userId": user_id})
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
@@ -63,7 +66,8 @@ async def read_user(user_id: str, db: AsyncIOMotorDatabase = Depends(config.get_
 
 
 @router.put("/{user_id}", response_model=User)
-async def update_user(user_id: str, user: User, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def update_user(user_id: str, user: User):
+    db = (await ConfigManager.get_manager()).get_db()
     existing_user = await db.users.find_one({"userId": user_id})
     if existing_user is None:
         raise HTTPException(status_code=404, detail="User not found")
@@ -74,7 +78,8 @@ async def update_user(user_id: str, user: User, db: AsyncIOMotorDatabase = Depen
 
 
 @router.delete("/{user_id}", response_model=User)
-async def delete_user(user_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def delete_user(user_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
     existing_user = await db.users.find_one({"userId": user_id})
     if existing_user is None:
         raise HTTPException(status_code=404, detail="User not found")

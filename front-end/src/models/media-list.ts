@@ -96,3 +96,20 @@ export interface MediaListOptions {
     updateImages: boolean;
     deleteExisting: boolean;
 }
+
+
+export enum MediaItemType {
+    MOVIE = 'MOVIE',
+    SHOW = 'SHOW',
+    SEASON = 'SEASON',
+    EPISODE = 'EPISODE',
+}
+
+export interface MediaItemOptions {
+    mediaItemOptionsId: string;
+    mediaItemId: string;
+    userId: string;
+    type: MediaItemType;
+    acquireClient?: ConfigClient; //like sonarr or rardarr
+    updateImages: boolean;
+}

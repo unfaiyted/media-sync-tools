@@ -13,7 +13,8 @@ config = ConfigManager.get_manager()
 
 # CRUD operations for Library
 @router.post("/", response_model=Library)
-async def create_library(library: Library, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def create_library(library: Library):
+    db = (await ConfigManager.get_manager()).get_db()
     if await db.libraries.find_one({"libraryId": library.libraryId}):
         raise HTTPException(status_code=400, detail="Library already exists")
     library_dict = library.dict()
@@ -25,24 +26,24 @@ async def create_library(library: Library, db: AsyncIOMotorDatabase = Depends(co
 # from .models import Library
 
 @router.get("/all", response_model=List[Library])
-async def read_all_libraries(db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def read_all_libraries():
+    db = (await ConfigManager.get_manager()).get_db()
     libraries = [library_doc async for library_doc in db.libraries.find({})]
 
-    if not libraries:
-        return []
-
-    return libraries
+    return [] if not libraries else libraries
 
 
 @router.get("/{library_id}", response_model=Library)
-async def read_library(library_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def read_library(library_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
     library_item = await db.libraries.find_one({"libraryId": library_id})
     if library_item is None:
         raise HTTPException(status_code=404, detail="Library not found")
     return library_item
 
 @router.put("/{library_id}", response_model=Library)
-async def update_library(library_id: str, library: Library, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def update_library(library_id: str, library: Library):
+    db = (await ConfigManager.get_manager()).get_db()
     existing_library = await db.libraries.find_one({"libraryId": library_id})
     if existing_library is None:
         raise HTTPException(status_code=404, detail="Library not found")
@@ -52,14 +53,16 @@ async def update_library(library_id: str, library: Library, db: AsyncIOMotorData
     return library_dict
 
 @router.delete("/{library_id}", response_model=Library)
-async def delete_library(library_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def delete_library(library_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
     existing_library = await db.libraries.find_one({"libraryId": library_id})
     if existing_library is None:
         raise HTTPException(status_code=404, detail="Library not found")
     await db.libraries.delete_one({"libraryId": library_id})
     return existing_library
 @router.post("/client/", response_model=LibraryClient)
-async def create_library_client(library_client: LibraryClient, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def create_library_client(library_client: LibraryClient):
+    db = (await ConfigManager.get_manager()).get_db()
     if await db.library_clients.find_one({"libraryClientId": library_client.libraryClientId}):
         raise HTTPException(status_code=400, detail="Library Client already exists")
     library_client_dict = library_client.dict()
@@ -68,7 +71,8 @@ async def create_library_client(library_client: LibraryClient, db: AsyncIOMotorD
 
 # Get all library Clients by LibraryId
 @router.get("/clients/{library_id}", response_model=list[LibraryClient])
-async def read_all_library_clients(library_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def read_all_library_clients(library_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
     library_clients = []
     async for library_client_doc in db.library_clients.find({"libraryId": library_id}):
         # Create a LibraryClient instance from the retrieved document
@@ -78,14 +82,16 @@ async def read_all_library_clients(library_id: str, db: AsyncIOMotorDatabase = D
     return library_clients
 
 @router.get("/client/{library_client_id}", response_model=LibraryClient)
-async def read_library_client(library_client_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def read_library_client(library_client_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
     library_client = await db.library_clients.find_one({"libraryClientId": library_client_id})
     if library_client is None:
         raise HTTPException(status_code=404, detail="Library Client not found")
     return library_client
 
 @router.put("/client/{library_client_id}", response_model=LibraryClient)
-async def update_library_client(library_client_id: str, library_client: LibraryClient, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def update_library_client(library_client_id: str, library_client: LibraryClient):
+    db = (await ConfigManager.get_manager()).get_db()
     existing_library_client = await db.library_clients.find_one({"libraryClientId": library_client_id})
     if existing_library_client is None:
         raise HTTPException(status_code=404, detail="Library Client not found")
@@ -95,7 +101,8 @@ async def update_library_client(library_client_id: str, library_client: LibraryC
     return library_client_dict
 
 @router.delete("/client/{library_client_id}", response_model=LibraryClient)
-async def delete_library_client(library_client_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def delete_library_client(library_client_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
     existing_library_client = await db.library_clients.find_one({"libraryClientId": library_client_id})
     if existing_library_client is None:
         raise HTTPException(status_code=404, detail="Library Client not found")
@@ -105,7 +112,8 @@ async def delete_library_client(library_client_id: str, db: AsyncIOMotorDatabase
 
 # update library clients media list records
 @router.get("/trigger/update/{library_client_id}/", response_model=LibraryClient)
-async def trigger_update_library_client(library_client_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def trigger_update_library_client(library_client_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
     existing_library_client = await db.library_clients.find_one({"libraryClientId": library_client_id})
     if existing_library_client is None:
         raise HTTPException(status_code=404, detail="Library Client not found")
@@ -137,7 +145,7 @@ async def trigger_update_library_client(library_client_id: str, db: AsyncIOMotor
         }
 
     list_builder = ListBuilder(config, list=details)
-    list_builder.build()
+    await list_builder.build()
 
     return library_client
 

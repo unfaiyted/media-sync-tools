@@ -10,7 +10,6 @@ import os
 
 router = APIRouter()
 
-config_manager = ConfigManager.get_manager()
 
 class PosterCreationQuery(BaseModel):
     query: str = None
@@ -29,6 +28,7 @@ class PosterCreationQuery(BaseModel):
 
 @router.post("/poster/create")
 async def create_poster(q: PosterCreationQuery):
+    config_manager = await ConfigManager.get_manager()
     print(q)
 
     try:
@@ -76,24 +76,28 @@ async def create_poster(q: PosterCreationQuery):
 
 
 @router.get("/icons/filenames")
-def list_files():
+async def list_files():
+
+    config_manager = await ConfigManager.get_manager()
     root_path = config_manager.get_root_path()
     print(root_path)
 
     try:
-        files = os.listdir(root_path + "/resources/icons")
+        files = os.listdir(f"{root_path}/resources/icons")
         return {"filenames": files}
     except Exception as e:
         return {"error": str(e)}
 
 
 @router.get("/uploads/filenames")
-def list_uploads_files():
+async def list_uploads_files():
+
+    config_manager = await ConfigManager.get_manager()
     config_path = config_manager.get_config_path()
     print(config_path)
 
     try:
-        files = os.listdir(config_path + "/uploads")
+        files = os.listdir(f"{config_path}/uploads")
         return {"files": files}
     except Exception as e:
         return {"error": str(e)}
@@ -101,6 +105,7 @@ def list_uploads_files():
 
 @router.post("/poster/upload-file")
 async def upload_file(file: UploadFile = File(...)):
+    config_manager = await ConfigManager.get_manager()
     config_path = config_manager.get_config_path()
     with open(f"{config_path}/uploads/{file.filename}", "wb") as buffer:
         buffer.write(file.file.read())

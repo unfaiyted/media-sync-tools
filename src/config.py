@@ -4,6 +4,7 @@ import openai
 from plexapi.myplex import MyPlexAccount
 from plexapi.server import PlexServer
 
+from src.db.queries import config_queries
 from src.models import User
 from src.clients.tmdb import TmdbClient
 from src.clients.trakt import TraktClient
@@ -15,9 +16,12 @@ from pymongo import MongoClient
 
 import motor.motor_asyncio
 import motor
+
+config_manager = None
+
 class ConfigManager:
     instance = None
-    def __init__(self, config_path=None):
+    def __init__(self, config_path=None, config_id=None):
         load_dotenv()
         self.clients = {}
         self.clients_details = {}
@@ -30,14 +34,86 @@ class ConfigManager:
         self.config_path = config_path or os.path.join(self.root_path, '../', 'config')
         self.create_subdirectories()
         self.db = self.get_db()
-        self.load_config()
-        #TODO: Refactor config to take in the config object from the database for a given user. For now, we'll use the default user
+
+        if config_path:
+            self.load_config()
+
+        if config_id:
+            self.config_id = config_id
+            # await self.fetch_and_load_config_from_db()
+
+        # TODO: Refactor config to take in the config object from the database for a given user. For now, we'll use the default user
         self.user: User = User(userId='APP-DEFAULT-USER', name='APP USER', email="app@user.com", password="test")
+
+    @classmethod
+    async def create(cls, config_path=None, config_id=None):
+        self = cls(config_path, config_id)
+        # self.config_id = config_id
+        await self.init_async()
+        return self
+
+    async def init_async(self):
+        self.db =  self.get_db()
+        if self.config_id:
+            await self.fetch_and_load_config_from_db()
+
 
     def get_db(self) -> motor.motor_asyncio.AsyncIOMotorDatabase:
         client = motor.motor_asyncio.AsyncIOMotorClient("mongodb://root:dragon@localhost:27017/sync-tools-db?authSource=admin")
-        database = client['sync-tools-db']
-        return database
+        return client['sync-tools-db']
+
+    async def fetch_and_load_config_from_db(self):
+        db = self.get_db()
+        config_data = await config_queries.get_full_config(db, config_id=self.config_id)
+
+        # print('Config data: ', config_data)
+
+
+        if not config_data:
+            raise ValueError(f"No configuration found for ID: {self.config_id}")
+
+        # self.user = config_data.get('user')
+        print('Config data: ', config_data)
+
+
+        # If 'clients' in the config is a list, you'll need to iterate through it.
+        for config_client in config_data.clients:
+            details = {}
+
+            client = config_client.client
+            client_fields = config_client.clientFields
+            field_values = config_client.clientFieldValues
+
+            for field in field_values:
+
+                details[field.clientField.name] = field.value
+
+                # details[field_values['fieldId']] = field['value']
+
+            # Use client ID (or name) as the key for the clients dictionary.
+                self.clients[config_client.configClientId] = details
+
+            print('Details: ', self.clients)
+
+        self.clients_details = config_data.clients
+
+        self.add_clients(self.clients)
+        # self.add_library_data(config_data.get('libraries', {}))
+        # self.add_collection_data(config_data.get('collections', {}))
+        # self.add_playlist_data(config_data.get('playlists', {}))
+        # self.add_sync_data(config_data.get('sync', {}))
+        # If 'clients' in the config is a list, you'll need to iterate through it.
+        # for client_data in config_data.get('clients', []):
+            # process each client_data as you were doing in your 'add_clients' method.
+
+        # Similar approach for libraries and sync
+        # for library_data in config_data.get('libraries', []):
+            # process each library_data
+
+        # sync_data = config_data.get('sync')
+        # if sync_data:
+            # process sync_data
+
 
     def get_user(self):
         return self.user
@@ -159,6 +235,9 @@ class ConfigManager:
         self.clients[name] = radarr_client
         return radarr_client  # https://docs.totaldebug.uk/pyarr/modules/radarr.html
 
+
+    # def add_sonarr_client(self, name, host, api_key):
+
     # TODO: Implement these
     # def add_portainer_client(self, name, server_url, username, password):
     #     print('Adding portainer client', server_url, username, password)
@@ -222,7 +301,7 @@ class ConfigManager:
         return tmdb_client
 
     @staticmethod
-    def get_manager():
+    async def get_manager(config_id='APP-DEFAULT-CONFIG'):
         if ConfigManager.instance is None:
-            ConfigManager.instance = ConfigManager()
+            ConfigManager.instance = await ConfigManager.create(config_id=config_id)
         return ConfigManager.instance

@@ -1,12 +1,14 @@
 <template>
     <Modal :is-open="isOpen" @cancel-action="closeModal" @do-action="doAction">
-        <h2 class="text-white text-xl font-bold mb-4">Add Movie (Radarr/Sonarr)</h2>
-        <p class="text-white mb-2">{{ mediaListItem?.name}}</p>
-        <p class="text-indigo-300 mb-4">This request will be approved.</p>
+        <h2 class="text-white text-xl font-bold mb-4">Add Movie </h2>
+        <p class="text-white text-lg mb-2">{{ mediaListItem?.item.title }}</p>
+<!--        <p class="text-indigo-300 mb-4">This request will be approved.</p>-->
 
+
+        <img :src="mediaListItem.item?.poster" :alt="mediaListItem.item?.tagline" class="max-w-[100px] h-auto mb-2">
         <div class="mb-4">
             <label class="block text-white text-sm font-bold mb-2" for="tags">Add to Clients(s):</label>
-            <ClientButtonGroup :type="ClientType.UTILITY" :is-config="true" @selectedClientsChanged="handleSelectedClients" />
+            <ClientButtonGroup :type="ClientType.UTILITY" :is-config="true" @selectedClientsChanged="handleSelectedClients"/>
         </div>
 
 
@@ -14,7 +16,7 @@
         <div class="flex justify-between mb-4 space-x-2">
             <div class="flex-1">
                 <label class="block text-white text-sm font-bold mb-2" for="folder">File Storage Location</label>
-                <VSelect :options="configLibraries" v-model="mediaListOptions.syncLibraryId" />
+                <VSelect :options="configLibraries" v-model="mediaItemOptions.syncLibraryId"/>
             </div>
 
         </div>
@@ -25,7 +27,7 @@
                 <VCheckbox v-model="mediaItemOptions.updateImages" label="Update client poster images"/>
             </div>
             <div>
-                <VCheckbox v-model="mediaItemOptions.deleteExisting" label="" />
+                <VCheckbox v-model="mediaItemOptions.deleteExisting" label="Something"/>
             </div>
 
         </div>
@@ -44,7 +46,7 @@
 
 <script lang="ts">
 import {defineComponent, onBeforeMount, ref} from 'vue';
-import {MediaListItem, ClientType, MediaListOptions, MediaListType, ConfigClient} from "@/models";
+import {ClientType, ConfigClient, MediaItemOptions, MediaItemType, MediaListItem, MediaListType} from "@/models";
 import ClientButtonGroup from "@/components/ui/ClientButtonGroup.vue";
 import Modal from "@/components/ui/Modal.vue";
 import VSelect from "@/components/ui/inputs/Select.vue";
@@ -61,27 +63,26 @@ export default defineComponent({
     },
     setup(props, {emit}) {
         // const store = useAppConfigStore();
+        const store = useAppConfigStore();
         const configLibraries = ref<SelectOption[]>([]);
         const isOpen = ref(false);
         const mediaListItem = ref<MediaListItem>();
-        const selectedClients =  ref<ConfigClient[]>([]);
-        const mediaListTypes: SelectOption[] = Object.values(MediaListType).map((type) => {
+        const selectedClients = ref<ConfigClient[]>([]);
+        const mediaItemTypes: SelectOption[] = Object.values(MediaItemType).map((type) => {
             return {
                 value: type,
                 text: type,
             };
-        }).filter((type) => type.value !== MediaListType.LIBRARY)
+        })
         const mediaItemOptions = ref<MediaItemOptions>({
-            mediaListOptionsId: crypto.randomUUID(),
-            userId: '',
-            mediaListId: '',
-            syncLibraryId: '',
-            clients: [],
-            type: MediaListType.COLLECTION,
-            sync: true,
-            updateImages: false,
-            deleteExisting: false,
-        });
+                mediaItemOptionsId: crypto.randomUUID(),
+                userId: '',
+                mediaItemId: '',
+                acquireClient: undefined,
+                type: MediaItemType.EPISODE,
+                updateImages: false,
+            })
+        ;
 
         onBeforeMount(async () => {
             const store = useAppConfigStore();
@@ -97,9 +98,9 @@ export default defineComponent({
 
         const doAction = () => {
             // Implement the sync logic here
-            console.log(mediaListOptions.value)
+            console.log(mediaItemOptions.value)
             const listStore = useListStore();
-            listStore.syncListToProviders(mediaListOptions.value);
+            listStore.syncListToProviders(mediaItemOptions.value);
             console.log("Request Sent!");
             isOpen.value = false;
         };
@@ -107,7 +108,7 @@ export default defineComponent({
         const openModal = async (item) => {
             const store = useAppConfigStore();
             console.log('open modal', selectedClients)
-            mediaListOptions.value.mediaListId = props.selectedItem?.mediaListId as string;
+            mediaItemOptions.value.mediaListId = props.selectedItem?.mediaListId as string;
             mediaListItem.value = props.selectedItem;
             isOpen.value = true;
         };
@@ -120,7 +121,7 @@ export default defineComponent({
 
         const handleSelectedClients = (selectedClients: ConfigClient[]) => {
             console.log('selected xxxx clients changed', selectedClients)
-            mediaListOptions.value.clients = selectedClients;
+            mediaItemOptions.value.clients = selectedClients;
         }
 
         return {
@@ -131,8 +132,8 @@ export default defineComponent({
             handleSelectedClients,
             selectedClients,
             configLibraries,
-            mediaListTypes,
-            mediaListOptions,
+            mediaItemTypes,
+            mediaItemOptions,
             doAction,
             closeModal
         };

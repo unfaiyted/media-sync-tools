@@ -1,7 +1,6 @@
 import uuid
 from datetime import datetime
 
-from src.routes.config import db
 from src.models import MediaListType, MediaList, MediaItem, MediaType, MediaProviderIds, MediaListItem
 
 

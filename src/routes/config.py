@@ -9,8 +9,6 @@ from src.db.queries import config_queries
 router = APIRouter()
 
 # Connect to MongoDB
-db = ConfigManager.get_manager().get_db()
-config_collection = db["config"]
 
 # # Define models
 # class ClientConfig(BaseModel):
@@ -165,7 +163,8 @@ config = ConfigManager.get_manager()
 
 # CRUD operations for Config
 @router.post("/", response_model=Config)
-async def create_config(config_item: Config, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def create_config(config_item: Config):
+    db = (await ConfigManager.get_manager()).get_db()
     if await db.configs.find_one({"configId": config_item.configId}):
         raise HTTPException(status_code=400, detail="Config already exists")
     config_dict = config_item.dict()
@@ -174,7 +173,8 @@ async def create_config(config_item: Config, db: AsyncIOMotorDatabase = Depends(
 
 #get all configs
 @router.get("/", response_model=List[Config])
-async def read_all_configs(db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def read_all_config():
+    db = (await ConfigManager.get_manager()).get_db()
     configs = []
     async for config_doc in db.configs.find({}):
         # Create a Config instance from the retrieved document
@@ -184,14 +184,16 @@ async def read_all_configs(db: AsyncIOMotorDatabase = Depends(config.get_db)):
     return configs
 
 @router.get("/{config_id}", response_model=Config)
-async def read_config(config_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def read_config(config_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
     config_item = await db.configs.find_one({"configId": config_id})
     if config_item is None:
         raise HTTPException(status_code=404, detail="Config not found")
     return config_item
 
 @router.put("/{config_id}", response_model=Config)
-async def update_config(config_id: str, config_item: Config, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def update_config(config_id: str, config_item: Config):
+    db = (await ConfigManager.get_manager()).get_db()
     existing_config = await db.configs.find_one({"configId": config_id})
     if existing_config is None:
         raise HTTPException(status_code=404, detail="Config not found")
@@ -201,7 +203,8 @@ async def update_config(config_id: str, config_item: Config, db: AsyncIOMotorDat
     return config_dict
 
 @router.delete("/{config_id}", response_model=Config)
-async def delete_config(config_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def delete_config(config_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
     existing_config = await db.configs.find_one({"configId": config_id})
     if existing_config is None:
         raise HTTPException(status_code=404, detail="Config not found")
@@ -210,7 +213,8 @@ async def delete_config(config_id: str, db: AsyncIOMotorDatabase = Depends(confi
 
 
 @router.get("/client/", response_model=List[ConfigClient])
-async def get_config_clients_by_config_id(configId: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def get_config_clients_by_config_id(configId: str):
+    db = (await ConfigManager.get_manager()).get_db()
     print('configId', configId)
     config_clients = await config_queries.get_full_config_clients_by_config_id(db, config_id=configId)
     print(config_clients)
@@ -219,7 +223,8 @@ async def get_config_clients_by_config_id(configId: str, db: AsyncIOMotorDatabas
     return config_clients
 
 @router.post("/client/", response_model=ConfigClient)
-async def create_config_client(config_client: ConfigClient, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def create_config_client(config_client: ConfigClient):
+    db = (await ConfigManager.get_manager()).get_db()
     if await db.config_clients.find_one({"configClientId": config_client.configClientId}):
         raise HTTPException(status_code=400, detail="Config Client already exists")
     config_client_dict = config_client.dict()
@@ -229,7 +234,8 @@ async def create_config_client(config_client: ConfigClient, db: AsyncIOMotorData
 
 # get config client by configId and type
 @router.get("/client/{config_id}/{type}", response_model=List[ConfigClient])
-async def read_config_client_by_config_id_and_type(config_id: str, type: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def read_config_client_by_config_id_and_type(config_id: str, type: str):
+    db = (await ConfigManager.get_manager()).get_db()
 
     # 1. Find all clients of the given type.
     clients_of_type = await db.clients.find({"type": type}).to_list(length=None)
@@ -252,14 +258,16 @@ async def read_config_client_by_config_id_and_type(config_id: str, type: str, db
     return matching_config_clients
 
 @router.get("/client/{config_client_id}", response_model=ConfigClient)
-async def read_config_client(config_client_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def read_config_client(config_client_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
     config_client = await db.config_clients.find_one({"configClientId": config_client_id})
     if config_client is None:
         raise HTTPException(status_code=404, detail="Config Client not found")
     return config_client
 
 @router.put("/client/{config_client_id}", response_model=ConfigClient)
-async def update_config_client(config_client_id: str, config_client: ConfigClient, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def update_config_client(config_client_id: str, config_client: ConfigClient):
+    db = (await ConfigManager.get_manager()).get_db()
     existing_config_client = await db.config_clients.find_one({"configClientId": config_client_id})
     if existing_config_client is None:
         raise HTTPException(status_code=404, detail="Config Client not found")
@@ -269,7 +277,8 @@ async def update_config_client(config_client_id: str, config_client: ConfigClien
     return config_client_dict
 
 @router.delete("/client/{config_client_id}", response_model=ConfigClient)
-async def delete_config_client(config_client_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def delete_config_client(config_client_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
     existing_config_client = await db.config_clients.find_one({"configClientId": config_client_id})
     if existing_config_client is None:
         raise HTTPException(status_code=404, detail="Config Client not found")
@@ -278,7 +287,8 @@ async def delete_config_client(config_client_id: str, db: AsyncIOMotorDatabase =
 
 
 @router.post("/client-fields-value/", response_model=ConfigClientFieldsValue)
-async def create_config_client_fields_value(fieldValue: ConfigClientFieldsValue, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def create_config_client_fields_value(fieldValue: ConfigClientFieldsValue):
+    db = (await ConfigManager.get_manager()).get_db()
 
     # if await db.config_client_fields_values.find_one({"configClientFieldValueId": fieldValue.configClientFieldValueId}):
     #     raise HTTPException(status_code=400, detail="Config Client Fields Value already exists")
@@ -301,7 +311,8 @@ async def create_config_client_fields_value(fieldValue: ConfigClientFieldsValue,
 
 # Get all field values for a given configClientId
 @router.get("/client-fields-value/", response_model=List[ConfigClientFieldsValue])
-async def read_all_config_client_fields_values_by_config_client_id(configClientId: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def read_all_config_client_fields_values_by_config_client_id(configClientId: str):
+    db = (await ConfigManager.get_manager()).get_db()
     values = []
     async for value_doc in db.config_client_fields_values.find({"configClientId": configClientId}):
         # Create a ConfigClientFieldsValue instance from the retrieved document
@@ -312,14 +323,16 @@ async def read_all_config_client_fields_values_by_config_client_id(configClientI
 
 
 @router.get("/client-fields-value/{value_id}", response_model=ConfigClientFieldsValue)
-async def read_config_client_fields_value(value_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def read_config_client_fields_value(value_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
     value = await db.config_client_fields_values.find_one({"configClientFieldsId": value_id})
     if value is None:
         raise HTTPException(status_code=404, detail="Config Client Fields Value not found")
     return value
 
 @router.put("/client-fields-value/{value_id}", response_model=ConfigClientFieldsValue)
-async def update_config_client_fields_value(value_id: str, value: ConfigClientFieldsValue, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def update_config_client_fields_value(value_id: str, value: ConfigClientFieldsValue):
+    db = (await ConfigManager.get_manager()).get_db()
     existing_value = await db.config_client_fields_values.find_one({"configClientFieldsId": value_id})
     if existing_value is None:
         raise HTTPException(status_code=404, detail="Config Client Fields Value not found")
@@ -329,7 +342,8 @@ async def update_config_client_fields_value(value_id: str, value: ConfigClientFi
     return value_dict
 
 @router.delete("/client-fields-value/{value_id}", response_model=ConfigClientFieldsValue)
-async def delete_config_client_fields_value(value_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def delete_config_client_fields_value(value_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
     existing_value = await db.config_client_fields_values.find_one({"configClientFieldsId": value_id})
     if existing_value is None:
         raise HTTPException(status_code=404, detail="Config Client Fields Value not found")
@@ -338,7 +352,8 @@ async def delete_config_client_fields_value(value_id: str, db: AsyncIOMotorDatab
 
 # Fetch Field Values for a Given configId
 @router.get("/client-fields-value/config/{config_id}", response_model=List[ConfigClientFieldsValue])
-async def read_all_config_client_fields_values_by_config_id(config_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def read_all_config_client_fields_values_by_config_id(config_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
     values = []
     async for value_doc in db.config_client_fields_values.find({"configId": config_id}):
         # Create a ConfigClientFieldsValue instance from the retrieved document
@@ -349,7 +364,8 @@ async def read_all_config_client_fields_values_by_config_id(config_id: str, db: 
 
 
 @router.post("/filter/", response_model=Filter)
-async def create_filter(filter_item: Filter, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def create_filter(filter_item: Filter):
+    db = (await ConfigManager.get_manager()).get_db()
     if await db.filters.find_one({"filterId": filter_item.filterId}):
         raise HTTPException(status_code=400, detail="Filter already exists")
     filter_dict = filter_item.dict()
@@ -357,14 +373,16 @@ async def create_filter(filter_item: Filter, db: AsyncIOMotorDatabase = Depends(
     return filter_dict
 
 @router.get("/filter/{filter_id}", response_model=Filter)
-async def read_filter(filter_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def read_filter(filter_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
     filter_item = await db.filters.find_one({"filterId": filter_id})
     if filter_item is None:
         raise HTTPException(status_code=404, detail="Filter not found")
     return filter_item
 
 @router.put("/filter/{filter_id}", response_model=Filter)
-async def update_filter(filter_id: str, filter_item: Filter, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def update_filter(filter_id: str, filter_item: Filter):
+    db = (await ConfigManager.get_manager()).get_db()
     existing_filter = await db.filters.find_one({"filterId": filter_id})
     if existing_filter is None:
         raise HTTPException(status_code=404, detail="Filter not found")
@@ -374,7 +392,8 @@ async def update_filter(filter_id: str, filter_item: Filter, db: AsyncIOMotorDat
     return filter_dict
 
 @router.delete("/filter/{filter_id}", response_model=Filter)
-async def delete_filter(filter_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def delete_filter(filter_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
     existing_filter = await db.filters.find_one({"filterId": filter_id})
     if existing_filter is None:
         raise HTTPException(status_code=404, detail="Filter not found")
@@ -384,7 +403,8 @@ async def delete_filter(filter_id: str, db: AsyncIOMotorDatabase = Depends(confi
 
 # Get all filters by Media ListId
 @router.get("/filter/list/", response_model=List[Filter])
-async def read_all_filters_by_list_id(mediaListId: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def read_all_filters_by_list_id(mediaListId: str):
+    db = (await ConfigManager.get_manager()).get_db()
     filters = []
     async for filter_doc in db.filters.find({"mediaListId": mediaListId}):
         # Create a Client instance from the retrieved document
@@ -394,8 +414,17 @@ async def read_all_filters_by_list_id(mediaListId: str, db: AsyncIOMotorDatabase
     return filters
 
 
+@router.get("/full/{config_id}", response_model=Config)
+async def read_full_config(config_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
+    config_object = await config_queries.get_full_config(db, config_id=config_id)
+    if config_object is None:
+        raise HTTPException(status_code=404, detail="Config not found")
+    return config_object
+
 @router.get("/hydrate/{user_id}", response_model=Config)
-async def hydrate_config(user_id: str, db: AsyncIOMotorDatabase = Depends(config.get_db)):
+async def hydrate_config(user_id: str):
+    db = (await ConfigManager.get_manager()).get_db()
 
     # Fetch the user data
     user = await db.users.find_one({"userId": user_id})
@@ -410,7 +439,6 @@ async def hydrate_config(user_id: str, db: AsyncIOMotorDatabase = Depends(config
 
     # Fetch Library data based on the found clients
     libraries = await db.libraries.find({"configId": appConfig.configId}).to_list(length=None)
-
 
     # Fetch ConfigClient data based on the found clients
     config_clients = await db.config_clients.find({"configId": appConfig.configId}).to_list(length=None)
@@ -427,7 +455,11 @@ async def hydrate_config(user_id: str, db: AsyncIOMotorDatabase = Depends(config
 
     for config_client in config_clients:
         config_client['clientFields'] = [field for field in client_fields if field['clientId'] == config_client['clientId']]
-        config_client['clientFieldValues'] = [value for value in await db.config_client_fields_values.find({"configClientId": config_client['configClientId']}).to_list(length=None)]
+        config_client['clientFieldValues'] = list(
+            await db.config_client_fields_values.find(
+                {"configClientId": config_client['configClientId']}
+            ).to_list(length=None)
+        )
         config_client['client'] = [client for client in clients if client['clientId'] == config_client['clientId']][0]
     sync_options = await db.sync_options.find_one({"configId": appConfig.configId})
 
