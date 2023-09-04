@@ -159,7 +159,6 @@ router = APIRouter()
 
 
 router = APIRouter()
-config = ConfigManager.get_manager()
 
 # CRUD operations for Config
 @router.post("/", response_model=Config)

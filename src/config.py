@@ -16,11 +16,21 @@ from pymongo import MongoClient
 
 import motor.motor_asyncio
 import motor
+import re
 
 config_manager = None
 
+
+def is_uuid(string):
+    """Check if string is a valid UUID"""
+    regex = r'^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\Z'
+    match = re.fullmatch(regex, string, re.I)
+    return bool(match)
+
+
 class ConfigManager:
     instance = None
+
     def __init__(self, config_path=None, config_id=None):
         load_dotenv()
         self.clients = {}
@@ -53,13 +63,14 @@ class ConfigManager:
         return self
 
     async def init_async(self):
-        self.db =  self.get_db()
+        self.db = self.get_db()
         if self.config_id:
             await self.fetch_and_load_config_from_db()
 
-
-    def get_db(self) -> motor.motor_asyncio.AsyncIOMotorDatabase:
-        client = motor.motor_asyncio.AsyncIOMotorClient("mongodb://root:dragon@localhost:27017/sync-tools-db?authSource=admin")
+    @staticmethod
+    def get_db() -> motor.motor_asyncio.AsyncIOMotorDatabase:
+        client = motor.motor_asyncio.AsyncIOMotorClient(
+            "mongodb://root:dragon@localhost:27017/sync-tools-db?authSource=admin")
         return client['sync-tools-db']
 
     async def fetch_and_load_config_from_db(self):
@@ -68,32 +79,36 @@ class ConfigManager:
 
         # print('Config data: ', config_data)
 
-
         if not config_data:
             raise ValueError(f"No configuration found for ID: {self.config_id}")
 
         # self.user = config_data.get('user')
         print('Config data: ', config_data)
-
-
+        print(f'Found config for user: {self.user.name} and config ID: {self.config_id}')
+        print(f'Total clients: {len(config_data.clients)}')
         # If 'clients' in the config is a list, you'll need to iterate through it.
         for config_client in config_data.clients:
-            details = {}
+            print(f'Processing client: {config_client.client.name}')
+            details = {
+                'name': config_client.client.name.lower(),
+            }
 
-            client = config_client.client
+            # print('config_client: ', config_client.clientFieldValues)
+
             client_fields = config_client.clientFields
             field_values = config_client.clientFieldValues
 
+            print(f'Found {len(field_values)} field values for client: {config_client.client.name}')
             for field in field_values:
-
                 details[field.clientField.name] = field.value
 
                 # details[field_values['fieldId']] = field['value']
 
-            # Use client ID (or name) as the key for the clients dictionary.
+                # Use client ID (or name) as the key for the clients dictionary.
                 self.clients[config_client.configClientId] = details
 
-            print('Details: ', self.clients)
+
+            print('Details: ', self.clients[config_client.configClientId])
 
         self.clients_details = config_data.clients
 
@@ -104,16 +119,15 @@ class ConfigManager:
         # self.add_sync_data(config_data.get('sync', {}))
         # If 'clients' in the config is a list, you'll need to iterate through it.
         # for client_data in config_data.get('clients', []):
-            # process each client_data as you were doing in your 'add_clients' method.
+        # process each client_data as you were doing in your 'add_clients' method.
 
         # Similar approach for libraries and sync
         # for library_data in config_data.get('libraries', []):
-            # process each library_data
+        # process each library_data
 
         # sync_data = config_data.get('sync')
         # if sync_data:
-            # process sync_data
-
+        # process sync_data
 
     def get_user(self):
         return self.user
@@ -198,7 +212,6 @@ class ConfigManager:
                 password = client_data.get('password')
                 self.add_tmdb_client(name, bearer_token, username, password)
 
-
             # Add other client types as needed
 
     # Rest of the methods remain the same
@@ -235,7 +248,6 @@ class ConfigManager:
         self.clients[name] = radarr_client
         return radarr_client  # https://docs.totaldebug.uk/pyarr/modules/radarr.html
 
-
     # def add_sonarr_client(self, name, host, api_key):
 
     # TODO: Implement these
@@ -247,7 +259,7 @@ class ConfigManager:
     #
     def add_trakt_client(self, name, username, client_id, client_secret):
         # TODO implement based on client_id and client_secret oauth
-        print('Adding trakt client',name, username, client_id, client_secret)
+        print('Adding trakt client', name, username, client_id, client_secret)
 
         trakt_client = TraktClient(client_id, client_secret, token_file=f'{self.config_path}/trakt.json')
 
@@ -261,12 +273,26 @@ class ConfigManager:
         self.clients[name] = openai
         return openai
 
-    def get_client(self, name):
-        try:
-            return self.clients[name]
-        except:
-            print(f'{name} client not found!')
-            return None
+    def get_client(self, id_or_type):
+        # check if client is a uuid
+        # if not uuid, search for client by type and find the uuid in the db.
+
+        if is_uuid(id_or_type):
+            try:
+                return self.clients[id_or_type]
+            except KeyError:
+                print(f'Client with UUID {id_or_type} not found!')
+                return None
+
+        else:
+            # Here, you'd search the database for the client's UUID by type
+            # For this step, you'd likely need an additional method or database query
+            try:
+                print('Searching for client by type', id_or_type)
+                return self.get_client_by_type(id_or_type)
+            except KeyError:
+                print(f'Client by {id_or_type} not found!')
+                return None
 
     def get_client_details(self, name):
         try:
@@ -291,10 +317,8 @@ class ConfigManager:
     def get_collection_settings(self):
         return self.collections
 
-
     def add_tmdb_client(self, name, api_key, username, password):
         print('Adding tmdb client', api_key)
-
 
         tmdb_client = TmdbClient(api_key, username, password)
         self.clients[name] = tmdb_client
@@ -305,3 +329,12 @@ class ConfigManager:
         if ConfigManager.instance is None:
             ConfigManager.instance = await ConfigManager.create(config_id=config_id)
         return ConfigManager.instance
+
+    def get_client_by_type(self, type):
+        # loop through clients and find the one with the matching type
+        for client_id, client in self.clients.items():
+            print('Checking client', client_id, client)
+            if client['name'] == type:
+                print('Found client by type', client_id, client)
+                return client
+        print('Client not found by type', type)

@@ -22,12 +22,11 @@ from src.tasks.tasks import sync_libraries_from_provider, sync_all_collections_f
 
 router = APIRouter()
 
-
 @router.get("/watched")
 async def trigger_sync_watchlist():
     try:
         # sync_watchlist(config)
-        config = ConfigManager.get_manager()
+        config = await ConfigManager.get_manager()
         list_maker = Lists(config)
         list_maker.create_previously_watchedlist()
 
@@ -38,6 +37,7 @@ async def trigger_sync_watchlist():
 
 @router.get("/playlists")
 async def trigger_sync_playlist():
+    config = await ConfigManager.get_manager()
     try:
 
         name = 'Sleeping Shows'
@@ -68,6 +68,7 @@ async def trigger_sync_playlist():
 
 @router.get("/topLists")
 async def trigger_sync_toplist():
+    config = await ConfigManager.get_manager()
     try:
         await sync_top_lists(config)
 
@@ -78,6 +79,7 @@ async def trigger_sync_toplist():
 
 @router.get("/collections")
 async def trigger_sync_collection():
+    config = await ConfigManager.get_manager()
     settings = config.get_collection_settings()
     emby_to_plex_sync_collection(config)
     try:
@@ -95,6 +97,7 @@ async def trigger_sync_collection():
 
 @router.get("/libraries")
 async def trigger_sync_libraries():
+    config = await ConfigManager.get_manager()
     try:
         await sync_libraries_from_provider(config)
 
@@ -104,6 +107,7 @@ async def trigger_sync_libraries():
 
 @router.get("/plex")
 async def trigger_sync_plex():
+    config = await ConfigManager.get_manager()
     try:
         # await sync_plex_collections(config)
         #await sync_plex_playlists(config)
@@ -115,6 +119,7 @@ async def trigger_sync_plex():
 
 @router.get('/trakt')
 async def handle_trakt():
+    config = await ConfigManager.get_manager()
     try:
 
         # await sync_trakt_user_lists(config, 'faiyt')
@@ -128,6 +133,9 @@ async def handle_trakt():
 
 @router.get('/ratings')
 async def handle_ratings(background_tasks: BackgroundTasks):
+    config = await ConfigManager.get_manager()
+
+
     try:
 
         # Create new list with listBuilder
@@ -206,6 +214,7 @@ async def handle_ratings(background_tasks: BackgroundTasks):
 # Sync list to ConfiguredClient
 @router.get('/list/{list_id}/client/{client_id}', response_model=MediaList)
 async def sync_list_to_client(list_id: str, client_id: str, ):
+    config = await ConfigManager.get_manager()
     db = (await ConfigManager.get_manager()).get_db()
 
     list_item = await db.media_lists.find_one({"mediaListId": list_id})
@@ -264,6 +273,7 @@ async def sync_media_list_to_provider(payload: MediaListOptions, ):
     print(f'Found {len(clients_to_sync)} clients to sync to.')
     print(f'Found {len(media_list.items)} items to sync.')
 
+    config = await ConfigManager.get_manager()
     # Loop over clients and sync
     for client in clients_to_sync:
         # print(client)

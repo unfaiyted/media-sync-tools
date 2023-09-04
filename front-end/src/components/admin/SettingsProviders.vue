@@ -1,49 +1,85 @@
 <template>
   <div class="p-4">
-    <!-- Display Buttons for Adding Provider and Library -->
+
+    <!-- Display Buttons for Adding Provider -->
     <div class="mb-4 flex space-x-2">
-      <button @click="addLibrary" class="bg-green-500 text-white px-4 py-2 rounded">Add Library</button>
       <button @click="addProvider" class="bg-blue-500 text-white px-4 py-2 rounded">Add Provider</button>
     </div>
 
-    <!-- Display Library Categories -->
-    <div>
-      <h2 class="text-xl mb-4">Server Libraries:</h2>
-      <div v-for="library in libraries" :key="library.libraryId">
-        <h3 class="text-lg mb-2">{{ library.name }} ({{ library.type }}):</h3>
-        <ul class="list-disc pl-5">
-          <li v-for="client in library.clients" :key="client.libraryClientId">
-            <a :href="`/provider/${client.clientId}`">{{ client.client?.name }}</a>
-            <ul class="list-circle pl-5">
-              <li><a :href="`/library/${client.libraryName}`">{{ client.libraryName }}
-              </a></li>
-            </ul>
-          </li>
-        </ul>
+    <!-- Display Providers grouped by ClientType -->
+    <div v-for="clientType in clientTypes" :key="clientType">
+      <h2 class="text-xl mb-4">{{ formatHeader(clientType) }}</h2>
+
+      <!-- Display Providers in Modern Cards -->
+      <div class="grid grid-cols-3 gap-4 mb-4">
+        <div v-for="provider in getProvidersByType(clientType)" :key="provider.client.clientId"
+             @click="handleCardClick(provider)"
+             class="cursor-pointer bg-white border p-4 rounded-lg shadow-md">
+
+
+          <div class="relative group">
+            <button
+                @click.stop="openDeleteModal(provider)"
+                class="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-8 h-8 flex justify-center items-center group-hover:opacity-100 opacity-0 transition-opacity duration-300"
+            >
+              X
+            </button>
+          </div>
+
+          <!-- Logo Image -->
+          <div :class="getPlaceholderClass(provider.client.name)">
+            <span class="text-white text-4xl font-semibold">{{ getInitial(provider.client.name) }}</span>
+          </div>
+
+          <!-- Provider Name -->
+          <div class="text-center mb-2">{{ provider.client.name }}</div>
+
+          <!-- Client Type Settings -->
+          <div v-if="clientType === 'MEDIA_SERVER'" class="text-center space-y-2">
+            <button @click="syncLibraries" class="bg-yellow-500 text-white px-4 py-2 rounded">Sync Libraries</button>
+            <div class="flex items-center justify-center mt-2">
+              <input type="checkbox" v-model="autoSync" class="mr-2">
+              <label>Auto-sync libraries</label>
+            </div>
+          </div>
+
+          <!-- Add more provider specific details here -->
+
+        </div>
       </div>
     </div>
+
   </div>
-
-
-  <Modal :isOpen="showLibraryManagerModal"
-         @do-action="addLibrary"
-         @cancel-action="showLibraryManagerModal = false">
-    <LibraryManager :config="config" ref="libraryManager"/>
-  </Modal>
 
   <Modal :isOpen="showProviderManagerModal"
          @do-action="addProvider"
          do-action-text="Add Provider"
          @cancel-action="showProviderManagerModal = false">
-    <ProviderManager :config="config" ref="providerManager" />
+    <ProviderManager :config="config" ref="providerManager"/>
   </Modal>
 
 
+  <Modal :isOpen="showDeleteModal" @cancel-action="closeDeleteModal">
+    <div class="p-4">
+      Are you sure you want to delete {{ selectedProvider?.client.name }}?
+      <div class="mt-4 flex justify-end space-x-4">
+        <button @click="closeDeleteModal" class="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded">
+          Cancel
+        </button>
+        <button @click="deleteProvider" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">
+          Delete
+        </button>
+      </div>
+    </div>
+  </Modal>
+
 
 </template>
+
+
 <script lang="ts">
-import { ref, onMounted } from 'vue';
-import {Library} from "@/models";
+import {ref, onMounted} from 'vue';
+import {ClientType, Library} from "@/models";
 import Modal from "@/components/ui/Modal.vue";
 import LibraryManager from "@/components/config/LibraryManager.vue";
 import ProviderManager from "@/components/config/ProviderManager.vue";
@@ -53,52 +89,96 @@ export default {
   name: 'SettingsProviders',
   components: {Modal, LibraryManager, ProviderManager},
 
-  setup() {
-    const config = ref({
-      configId: 'APP-DEFAULT-CONFIG'
-    });
-    const libraries = ref<Library[]>([]);
-    const showLibraryManagerModal = ref<boolean>(false);
-    const showProviderManagerModal = ref<boolean>(false);
 
-    const libraryManager = ref<InstanceType<typeof LibraryManager> | null>(null);
-    const providerManager = ref<InstanceType<typeof ProviderManager> | null>(null);
+  setup() {
+
+    const store = useAppConfigStore();
+    const autoSync = ref(false);
+    const selectedProvider = ref(null);
+    const showDeleteModal = ref(false);
 
     onMounted(async () => {
-      const store = useAppConfigStore();
-      libraries.value = (await store.getLibraries()) || [];
-      config.value = await store.getAppConfig('APP-DEFAULT-USER');
+      // Assuming you need to hydrate the store when component mounts. Adjust as needed.
+      await store.hydrateApp('APP-DEFAULT-USER');
     });
 
-    const addProvider = () => {
-      showProviderManagerModal.value = true;
-      providerManager.value?.createConfigClient();
+    const clientTypes = computed(() => {
+      // Extract the unique client types from the clients
+      const types = store.appConfig?.clients?.map(client => client.client.type) || [];
+      return [...new Set(types)];
+    });
+
+    const getProvidersByType = (type: ClientType) => {
+      return store.appConfig?.clients?.filter(client => client.client.type === type) || [];
     };
 
-    const addLibrary = () => {
-      showLibraryManagerModal.value = true;
-      libraryManager.value?.createLib();
+    const syncLibraries = () => {
+      // Logic to sync libraries. Might need to call an API or dispatch an action here.
+      console.log('Syncing libraries...');
     };
 
-    const closeProviderModal = () => {
-      showProviderManagerModal.value = false;
+    const appConfigStore = useAppConfigStore();
+
+    const getInitial = (name: string) => {
+      return name.charAt(0).toUpperCase();
     };
 
-    const closeLibraryModal = () => {
-      showLibraryManagerModal.value = false;
+    const handleCardClick = (clientId: string) => {
+      // Handle card click, you can navigate or open a modal
+      console.log(`Card with client ID ${clientId} clicked.`);
     };
+
+    const openDeleteModal = (provider) => {
+      selectedProvider.value = provider;
+      showDeleteModal.value = true;
+    };
+
+    const closeDeleteModal = () => {
+      selectedProvider.value = null;
+      showDeleteModal.value = false;
+    };
+
+    const formatHeader = (str: string) => {
+      return str
+          .toLowerCase()
+          .split('_')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+    };
+
+
+    const colors = ['bg-purple-300', 'bg-blue-300', 'bg-red-300', 'bg-yellow-300', 'bg-green-300'];
+
+    const getPlaceholderClass = (name: string) => {
+      const charCode = name.charCodeAt(0);
+      const colorIndex = charCode % colors.length;
+      return `h-24 w-24 mx-auto mb-4 rounded-full ${colors[colorIndex]} flex items-center justify-center`;
+    };
+
+    const deleteProvider = async () => {
+      if (selectedProvider.value) {
+        // TODO: Add your delete logic here using the selected provider
+        // Example: await api.deleteProvider(selectedProvider.value.id);
+
+        // After deleting, close the modal and refresh the list (or remove the provider from the local list)
+        closeDeleteModal();
+      }
+    };
+
 
     return {
-      config,
-      libraries,
-      showLibraryManagerModal,
-      showProviderManagerModal,
-      libraryManager,
-      providerManager,
-      addProvider,
-      addLibrary,
-      closeProviderModal,
-      closeLibraryModal
+      autoSync,
+      getInitial,
+      clientTypes,
+      openDeleteModal,
+      closeDeleteModal,
+      getProvidersByType,
+      deleteProvider,
+      syncLibraries,
+      appConfigStore,
+      handleCardClick,
+      formatHeader,
+      getPlaceholderClass,
     };
   }
 };

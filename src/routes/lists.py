@@ -9,7 +9,6 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from src.db.queries import media_list_queries
 
 router = APIRouter()
-config = ConfigManager.get_manager()
 
 
 # LISTS main CRUD operations for List

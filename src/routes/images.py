@@ -10,7 +10,6 @@ import os
 
 router = APIRouter()
 
-
 class PosterCreationQuery(BaseModel):
     query: str = None
 

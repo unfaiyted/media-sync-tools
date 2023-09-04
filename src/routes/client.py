@@ -8,7 +8,6 @@ from src.config import ConfigManager
 from fastapi import APIRouter, HTTPException, Depends
 
 router = APIRouter()
-config = ConfigManager.get_manager()
 
 
 @router.post("/", response_model=Client)

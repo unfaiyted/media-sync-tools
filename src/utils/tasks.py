@@ -3,7 +3,6 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from datetime import datetime
 from src.config import ConfigManager
 
-config = ConfigManager.get_manager()
 
 
 async def run_scheduled_tasks(db: AsyncIOMotorDatabase = Depends(config.get_db)):

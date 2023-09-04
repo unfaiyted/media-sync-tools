@@ -5,7 +5,6 @@ from src.models import User
 from src.config import ConfigManager
 
 router = APIRouter()
-config = ConfigManager.get_manager()
 
 
 @router.post("/", response_model=User)

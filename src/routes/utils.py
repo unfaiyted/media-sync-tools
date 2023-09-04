@@ -12,7 +12,7 @@ router = APIRouter()
 @router.get("/examples")
 
 async def trigger_examples():
-    config_manager = ConfigManager.get_manager()
+    config_manager = await ConfigManager.get_manager()
     try:
         list = Lists(config_manager)
 

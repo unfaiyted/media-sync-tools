@@ -9,7 +9,6 @@ from src.models import Library, LibraryClient
 from src.config import ConfigManager
 
 router = APIRouter()
-config = ConfigManager.get_manager()
 
 # CRUD operations for Library
 @router.post("/", response_model=Library)

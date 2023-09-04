@@ -4,7 +4,9 @@ export enum ClientType {
     UNKNOWN = 'UNKNOWN',
     MEDIA_SERVER = 'MEDIA_SERVER',
     LIST_PROVIDER = 'LIST_PROVIDER',
+    ACQUISITION = 'ACQUISITION',
     UTILITY = 'UTILITY'
+
     // ... other types ...
 }
 

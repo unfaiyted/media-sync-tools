@@ -1,4 +1,4 @@
-import {ClientField, Library, User} from "@/models/index";
+import {ClientField, Library, User, Client} from "@/models/index";
 
 export enum FieldType {
     STRING = 'STRING',
