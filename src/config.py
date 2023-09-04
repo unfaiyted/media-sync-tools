@@ -333,7 +333,7 @@ class ConfigManager:
     def get_client_by_type(self, type):
         # loop through clients and find the one with the matching type
         for client_id, client in self.clients.items():
-            print('Checking client', client_id, client)
+            # print('Checking client', client_id, client)
             if client['name'] == type:
                 print('Found client by type', client_id, client)
                 return client
