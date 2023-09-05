@@ -45,6 +45,28 @@
 
           <!-- Add more provider specific details here -->
 
+
+
+          <Modal :isOpen="showProviderDetailsModal"
+                 @do-action="saveProviderChanges"
+                  do-action-text="Save Changes"
+                  cancel-action-text="Cancel"
+                 @cancel-action="showProviderDetailsModal = false">
+            <div class="p-4">
+
+              <h3 class="text-xl mb-4">Edit Provider: {{ selectedProvider?.client.name }}</h3>
+              <div>
+                <!-- Sample input field for editing provider name -->
+                <label class="block mb-2">Provider Name:</label>
+                <input v-model="selectedProvider.client.name" class="border p-2 rounded w-full mb-4">
+
+                <!-- Add more input fields for other properties here -->
+
+
+              </div>
+            </div>
+          </Modal>
+
         </div>
       </div>
     </div>
@@ -96,6 +118,7 @@ export default {
     const autoSync = ref(false);
     const selectedProvider = ref(null);
     const showDeleteModal = ref(false);
+    const showProviderManagerModal = ref(false);
 
     onMounted(async () => {
       // Assuming you need to hydrate the store when component mounts. Adjust as needed.
@@ -123,10 +146,6 @@ export default {
       return name.charAt(0).toUpperCase();
     };
 
-    const handleCardClick = (clientId: string) => {
-      // Handle card click, you can navigate or open a modal
-      console.log(`Card with client ID ${clientId} clicked.`);
-    };
 
     const openDeleteModal = (provider) => {
       selectedProvider.value = provider;
@@ -164,19 +183,50 @@ export default {
         closeDeleteModal();
       }
     };
+    const showProviderDetailsModal = ref(false);
 
+    const handleCardClick = (provider) => {
+      console.log('Clicked provider', provider);
+      selectedProvider.value = provider;
+      showProviderDetailsModal.value = true;
+    };
+
+    const closeProviderDetailsModal = () => {
+      showProviderDetailsModal.value = false;
+    };
+
+    const saveProviderChanges = async () => {
+      if (selectedProvider.value) {
+        // TODO: Add your save/update logic here using the selected provider
+        // Example: await api.updateProvider(selectedProvider.value);
+
+        // After updating, close the modal and refresh the list (or update the provider in the local list)
+        closeProviderDetailsModal();
+      }
+    };
+
+    const addProvider = () => {
+      showProviderManagerModal.value = true;
+    };
 
     return {
       autoSync,
+      addProvider,
       getInitial,
       clientTypes,
       openDeleteModal,
+      handleCardClick,
+  closeProviderDetailsModal,
+      showDeleteModal,
+      showProviderManagerModal,
+      showProviderDetailsModal,
+  saveProviderChanges,
       closeDeleteModal,
       getProvidersByType,
+      selectedProvider,
       deleteProvider,
       syncLibraries,
       appConfigStore,
-      handleCardClick,
       formatHeader,
       getPlaceholderClass,
     };
