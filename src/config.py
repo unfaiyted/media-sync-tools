@@ -74,6 +74,7 @@ class ConfigManager:
         return client['sync-tools-db']
 
     async def fetch_and_load_config_from_db(self):
+        print('Fetching config from DB for config ID: ', self.config_id)
         db = self.get_db()
         config_data = await config_queries.get_full_config(db, config_id=self.config_id)
 
@@ -90,7 +91,7 @@ class ConfigManager:
         for config_client in config_data.clients:
             print(f'Processing client: {config_client.client.name}')
             details = {
-                'name': config_client.client.name.lower(),
+                'type': config_client.client.name.lower(),
             }
 
             # print('config_client: ', config_client.clientFieldValues)
@@ -105,14 +106,13 @@ class ConfigManager:
                 # details[field_values['fieldId']] = field['value']
 
                 # Use client ID (or name) as the key for the clients dictionary.
-                self.clients[config_client.configClientId] = details
+                self.clients_details[config_client.configClientId] = details
 
+            print('Client Details: ', self.clients_details[config_client.configClientId])
 
-            print('Details: ', self.clients[config_client.configClientId])
-
-        self.clients_details = config_data.clients
-
-        self.add_clients(self.clients)
+        # self.clients_details = config_data.clients
+        print(f'Added {len(self.clients_details)} clients to config')
+        self.add_clients(self.clients_details)
         # self.add_library_data(config_data.get('libraries', {}))
         # self.add_collection_data(config_data.get('collections', {}))
         # self.add_playlist_data(config_data.get('playlists', {}))
@@ -203,7 +203,7 @@ class ConfigManager:
                 api_key = client_data.get('api_key')
                 host = client_data.get('server_url')
                 self.add_radarr_client(name, host, api_key)
-            elif client_type == 'mdblist':  # Add a new elif block for the MDBList client
+            elif client_type == 'mdb':  # Add a new elif block for the MDBList client
                 api_key = client_data.get('api_key')
                 self.add_mdblist_client(name, api_key)
             elif client_type == 'tmdb':
@@ -223,9 +223,10 @@ class ConfigManager:
         return plex_client
 
     def add_mdblist_client(self, name, api_key):
-        print('Adding MDBList client', api_key)
+        print('Adding MDBList client', api_key, name)
         mdblist_client = MDBListClient(api_key)
         self.clients[name] = mdblist_client
+        print('MDBList client added', self.clients[name])
         return mdblist_client
 
     # Client to login through plex online plex.myapp.com
@@ -332,9 +333,13 @@ class ConfigManager:
 
     def get_client_by_type(self, type):
         # loop through clients and find the one with the matching type
-        for client_id, client in self.clients.items():
-            # print('Checking client', client_id, client)
-            if client['name'] == type:
-                print('Found client by type', client_id, client)
-                return client
+        print(f'Looking for client by type: {type}, total clients: {len(self.clients_details)}')
+        print('Clients: ', self.clients_details)
+        for clientId, client in self.clients_details.items():
+            print('Checking client', client, clientId)
+            # print('Checking client', client_id)
+            if client['type'] == type:
+                print('Found client by type', clientId, client)
+                print('self.clients', self.clients[clientId])
+                return self.clients[clientId]
         print('Client not found by type', type)

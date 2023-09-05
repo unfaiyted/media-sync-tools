@@ -5,9 +5,6 @@ async def sync_top_lists(config):
 
     mdb_list_api = config.get_client('mdb')
 
-    emby = config.get_client('emby')
-
-    # emby_movies = emby.get_media(external_id='imdb.tt0414993')
 
     top_lists = mdb_list_api.get_top_lists()
     print('Top Lists ======================')
