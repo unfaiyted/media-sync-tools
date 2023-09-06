@@ -1,13 +1,5 @@
 <template>
         <ClientManager />
-
-    <UserManagement />
-
-
-
-
-
-
 <!--    <ListEditor />-->
 </template>
 

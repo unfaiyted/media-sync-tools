@@ -13,7 +13,7 @@
       <!-- Display Providers in Modern Cards -->
       <div class="grid grid-cols-3 gap-4 mb-4">
         <div v-for="provider in getProvidersByType(clientType)" :key="provider.client.clientId"
-             @click="handleCardClick(provider)"
+             @click.stop="handleCardClick(provider)"
              class="cursor-pointer bg-white border p-4 rounded-lg shadow-md">
 
 
@@ -46,32 +46,13 @@
           <!-- Add more provider specific details here -->
 
 
-
-          <Modal :isOpen="showProviderDetailsModal"
-                 @do-action="saveProviderChanges"
-                  do-action-text="Save Changes"
-                  cancel-action-text="Cancel"
-                 @cancel-action="showProviderDetailsModal = false">
-            <div class="p-4">
-
-              <h3 class="text-xl mb-4">Edit Provider: {{ selectedProvider?.client.name }}</h3>
-              <div>
-                <!-- Sample input field for editing provider name -->
-                <label class="block mb-2">Provider Name:</label>
-                <input v-model="selectedProvider.client.name" class="border p-2 rounded w-full mb-4">
-
-                <!-- Add more input fields for other properties here -->
-
-
-              </div>
-            </div>
-          </Modal>
-
         </div>
       </div>
     </div>
 
   </div>
+      <SettingsProviderModal  :provider="selectedProvider" :isOpen="showProviderDetailsModal"
+                                   @close="closeProviderDetailsModal" @save="saveProviderChanges"/>
 
   <Modal :isOpen="showProviderManagerModal"
          @do-action="addProvider"
@@ -81,17 +62,10 @@
   </Modal>
 
 
-  <Modal :isOpen="showDeleteModal" @cancel-action="closeDeleteModal">
+  <Modal :isOpen="showDeleteModal" @do-action="deleteProvider" @cancel-action="closeDeleteModal">
     <div class="p-4">
       Are you sure you want to delete {{ selectedProvider?.client.name }}?
-      <div class="mt-4 flex justify-end space-x-4">
-        <button @click="closeDeleteModal" class="bg-gray-300 hover:bg-gray-400 px-4 py-2 rounded">
-          Cancel
-        </button>
-        <button @click="deleteProvider" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">
-          Delete
-        </button>
-      </div>
+
     </div>
   </Modal>
 
@@ -106,10 +80,11 @@ import Modal from "@/components/ui/Modal.vue";
 import LibraryManager from "@/components/config/LibraryManager.vue";
 import ProviderManager from "@/components/config/ProviderManager.vue";
 import {useAppConfigStore} from "@/store/appConfigStore";
+import SettingsProviderModal from "@/components/admin/SettingsProviderModal.vue";
 
 export default {
   name: 'SettingsProviders',
-  components: {Modal, LibraryManager, ProviderManager},
+  components: {SettingsProviderModal, Modal, LibraryManager, ProviderManager},
 
 
   setup() {
@@ -192,6 +167,8 @@ export default {
     };
 
     const closeProviderDetailsModal = () => {
+        console.log('closeProviderDetailsModal');
+        selectedProvider.value = null;
       showProviderDetailsModal.value = false;
     };
 

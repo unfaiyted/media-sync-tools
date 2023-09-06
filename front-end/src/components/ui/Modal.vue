@@ -66,7 +66,7 @@ export default defineComponent({
         }, 750);
 
     },
-    cancelAction() {
+    async cancelAction() {
       this.$emit('cancel-action', false);
     }
   },

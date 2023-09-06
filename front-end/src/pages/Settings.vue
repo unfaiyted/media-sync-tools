@@ -1,11 +1,7 @@
 <template>
-
     <div v-if="isHydrated">
-<!--      <ClientButtonGroup :type="ClientType.MEDIA_SERVER" :is-config="true" />-->
-<!--      <ClientButtonGroup :type="ClientType.UTILITY" />-->
       <SettingsTabs/>
     </div>
-
 </template>
 
 <script lang="ts">
@@ -18,7 +14,7 @@ import SyncOptions from "@/components/config/SyncOptions.vue";
 import {ClientType, Config} from "@/models";
 import {fetchConfig} from "@/api/configs";
 import {useAppConfigStore} from "@/store/appConfigStore";
-import SettingsTabs from "@/components/admin/SettingsTabs.vue";
+import SettingsTabs from "@/components/settings/SettingsTabs.vue";
 export default defineComponent({
   computed: {
     ClientType() {

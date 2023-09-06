@@ -15,7 +15,8 @@ export interface ConfigClient {
     clientId: string;
     relatedConfig: Config;
     configId: string;
-    clientFields: ConfigClientFieldsValue[];
+    clientFields: ClientField[];
+    clientFieldValues: ConfigClientFieldsValue[];
 }
 
 export interface ConfigClientFieldsValue {
