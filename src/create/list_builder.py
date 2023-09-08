@@ -1,3 +1,4 @@
+from src.create.providers.jellyfin import JellyfinProvider
 from src.create.providers.emby import EmbyProvider
 from src.create.providers.plex import PlexProvider
 from src.create.providers.tmdb import TMDBProvider
@@ -239,7 +240,8 @@ class ListBuilder:
             'trakt': (lambda: TraktProvider(self.config, self.filters,details=self, listType=self.type)),
             'tmdb': (lambda: TMDBProvider(self.config, self.filters, details=self, listType=self.type)),
             'plex': (lambda: PlexProvider(self.config, media_list=self.media_list)),
-            'emby': (lambda: EmbyProvider(self.config, self.filters, details=self, listType=self.type))
+            'emby': (lambda: EmbyProvider(self.config, self.filters, details=self, listType=self.type)),
+            'jellyfin': (lambda: JellyfinProvider(self.config, self.filters, details=self, listType=self.type))
         }
 
         if self.provider in provider_mapping:
@@ -269,7 +271,8 @@ class ListBuilder:
             'trakt': (lambda: TraktProvider(self.config, self.filters, details=self, listType=self.type)),
             'tmdb': (lambda: TMDBProvider(self.config, self.filters, details=self, listType=self.type)),
             'plex': (lambda: PlexProvider(self.config, self.filters, listType=self.type)),
-            'emby': (lambda: EmbyProvider(self.config, self.filters, details=self, listType=self.type))
+            'emby': (lambda: EmbyProvider(self.config, self.filters, details=self, listType=self.type)),
+            'jellyfin': (lambda: JellyfinProvider(self.config, self.filters, details=self, listType=self.type))
         }
 
         if provider in provider_mapping:

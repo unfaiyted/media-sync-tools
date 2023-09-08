@@ -4,6 +4,7 @@ import openai
 from plexapi.myplex import MyPlexAccount
 from plexapi.server import PlexServer
 
+from src.clients.jellyfin import Jellyfin
 from src.db.queries import config_queries
 from src.models import User
 from src.clients.tmdb import TmdbClient
@@ -191,6 +192,11 @@ class ConfigManager:
                 username = client_data.get('username')
                 api_key = client_data.get('api_key')
                 self.add_emby_client(name, server_url, username, api_key)
+            elif client_type == 'jellyfin':
+                server_url = client_data.get('server_url')
+                username = client_data.get('username')
+                api_key = client_data.get('api_key')
+                self.add_jellyfin_client(name, server_url, username, api_key)
             elif client_type == 'trakt':
                 username = client_data.get('username')
                 client_id = client_data.get('client_id')
@@ -243,6 +249,13 @@ class ConfigManager:
         emby_client = Emby(server_url, username, api_key)
         self.clients[name] = emby_client
         return emby_client
+
+    def add_jellyfin_client(self, name, server_url, username, api_key):
+            print('Adding jellyfin client', server_url, username, api_key)
+            jellyfin_client = Jellyfin(server_url, username, api_key)
+            self.clients[name] = jellyfin_client
+            return jellyfin_client
+
 
     def add_radarr_client(self, name, host, api_key):
         radarr_client = RadarrAPI(host, api_key)

@@ -209,7 +209,7 @@ async def handle_ratings(background_tasks: BackgroundTasks):
 
         list_builder = ListBuilder(config, list=details)
         list_builder = await list_builder.build()
-        list_builder = await list_builder.sync('emby')
+        list_builder = await list_builder.sync('jellyfin')
 
         return JSONResponse(status_code=200, content={"message": "Test completed", })
     except Exception as e:

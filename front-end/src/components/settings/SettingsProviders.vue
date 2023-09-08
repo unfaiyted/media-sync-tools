@@ -80,7 +80,7 @@ import Modal from "@/components/ui/Modal.vue";
 import LibraryManager from "@/components/config/LibraryManager.vue";
 import ProviderManager from "@/components/config/ProviderManager.vue";
 import {useAppConfigStore} from "@/store/appConfigStore";
-import SettingsProviderModal from "@/components/admin/SettingsProviderModal.vue";
+import SettingsProviderModal from "@/components/settings/SettingsProviderModal.vue";
 
 export default {
   name: 'SettingsProviders',

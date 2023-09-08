@@ -37,6 +37,16 @@ clients_data = {
             "isPrimary": {"placeholderValue": "true", "type": FieldType.BOOLEAN}
         }
     },
+    "jellyfin": {
+        "label": "Emby",
+        "type": ClientType.MEDIA_SERVER,
+        "fields": {
+            "server_url": {"placeholderValue": "http://example.com:port", "type": FieldType.STRING},
+            "api_key": {"placeholderValue": "xxxxxxxxxxxx", "type": FieldType.PASSWORD},
+            "username": {"placeholderValue": "username", "type": FieldType.STRING},
+            "isPrimary": {"placeholderValue": "true", "type": FieldType.BOOLEAN}
+        }
+    },
     "trakt": {
         "label": "Trakt",
         "type": ClientType.LIST_PROVIDER,

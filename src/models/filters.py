@@ -72,7 +72,31 @@ class PlexFilters(BaseFilters):
 class JellyfinFilters(BaseFilters):
     listId: Optional[str] = None
     library: Optional[str] = None
-
+    search: Optional[str] = None
+    limit: Optional[int] = None
+    offset: Optional[int] = None
+    sortBy: Optional[str] = None
+    sortOrder: Optional[str] = None
+    groupProgramsBySeries: Optional[bool] = None
+    recursive: Optional[bool] = None
+    includeItemTypes: Optional[str] = None
+    studioIds: Optional[str] = None
+    studioNames: Optional[str] = None
+    is3d: Optional[bool] = None
+    officialRatings: Optional[str] = None
+    hasTrailer: Optional[bool] = None
+    hasSpecialFeature: Optional[bool] = None
+    hasThemeSong: Optional[bool] = None
+    hasThemeVideo: Optional[bool] = None
+    hasOverview: Optional[bool] = None
+    hasImdbId: Optional[bool] = None
+    hasTmdbId: Optional[bool] = None
+    hasTvdbId: Optional[bool] = None
+    audioLanguages: Optional[str] = None
+    videoCodecs: Optional[str] = None
+    audioCodecs: Optional[str] = None
+    isPlayed: Optional[bool] = None
+    isFavorite: Optional[bool] = None
 
 class TraktFilters(BaseFilters):
     listId: Optional[str] = None

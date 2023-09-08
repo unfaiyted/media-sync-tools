@@ -31,6 +31,7 @@ class TMDBProvider:
         return {filter_item['type']: filter_item['value'] for filter_item in self.filters}
 
     async def get_list(self):
+        db = self.config.get_db()
         filter_query_params = self._convert_filters_to_query_params()
 
         movie_data = self.client.discover_movie(**filter_query_params)
