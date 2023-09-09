@@ -12,13 +12,14 @@ import {
     createMediaListItem, fetchMediaListItem, updateMediaListItem, deleteMediaListItem
 } from "@/api/lists";
 import {requestPosterForItem} from "@/api/posters";
-import {syncListToProviders} from "@/api/sync";
+import {importMediaListFromUrl, syncListToProviders} from "@/api/sync";
 
 interface ListState {
     mediaLists: MediaList[];
     mediaListOptions: MediaListOptions[];
     selectedList: MediaList | null;
     selectedItem: MediaListItem | null;
+    importUrl: string;
     loading: boolean;
     error: boolean;
     errorMessage: string;
@@ -33,6 +34,7 @@ export const useListStore = defineStore({
             selectedItem: null,
             selectedList: null,
             loading: true,
+            importUrl: '',
             error: false,
             errorMessage: '',
         };
@@ -44,13 +46,14 @@ export const useListStore = defineStore({
             this.loading = false;
         },
 
+
         asyncWrapper: async function(action: (...args: any[]) => Promise<any>, ...args: any[]) {
             try {
                 return await action(...args);
             } catch (err) {
                 this.handleError(err);
             } finally {
-                if (!this.error) this.loading = false;
+               this.loading = false;
             }
         },
 
@@ -180,6 +183,20 @@ export const useListStore = defineStore({
         getSelectedList: function() {
             return this.selectedList;
         },
+
+        setImportUrl: function(url: string) {
+            this.importUrl = url;
+        },
+        importListFromUrl: async function(url: string): Promise<void> {
+            try {
+                const newMediaList: MediaList = await importMediaListFromUrl(url);
+                this.mediaLists.push(newMediaList);  // Add the new media list to your state
+                this.loading = false;
+            } catch (error) {
+                this.handleError(error);
+            }
+        },
+
         resetState() {
             this.mediaLists = [];
             this.selectedList = null;

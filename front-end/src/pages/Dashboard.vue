@@ -24,6 +24,8 @@
       <!-- Movie list, potentially a component iterating over the recent movies -->
     </div>
 
+      <MediaListUrlImporter/>
+
       <SyncOptions :config="config"/>
 
 

@@ -1,14 +1,18 @@
 import uuid
+from ctypes import Union
 from datetime import datetime
 
+from create.providers.posters import PosterProvider
+from src.models import TraktFilters
 from src.models import MediaListType, MediaList, MediaItem, MediaProviderIds, MediaType, MediaListItem
 
 
 class TraktProvider:
-    def __init__(self, config, filters=None, details = None, listType=MediaListType.COLLECTION):
+    def __init__(self, config, filters: TraktFilters = None, details= None, media_list: MediaList = None, listType=MediaListType.COLLECTION):
         self.config = config
         self.listType = listType
         self.client = config.get_client('trakt')
+
         self.username = None
         self.details = details
         self.list_slug_or_id = None
@@ -20,6 +24,14 @@ class TraktProvider:
                 elif filter_item['type'] in ['list_slug', 'list_id']:
                     self.list_slug_or_id = filter_item['value']
 
+
+        if media_list:
+            print('media_list = ', media_list)
+            # self.list_slug_or_id = media_list.sourceListId
+            self.filters = media_list.filters
+            self.username = self.filters.username
+            self.list_slug_or_id = self.filters.listSlug if self.filters.listSlug else self.filters.listId
+
         # if not self.username or not self.list_slug_or_id:
         #     print("Both username and list_slug/list_id are required.")
             # Handle error or throw exception
@@ -30,21 +42,39 @@ class TraktProvider:
             print('No list id provided. Cannot get list.')
             return None
 
-        # list_info =  self.client.get_list(username=self.username, list_id_or_slug=self.list_slug_or_id)
+
+
         if self.username:
             list_items = self.client.get_list_items(username=self.username, list_id_or_slug=self.list_slug_or_id)
         else:
             list_items = self.client.get_list_items_by_id(list_id=self.list_slug_or_id)
 
+
+        if self.details is None:
+            print('Details not provided, getting list info')
+            if self.username:
+                list_info =  self.client.get_list(username=self.username, list_id_or_slug=self.list_slug_or_id)
+            else:
+                list_info = self.client.get_list_by_id(list_id=self.list_slug_or_id)
+
+            self.details = {
+                'title': list_info['name'],
+                'description': list_info['description'],
+                'sort_title': list_info['name'],
+                'sourceListId': list_info['ids']['trakt']
+            }
+
+
         media_list = MediaList(
             mediaListId=str(uuid.uuid4()),
-            name=self.details.title,
+            name=self.details['title'],
             type=self.listType,
             sourceListId=self.list_slug_or_id,
             # filters=self.filters,
             items=[],
-            sortName=self.details.sort_title,
-            clientId='TRAKTCLIENTID',
+            description=self.details['description'],
+            sortName=self.details['sort_title'],
+            clientId='trakt',
             createdAt=datetime.now(),
             creatorId=self.config.get_user().userId
         )
@@ -130,3 +160,11 @@ class TraktProvider:
         media_list_item.item = media_item
 
         return media_item
+
+class TraktPosterProvider(PosterProvider):
+
+    async def get_poster(self, media_item: 'MediaListItem') -> Union[str, None]:
+        # Since Trakt doesn't provide a poster, we directly check the next provider.
+        if self._next_provider:
+            return await self._next_provider.get_poster(media_item)
+        return None

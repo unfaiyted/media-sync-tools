@@ -96,11 +96,31 @@ class Jellyfin:
 
         # Modify your existing methods to use the new _get_request_with_retry and _post_request_with_retry methods
 
+    def _delete_request_with_retry(self, url, data=None, files=None, retries=5, delay=1):
+        for attempt in range(retries):
+            try:
+                response = requests.delete(url, data=data, files=files, headers=self.headers, timeout=60)
+                response.raise_for_status()  # Raise an exception for non-2xx status codes
+                return response
+            except (Timeout, requests.exceptions.RequestException, requests.exceptions.ReadTimeout) as e:
+                print(f"Request failed: {e}")
+                if attempt < retries - 1:
+                    print(f"Retrying in {delay} seconds...")
+                    time.sleep(delay)
+        raise Exception(f"Failed to make the request after {retries} attempts.")
+
+        # Modify your existing methods to use the new _get_request_with_retry and _post_request_with_retry methods
+
+
+
     def _get_request(self, url, stream=False, retries=5, delay=1):
         return self._get_request_with_retry(url, stream=stream, retries=retries, delay=delay)
 
     def _post_request(self, url, data=None, files=None):
         return self._post_request_with_retry(url, data=data, files=files)
+
+    def _delete_request(self, url, data=None, files=None):
+        return self._delete_request_with_retry(url, data=data, files=files)
 
     def create_collection(self, name, type, sort_name=None, poster=None):
 
@@ -111,9 +131,10 @@ class Jellyfin:
         response = self._post_request(url)
         collection = response.json()
 
+
         # TODO: Add sort name if other than None
 
-        print(f"Created collection: {collection['Name']} ({collection['Id']})")
+        print(f"Created collection: {name} ({collection['Id']})")
 
         if sort_name:
             self.update_item_sort_name(collection['Id'], sort_name)
@@ -271,8 +292,8 @@ class Jellyfin:
         return response
 
     def delete_item_from_collection(self, collection_id, item_id):
-        url = self._build_url(f'Collections/{collection_id}/Items/Delete', {'Ids': item_id})
-        response = self._post_request(url)
+        url = self._build_url(f'Collections/{collection_id}/Items', {'Ids': item_id})
+        response = self._delete_request(url)
         return response
 
     def delete_item_from_playlist(self, playlist_id, item_id):
@@ -407,7 +428,7 @@ class Jellyfin:
         return response
 
     def get_users(self):
-        url = self._build_url(f'Users/Public')
+        url = self._build_url(f'Users')
         print('get users url', url)
         response = self._get_request(url)
         return response

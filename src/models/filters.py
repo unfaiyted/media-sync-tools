@@ -11,6 +11,7 @@ class FilterType(str, Enum):
     JELLYFIN = "JELLYFIN"
     TRAKT = "TRAKT"
     TMDB = "TMDB"
+    TVDB = "TVDB"
     MDB = "MDB"
 
 class BaseFilters(BaseModel):
@@ -101,6 +102,7 @@ class JellyfinFilters(BaseFilters):
 class TraktFilters(BaseFilters):
     listId: Optional[str] = None
     listSlug: Optional[str] = None
+    username: Optional[str] = None
 
 
 class TmdbFilters(BaseFilters):
@@ -132,6 +134,8 @@ class TmdbFilters(BaseFilters):
     withoutWatchProviders: Optional[str] = None
     year: Optional[int] =    None
 
+class TvdbFilters(TmdbFilters):
+    listId: Optional[str] = None
 
 
 class TmdbShowFilters(TmdbFilters):
@@ -154,4 +158,4 @@ class MdbFilter(BaseFilters):
     library: Optional[str] = None
 
 
-Filters = Optional[PlexFilters or JellyfinFilters or TraktFilters or TmdbFilters or MdbFilter]
+Filters = Optional[Union[PlexFilters, JellyfinFilters, TraktFilters, TmdbFilters, MdbFilter, TvdbFilters, TmdbShowFilters, EmbyFilters]]

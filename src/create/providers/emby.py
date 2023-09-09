@@ -1,9 +1,10 @@
 import uuid
 from datetime import datetime
 
+from create.providers.posters import PosterProvider
 from src.create.posters import MediaPosterImageCreator
 from src.models import MediaList, MediaListItem, MediaType, MediaListType, MediaItem, MediaProviderIds, MediaPoster
-
+from src.clients.emby import Emby
 from typing import Optional
 
 class EmbyProvider:
@@ -161,7 +162,7 @@ class EmbyProvider:
 
         media_list_item.item = media_item
 
-        return media_item
+        return media_list_item
 
     def search_emby_for_external_ids(self, media_list_item: MediaListItem) -> dict or None:
         match = None
@@ -273,3 +274,12 @@ class EmbyProvider:
             poster_location = f'{self.config.get_root_path()}/poster.png'
             poster.save(poster_location)
             self.client.upload_image(item_id, poster_location)
+
+
+class EmbyPosterProvider(PosterProvider):
+    def get_poster(self, media_item_id: str) -> Optional[str]:
+        # Your logic for fetching the poster from Emby
+        poster = ...
+        if not poster and self.next_provider:
+            return self.next_provider.get_poster(media_item_id)
+        return poster

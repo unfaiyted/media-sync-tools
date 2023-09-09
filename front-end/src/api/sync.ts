@@ -1,6 +1,6 @@
 
 // Sync Options API methods
-import {MediaListOptions, SyncOptions} from "@/models";
+import {MediaList, MediaListOptions, SyncOptions} from "@/models";
 import {apiClient} from "@/api/index";
 
 export const createSyncOption = async (option: SyncOptions): Promise<SyncOptions> => {
@@ -42,6 +42,11 @@ export const syncListToProviders = async (listOptions: MediaListOptions): Promis
 // sync list to client
 export const syncListToClient = async (clientId: string, listId: string): Promise<SyncOptions> => {
     const response = await apiClient.get(`/sync/list/${listId}/client/${clientId}`, { timeout:0});
-
     return response.data;
 }
+
+export const importMediaListFromUrl = async (url: string): Promise<MediaList> => {
+    const response = await apiClient.post('/sync/import/list/', { url });
+    return response.data as MediaList;
+}
+

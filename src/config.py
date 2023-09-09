@@ -42,7 +42,8 @@ class ConfigManager:
         self.playlists = {}
         self.sync = {}
         self.root_path = os.path.dirname(os.path.abspath(__file__))
-        self.config_path = config_path or os.path.join(self.root_path, '../', 'config')
+        self.config_path = config_path or os.path.join(
+            self.root_path, '../', 'config')
         self.create_subdirectories()
         self.db = self.get_db()
 
@@ -54,7 +55,8 @@ class ConfigManager:
             # await self.fetch_and_load_config_from_db()
 
         # TODO: Refactor config to take in the config object from the database for a given user. For now, we'll use the default user
-        self.user: User = User(userId='APP-DEFAULT-USER', name='APP USER', email="app@user.com", password="test")
+        self.user: User = User(
+            userId='APP-DEFAULT-USER', name='APP USER', email="app@user.com", password="test")
 
     @classmethod
     async def create(cls, config_path=None, config_id=None):
@@ -82,11 +84,13 @@ class ConfigManager:
         # print('Config data: ', config_data)
 
         if not config_data:
-            raise ValueError(f"No configuration found for ID: {self.config_id}")
+            raise ValueError(
+                f"No configuration found for ID: {self.config_id}")
 
         # self.user = config_data.get('user')
         print('Config data: ', config_data)
-        print(f'Found config for user: {self.user.name} and config ID: {self.config_id}')
+        print(
+            f'Found config for user: {self.user.name} and config ID: {self.config_id}')
         print(f'Total clients: {len(config_data.clients)}')
         # If 'clients' in the config is a list, you'll need to iterate through it.
         for config_client in config_data.clients:
@@ -100,7 +104,8 @@ class ConfigManager:
             client_fields = config_client.clientFields
             field_values = config_client.clientFieldValues
 
-            print(f'Found {len(field_values)} field values for client: {config_client.client.name}')
+            print(
+                f'Found {len(field_values)} field values for client: {config_client.client.name}')
             for field in field_values:
                 details[field.clientField.name] = field.value
 
@@ -109,7 +114,8 @@ class ConfigManager:
                 # Use client ID (or name) as the key for the clients dictionary.
                 self.clients_details[config_client.configClientId] = details
 
-            print('Client Details: ', self.clients_details[config_client.configClientId])
+            print('Client Details: ',
+                  self.clients_details[config_client.configClientId])
 
         # self.clients_details = config_data.clients
         print(f'Added {len(self.clients_details)} clients to config')
@@ -134,7 +140,8 @@ class ConfigManager:
         return self.user
 
     def create_subdirectories(self):
-        subdirectories = ['logs', 'collections', 'playlists', 'resources', 'libraries']
+        subdirectories = ['logs', 'collections',
+                          'playlists', 'resources', 'libraries']
         for subdir in subdirectories:
             path = os.path.join(self.config_path, subdir)
             os.makedirs(path, exist_ok=True)
@@ -251,11 +258,10 @@ class ConfigManager:
         return emby_client
 
     def add_jellyfin_client(self, name, server_url, username, api_key):
-            print('Adding jellyfin client', server_url, username, api_key)
-            jellyfin_client = Jellyfin(server_url, username, api_key)
-            self.clients[name] = jellyfin_client
-            return jellyfin_client
-
+        print('Adding jellyfin client', server_url, username, api_key)
+        jellyfin_client = Jellyfin(server_url, username, api_key)
+        self.clients[name] = jellyfin_client
+        return jellyfin_client
 
     def add_radarr_client(self, name, host, api_key):
         radarr_client = RadarrAPI(host, api_key)
@@ -275,7 +281,8 @@ class ConfigManager:
         # TODO implement based on client_id and client_secret oauth
         print('Adding trakt client', name, username, client_id, client_secret)
 
-        trakt_client = TraktClient(client_id, client_secret, token_file=f'{self.config_path}/trakt.json')
+        trakt_client = TraktClient(
+            client_id, client_secret, token_file=f'{self.config_path}/trakt.json')
 
         self.clients[name] = trakt_client
 
@@ -346,7 +353,8 @@ class ConfigManager:
 
     def get_client_by_type(self, type):
         # loop through clients and find the one with the matching type
-        print(f'Looking for client by type: {type}, total clients: {len(self.clients_details)}')
+        print(
+            f'Looking for client by type: {type}, total clients: {len(self.clients_details)}')
         print('Clients: ', self.clients_details)
         for clientId, client in self.clients_details.items():
             print('Checking client', client, clientId)

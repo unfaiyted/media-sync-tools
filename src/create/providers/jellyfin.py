@@ -102,7 +102,7 @@ class JellyfinProvider:
         for item in list_items:
             media_item, media_list_item = self.create_media_item(item, media_list)
             db.media_list_items.insert_one(media_list_item.dict())
-            primary_list.extend(self.search_emby_for_external_ids(media_item))
+            primary_list.extend(self.search_jellyfin_for_external_ids(media_item))
 
         return primary_list
 
@@ -163,7 +163,8 @@ class JellyfinProvider:
 
         return media_item
 
-    def search_emby_for_external_ids(self, media_list_item: MediaListItem) -> dict or None:
+    def search_jellyfin_for_external_ids(self, media_item: MediaItem) -> dict or None:
+        print('searching jellyfin for external ids', media_item)
         match = None
         def search_id(external_id: str) -> Optional[dict]:
             try:
@@ -177,9 +178,9 @@ class JellyfinProvider:
                 print(f"Failed searching for {external_id} due to {e}")
             return None
 
-        imdb_result = search_id(f"imdb.{media_list_item.item.providers.imdbId}")
-        tvdb_result = search_id(f"tvdb.{media_list_item.item.providers.tvdbId}")
-        tmdb_result = search_id(f"Tmdb.{media_list_item.item.providers.tmdbId}")
+        imdb_result = search_id(f"imdb.{media_item.providers.imdbId}")
+        tvdb_result = search_id(f"tvdb.{media_item.providers.tvdbId}")
+        tmdb_result = search_id(f"Tmdb.{media_item.providers.tmdbId}")
 
         if imdb_result:
            return imdb_result
@@ -193,13 +194,13 @@ class JellyfinProvider:
                 # try:
                     # if emby_media['ProductionYear'] == media.year:
 
-        emby_type = 'Movie' if media_list_item.item.type == MediaType.MOVIE else 'Series'
+        emby_type = 'Movie' if media_item.type == MediaType.MOVIE else 'Series'
         # Fallback to name and year
-        search_results = self.client.search(media_list_item.item.title, emby_type)
+        search_results = self.client.search(media_item.title, emby_type)
         print('SEARCH RESULTS::::', search_results)
         if search_results:
                 for result in search_results:
-                    if int(result['ProductionYear']) == int(media_list_item.item.year):
+                    if int(result['ProductionYear']) == int(media_item.year):
                         match = result
                         break
                 return match
@@ -215,8 +216,8 @@ class JellyfinProvider:
         # add items to the playlist or collection
         # return the playlist or collection id
 
-        # print(media_list)
         type = media_list.type
+        print(media_list)
 
         if type == MediaListType.COLLECTION:
            list = self.client.create_collection(media_list.name, media_list.sortName)
@@ -230,23 +231,24 @@ class JellyfinProvider:
         # Main List Poster
         self.save_poster(media_list.sourceListId, media_list.poster)
 
-        print(f'adding {len(media_list.items)} items to list {list["Name"]}')
+        print(f'adding {len(media_list.items)} items to list {list["Id"]}')
+        print(f'media list items',media_list.items)
         for media_list_item in media_list.items:
-            print(f'adding item {media_list_item.item.title} to list {list["Name"]}')
-            embyItem = self.search_emby_for_external_ids(media_list_item)
+            print(f'adding item {media_list_item.item.title} to list {list["Id"]}')
+            jellyItem = self.search_jellyfin_for_external_ids(media_list_item.item)
 
-            if embyItem is None:
+            if jellyItem is None:
                 print('item not found')
                 continue
 
             if type == MediaListType.PLAYLIST:
-                self.client.add_item_to_playlist(list['Id'], embyItem['Id'])
+                self.client.add_item_to_playlist(list['Id'], jellyItem['Id'])
             elif type == MediaListType.COLLECTION:
-                self.client.add_item_to_collection(list['Id'], embyItem['Id'])
+                self.client.add_item_to_collection(list['Id'], jellyItem['Id'])
 
             poster = (media_list_item.poster if media_list_item.poster is not None else media_list_item.item.poster)
             # Item Poster
-            self.save_poster(embyItem['Id'], poster)
+            self.save_poster(jellyItem['Id'], poster)
         return media_list
 
     def save_poster(self, item_id: str, poster: MediaPoster or str):

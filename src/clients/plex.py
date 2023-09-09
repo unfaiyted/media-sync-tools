@@ -2,6 +2,7 @@ import os
 import requests
 import string
 
+
 class PlexManager:
     def __init__(self, config):
         self.client = config.get_client("plex")
@@ -18,8 +19,6 @@ class PlexManager:
                 limit=limit
             )
 
-
-
             # Process the retrieved items
             print(f"Processing {len(items)} items starting with {letter}")
             for item in items:
@@ -33,11 +32,9 @@ class PlexManager:
     def get_by_guid(self, guid):
         return self.guidLookup.get(guid)
 
-
     # def create_collection(self, title, items):
 
     # def create_playlist(self, title, items):
-
 
     @staticmethod
     def save_poster(poster_url, filename="poster.jpg"):
@@ -50,4 +47,3 @@ class PlexManager:
                 for chunk in poster_response.iter_content(1024):
                     f.write(chunk)
         return poster_response
-

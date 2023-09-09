@@ -1,12 +1,13 @@
 import uuid
 from dataclasses import asdict
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Optional, Union
 from plexapi.library import LibrarySection
 from plexapi.server import PlexServer
 from plexapi.video import Movie, Show
 import re
 
+from create.providers.posters import PosterProvider
 from src.models import MediaList, MediaListItem, MediaType, MediaListType, MediaItem, MediaProviderIds
 
 
@@ -266,3 +267,31 @@ class PlexProvider:
         media_list_item.item = media_item
 
         return media_item
+
+from plexapi.server import PlexServer
+
+class PlexPosterProvider(PosterProvider):
+
+    def __init__(self, config):
+        super().__init__()
+        self.config = config
+
+    async def get_poster(self, media_item: 'MediaListItem') -> Union[str, None]:
+        try:
+            plex = self.get_plex_client()
+            media = plex.library.section('Movies').get(media_item.name)  # Adjust this based on your media type and library setup.
+
+            # Assuming media provides a poster URL or a way to fetch it.
+            if media and media.poster:
+                return media.poster
+        except Exception as e:
+            print(f"Error fetching poster from Plex: {e}")
+
+        # If fetching from Plex fails or doesn't provide a poster, check the next provider.
+        if self._next_provider:
+            return await self._next_provider.get_poster(media_item)
+        return None
+
+    def get_plex_client(self) -> PlexServer:
+        return self.config.get_client('plex')
+

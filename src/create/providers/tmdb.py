@@ -1,6 +1,8 @@
 import uuid
 from datetime import datetime
+from typing import Optional
 
+from create.providers.posters import PosterProvider
 from src.models import MediaListType, MediaList, MediaItem, MediaType, MediaProviderIds, MediaListItem
 
 
@@ -44,7 +46,7 @@ class TMDBProvider:
                 description=self.details.description,
                 # filters=self.filters,
                 sortName=self.details.sort_title,
-                clientId='TMDBCLIENTID',
+                clientId='tmdb',
                 createdAt=datetime.now(),
                 creatorId=self.config.get_user().userId
             )
@@ -59,13 +61,15 @@ class TMDBProvider:
 
         return media_list
 
+    async def get_poster(self, item):
+        poster_id = item['poster_path']
+        poster_url = f"https://image.tmdb.org/t/p/original/{poster_id}"
+        return poster_url
 
     async def create_media_item(self, item, media_list):
         db = self.config.get_db()
 
-        poster_id = item['poster_path']
-        poster_url = f"https://image.tmdb.org/t/p/original/{poster_id}"
-
+        poster_url = self.get_poster(item)
 
         media_item = MediaItem(
             mediaItemId=str(uuid.uuid4()),
@@ -109,6 +113,12 @@ class TMDBProvider:
 
         media_list_item.item = media_item
 
-        return media_item
+        return media_list_item
 
-
+    class TmdbPosterProvider(PosterProvider):
+    def get_poster(self, media_item_id: str) -> Optional[str]:
+        # Logic for fetching the poster from TMDb
+        poster = ...
+        if not poster and self.next_provider:
+            return self.next_provider.get_poster(media_item_id)
+        return poster

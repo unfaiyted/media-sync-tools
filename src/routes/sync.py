@@ -1,5 +1,6 @@
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorDatabase
+from pydantic import BaseModel
 from starlette.background import BackgroundTasks
 
 from src.create.plex import sync_plex_collections, sync_plex_playlists, sync_plex_sample_searches
@@ -13,7 +14,7 @@ from src.sync.collections import sync_collections, emby_to_plex_sync_collection
 from src.create.lists import Lists
 from src.create.trakt import sync_trakt_user_lists, sync_trakt_popular_lists, sync_trakt_trending_lists
 from src.create.playlists import create_emby_playlist
-
+from src.sync.imports import import_url
 from starlette.responses import JSONResponse
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -328,8 +329,7 @@ async def read_sync_options_by_config_id(config_id: str, ):
 
 
 @router.put("/options/{sync_options_id}", response_model=SyncOptions)
-async def update_sync_options(sync_options_id: str, sync_option: SyncOptions,
-                              ):
+async def update_sync_options(sync_options_id: str, sync_option: SyncOptions):
     db = (await ConfigManager.get_manager()).get_db()
 
     existing_sync_option = await db.sync_options.find_one({"syncOptionsId": sync_options_id})
@@ -350,3 +350,15 @@ async def delete_sync_options(sync_options_id: str, ):
         raise HTTPException(status_code=404, detail="SyncOption not found")
     await db.sync_options.delete_one({"syncOptionsId": sync_options_id})
     return existing_sync_option
+
+
+
+class ImportUrlRequest(BaseModel):
+    url: str
+
+@router.post("/import/list/", response_model=MediaList)
+async def import_list(payload: ImportUrlRequest):
+    config = await ConfigManager.get_manager()
+    media_list = await import_url(config,payload.url)
+    return media_list
+
