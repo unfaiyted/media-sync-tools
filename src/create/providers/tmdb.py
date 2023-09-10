@@ -1,8 +1,11 @@
 import uuid
+from abc import ABC
 from datetime import datetime
 from typing import Optional
 
-from create.providers.posters import PosterProvider
+from src.clients.tmdb import TmdbClient
+from src.config import ConfigManager
+from src.create.providers.posters import PosterProvider
 from src.models import MediaListType, MediaList, MediaItem, MediaType, MediaProviderIds, MediaListItem
 
 
@@ -115,10 +118,3 @@ class TMDBProvider:
 
         return media_list_item
 
-    class TmdbPosterProvider(PosterProvider):
-    def get_poster(self, media_item_id: str) -> Optional[str]:
-        # Logic for fetching the poster from TMDb
-        poster = ...
-        if not poster and self.next_provider:
-            return self.next_provider.get_poster(media_item_id)
-        return poster

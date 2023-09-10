@@ -1,8 +1,10 @@
 import uuid
+from abc import ABC
 from datetime import datetime
 
-from create.providers.posters import PosterProvider
 from src.create.posters import MediaPosterImageCreator
+from src.create.providers.posters import PosterManager
+from src.create.providers.provider_manager import EmbyPosterProvider
 from src.models import MediaList, MediaListItem, MediaType, MediaListType, MediaItem, MediaProviderIds, MediaPoster
 from src.clients.emby import Emby
 from typing import Optional
@@ -14,11 +16,12 @@ class EmbyProvider:
         self.filters = filters
         self.server_url = self.client.server_url
         self.api_key = self.client.api_key
+        self.poster_manager = PosterManager(config=config)
         self.listType = listType
         self.details = details
 
         self.id, self.library_name = self.parse_filters(filters if filters is not None else [])
-        print('id ',self.id)
+        print('id ', self.id)
         print('library name ', self.library_name)
 
     def parse_filters(self, filters):
@@ -110,21 +113,23 @@ class EmbyProvider:
     async def create_media_item(self, item, media_list):
         db = self.config.get_db()
 
-        poster_id = item['ImageTags'].get('Primary')
-        poster_url = f"{self.server_url}/emby/Items/{item['Id']}/Images/Primary?api_key={self.api_key}&X-Emby-Token={self.api_key}" if poster_id else None
+        # poster_id = item['ImageTags'].get('Primary')
+        # poster_url = f"{self.server_url}/emby/Items/{item['Id']}/Images/Primary?api_key={self.api_key}&X-Emby-Token={self.api_key}" if poster_id else None
 
         media_item = MediaItem(
             mediaItemId=str(uuid.uuid4()),
             title=item.get('Name','TITLE MISSING'),
             year=item.get('ProductionYear', None),
+            description=item.get('Overview', None),
             type=MediaType.MOVIE if item['Type'] == 'Movie' else MediaType.SHOW,
-            poster=poster_url,
             providers=MediaProviderIds(
                 imdbId=item['ProviderIds'].get('IMDB', None),
                 tvdbId=item['ProviderIds'].get('Tvdb', None)
             ),
             # ... add any other fields you need here ...
         )
+
+        media_item.poster = await self.poster_manager.get_poster(media_item)
 
         # Check for existing mediaItem
         existing_media_item = None
@@ -164,7 +169,17 @@ class EmbyProvider:
 
         return media_list_item
 
-    def search_emby_for_external_ids(self, media_list_item: MediaListItem) -> dict or None:
+    def search_emby_for_external_ids(self, media_list_item: MediaListItem = None, media_item=None) -> dict or None:
+        # if media_list_item is none we should set the media_item to a media_list_item object
+
+        if media_list_item is None and media_item is None:
+            print('no media item provided')
+            return None
+
+        if media_list_item is None:
+            media_list_item = MediaListItem(item=media_item)
+
+
         match = None
         def search_id(external_id: str) -> Optional[dict]:
             try:
@@ -197,7 +212,7 @@ class EmbyProvider:
         emby_type = 'Movie' if media_list_item.item.type == MediaType.MOVIE else 'Series'
         # Fallback to name and year
         search_results = self.client.search(media_list_item.item.title, emby_type)
-        print('SEARCH RESULTS::::', search_results)
+        # print('SEARCH RESULTS::::', search_results)
         if search_results:
                 for result in search_results:
                     if int(result['ProductionYear']) == int(media_list_item.item.year):
@@ -226,7 +241,6 @@ class EmbyProvider:
         else:
             print('invalid list type')
             return None
-
 
         # Main List Poster
         self.save_poster(media_list.sourceListId, media_list.poster)
@@ -275,11 +289,3 @@ class EmbyProvider:
             poster.save(poster_location)
             self.client.upload_image(item_id, poster_location)
 
-
-class EmbyPosterProvider(PosterProvider):
-    def get_poster(self, media_item_id: str) -> Optional[str]:
-        # Your logic for fetching the poster from Emby
-        poster = ...
-        if not poster and self.next_provider:
-            return self.next_provider.get_poster(media_item_id)
-        return poster

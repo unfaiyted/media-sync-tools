@@ -1,6 +1,5 @@
 <template>
         <ClientManager />
-<!--    <ListEditor />-->
 </template>
 
 <script lang="ts">

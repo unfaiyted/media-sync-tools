@@ -1,18 +1,24 @@
 import uuid
+from abc import ABC
 from ctypes import Union
 from datetime import datetime
+from typing import Optional
 
-from create.providers.posters import PosterProvider
+from src.create.providers.posters import PosterProvider, PosterManager
+
+from src.config import ConfigManager
+from src.create.providers.tmdb import TmdbPosterProvider
 from src.models import TraktFilters
 from src.models import MediaListType, MediaList, MediaItem, MediaProviderIds, MediaType, MediaListItem
 
 
 class TraktProvider:
-    def __init__(self, config, filters: TraktFilters = None, details= None, media_list: MediaList = None, listType=MediaListType.COLLECTION):
+    def __init__(self, config, filters: TraktFilters = None, details=None, media_list: MediaList = None,
+                 listType=MediaListType.COLLECTION):
         self.config = config
         self.listType = listType
         self.client = config.get_client('trakt')
-
+        self.poster_manager = PosterManager()
         self.username = None
         self.details = details
         self.list_slug_or_id = None
@@ -24,7 +30,6 @@ class TraktProvider:
                 elif filter_item['type'] in ['list_slug', 'list_id']:
                     self.list_slug_or_id = filter_item['value']
 
-
         if media_list:
             print('media_list = ', media_list)
             # self.list_slug_or_id = media_list.sourceListId
@@ -34,26 +39,22 @@ class TraktProvider:
 
         # if not self.username or not self.list_slug_or_id:
         #     print("Both username and list_slug/list_id are required.")
-            # Handle error or throw exception
-
+        # Handle error or throw exception
 
     async def get_list(self):
         if self.list_slug_or_id is None:
             print('No list id provided. Cannot get list.')
             return None
 
-
-
         if self.username:
             list_items = self.client.get_list_items(username=self.username, list_id_or_slug=self.list_slug_or_id)
         else:
             list_items = self.client.get_list_items_by_id(list_id=self.list_slug_or_id)
 
-
         if self.details is None:
             print('Details not provided, getting list info')
             if self.username:
-                list_info =  self.client.get_list(username=self.username, list_id_or_slug=self.list_slug_or_id)
+                list_info = self.client.get_list(username=self.username, list_id_or_slug=self.list_slug_or_id)
             else:
                 list_info = self.client.get_list_by_id(list_id=self.list_slug_or_id)
 
@@ -63,7 +64,6 @@ class TraktProvider:
                 'sort_title': list_info['name'],
                 'sourceListId': list_info['ids']['trakt']
             }
-
 
         media_list = MediaList(
             mediaListId=str(uuid.uuid4()),
@@ -93,7 +93,6 @@ class TraktProvider:
 
         return media_list
 
-
     async def create_media_item(self, provider_item, media_list):
         db = self.config.get_db()
 
@@ -104,20 +103,24 @@ class TraktProvider:
         print('ITEM = ', item)
 
         media_item = MediaItem(
-                mediaItemId=str(uuid.uuid4()),
-                title=item['title'],
-                year=item['year'],
-                type=MediaType.MOVIE if provider_item['type'] == 'movie' else MediaType.SHOW,
-                # poster=poster_url,
-                providers=MediaProviderIds(
-                    imdbId=item['ids'].get('imdb', None),
-                    tvdbId=item['ids'].get('tvdb', None),
-                    traktId=item['ids'].get('trakt', None),
-                    tmdbId=item['ids'].get('tmdb', None),
-                    tvRageId=item['ids'].get('tvrage', None),
-                ),
-                # ... add any other fields you need here ...
-            )
+            mediaItemId=str(uuid.uuid4()),
+            title=item['title'],
+            year=item['year'],
+            type=MediaType.MOVIE if provider_item['type'] == 'movie' else MediaType.SHOW,
+            # poster=poster_url,
+            providers=MediaProviderIds(
+                imdbId=item['ids'].get('imdb', None),
+                tvdbId=item['ids'].get('tvdb', None),
+                traktId=item['ids'].get('trakt', None),
+                tmdbId=item['ids'].get('tmdb', None),
+                tvRageId=item['ids'].get('tvrage', None),
+            ),
+            # ... add any other fields you need here ...
+        )
+
+        media_item.poster = await self.poster_manager.get_poster(
+            preferred_provider=TmdbPosterProvider(config=self.config),
+            media_item=media_item)
 
         # Check for existing mediaItem
         existing_media_item = None
@@ -131,16 +134,16 @@ class TraktProvider:
             existing_media_item = await db.media_items.find_one({"title": media_item.title, "year": media_item.year})
 
         if existing_media_item:
-                    print('updating existing media item')
-                    media_item.mediaItemId = existing_media_item['mediaItemId']
+            print('updating existing media item')
+            media_item.mediaItemId = existing_media_item['mediaItemId']
 
-                    # Filter out fields in the media item that are not valid
-                    valid_fields = {k: v for k, v in media_item.dict().items() if v}
+            # Filter out fields in the media item that are not valid
+            valid_fields = {k: v for k, v in media_item.dict().items() if v}
 
-                    db.media_items.update_one(
-                        {"mediaItemId": existing_media_item["mediaItemId"]},
-                        {"$set": valid_fields}
-                    )
+            db.media_items.update_one(
+                {"mediaItemId": existing_media_item["mediaItemId"]},
+                {"$set": valid_fields}
+            )
         # media_item.dict()
         else:
             print('inserting new media item')
@@ -160,11 +163,3 @@ class TraktProvider:
         media_list_item.item = media_item
 
         return media_item
-
-class TraktPosterProvider(PosterProvider):
-
-    async def get_poster(self, media_item: 'MediaListItem') -> Union[str, None]:
-        # Since Trakt doesn't provide a poster, we directly check the next provider.
-        if self._next_provider:
-            return await self._next_provider.get_poster(media_item)
-        return None
