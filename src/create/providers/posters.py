@@ -3,6 +3,7 @@ from typing import Optional, Union
 
 from plexapi.server import PlexServer
 
+from src.clients.jellyfin import JellyfinClient
 from src.clients.tmdb import TmdbClient
 from src.models import MediaItem, MediaProviderIds
 
@@ -41,44 +42,34 @@ class TraktPosterProvider(PosterProvider, ABC):
     def __init__(self, config, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.config = config
+        self.log = config.get_logger(__name__)
 
     async def get_poster_from_source(self, config, media_item: MediaItem) -> Optional[str]:
-        emby = self.config.get_client('emby')
-
+        self.log.info('Skipping fetch poster from Trakt', media_item=media_item.dict())
         # Not implemented for Trakt
         poster = None
-        # Attempt to fetch from Emby
+        # Attempt to fetch from Next Provider
         if not poster and self.next_provider:
             return await self.next_provider.get_poster(media_item)  # Ensure this is awaited if it's async
         return poster
-
 
 
 class EmbyPosterProvider(PosterProvider, ABC):
     def __init__(self, config, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.config = config
+        self.log = config.get_logger(__name__)
 
     async def get_poster_from_source(self, config, media_item: MediaItem) -> Optional[str]:
+        self.log.info('Skipping fetch poster from Emby', media_item=media_item.dict())
         emby = self.config.get_client('emby')
 
         # Attempt to fetch from Emby
-        poster = await self.fetch_from_emby(media_item, emby)
+        poster = await emby.get_poster_from_emby_by_media_item(media_item, emby)
         if not poster and self.next_provider:
+            self.log.debug('Poster not found in Emby! Attempting to fetch from next provider.', media_item=media_item.dict())
             return await self.next_provider.get_poster(media_item)  # Ensure this is awaited if it's async
         return poster
-
-    async def fetch_from_emby(self, media_item, emby):
-        embyItem = await emby.search_emby_for_external_ids(media_item=media_item)
-
-        if embyItem is None:
-            print('Item not found in Emby')
-            return None
-
-        if poster_id := embyItem['ImageTags'].get('Primary'):
-            return f"{emby.server_url}/emby/Items/{embyItem['Id']}/Images/Primary?api_key={emby.api_key}&X-Emby-Token={emby.api_key}"
-        else:
-            return None
 
 
 class TmdbPosterProvider(PosterProvider, ABC):
@@ -87,7 +78,8 @@ class TmdbPosterProvider(PosterProvider, ABC):
         self.config = config
         self.log = config.get_logger(__name__)
 
-    async def get_poster_from_source(self,config, media_item: MediaItem) -> Optional[str]:
+    async def get_poster_from_source(self, config, media_item: MediaItem) -> Optional[str]:
+        self.log.info('Fetching poster from Tmdb', media_item=media_item.dict())
         tmdb: TmdbClient = self.config.get_client('tmdb')
         # Attempt to fetch from Tmdb
         poster = tmdb.get_movie_poster_path(media_item.providers.tmdbId, full_path=True)
@@ -95,7 +87,7 @@ class TmdbPosterProvider(PosterProvider, ABC):
 
         if poster is None:
             self.log.info(
-                'Poster not found by Tmdb Id! Attempting to fetch by name and year.'
+                'Poster not found! Attempting to fetch by name and year.'
             )
             if movie := tmdb.get_movie_by_name_and_year(media_item.title, media_item.year):
                 self.log.info('Found movie by name and year', movie=movie)
@@ -139,6 +131,7 @@ class PlexPosterProvider(PosterProvider, ABC):
 
         # If fetching from Plex fails or doesn't provide a poster, check the next provider.
         if self.next_provider:
+            self.log.debug('Poster not found in Plex! Attempting to fetch from next provider.')
             return await self.next_provider.get_poster(media_item)
         return None
 
@@ -159,4 +152,22 @@ class PlexPosterProvider(PosterProvider, ABC):
 
     def get_plex_client(self) -> PlexServer:
         return self.config.get_client('plex')
+
+
+class JellyfinPosterProvider(PosterProvider, ABC):
+    def __init__(self, config, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.config = config
+        self.log = config.get_logger(__name__)
+
+    async def get_poster_from_source(self, config, media_item: MediaItem) -> Optional[str]:
+        jellyfin: JellyfinClient = self.config.get_client('jellyfin')
+
+        # Attempt to fetch from Emby
+        poster = await jellyfin.get_poster_from_emby_by_media_item(media_item)
+        if not poster and self.next_provider:
+            self.log.info('Poster not found in Jellyfin! Attempting to fetch from next provider.')
+            return await self.next_provider.get_poster(media_item)  # Ensure this is awaited if it's async
+        return poster
+
 

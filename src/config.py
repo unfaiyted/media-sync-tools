@@ -7,12 +7,12 @@ import openai
 from plexapi.myplex import MyPlexAccount
 from plexapi.server import PlexServer
 
-from src.clients.jellyfin import Jellyfin
+from src.clients.jellyfin import JellyfinClient
 from src.db.queries import config_queries
 from src.models import User, ClientType
 from src.clients.tmdb import TmdbClient
 from src.clients.trakt import TraktClient
-from src.clients.emby import Emby
+from src.clients.emby import EmbyClient
 from dotenv import load_dotenv
 from pyarr import RadarrAPI
 from src.clients.mdblist import MdbClient
@@ -94,14 +94,29 @@ class ConfigManager:
         self.log = structlog.get_logger(__name__)
 
     @staticmethod
-    def get_logger(name=None):
-        print('Getting logger', name)
+    def get_logger(name=None) -> structlog.stdlib.BoundLogger:
+        # print('Getting logger', name)
         """
         Retrieve a structured logger.
 
         :param name: Optional name for the logger. If not provided, will default to calling module's name.
         :return: Structured logger
         """
+        structlog.configure(
+            processors=[
+                structlog.stdlib.add_logger_name,
+                structlog.contextvars.merge_contextvars,
+                structlog.processors.add_log_level,
+                structlog.processors.StackInfoRenderer(),
+                structlog.dev.set_exc_info,
+                structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S"),
+                CenteredConsoleRenderer(),
+            ],
+            wrapper_class=structlog.make_filtering_bound_logger(logging.NOTSET),
+            context_class=dict,
+            logger_factory=NamedPrintLoggerFactory(),
+            cache_logger_on_first_use=False
+        )
         return structlog.get_logger(name)
 
     @staticmethod
@@ -113,7 +128,7 @@ class ConfigManager:
     async def fetch_and_load_config_from_db(self):
         self.log.info('Fetching config from DB for config ID', configId=self.config_id)
         db = self.get_db()
-        config_data = await config_queries.get_full_config(db, config_id=self.config_id)
+        config_data = await config_queries.get_full_config(db, config_id=self.config_id, log=self.log)
 
         if not config_data:
             raise ValueError(
@@ -239,13 +254,17 @@ class ConfigManager:
 
     def add_plex_client(self, name, server_url, access_token):
         self.log.info('Adding plex client', clientName=name)
-        plex_client = PlexServer(server_url, access_token, timeout=120)
-        self.clients[name] = plex_client
+        try:
+            plex_client = PlexServer(server_url, access_token, timeout=120)
+            self.clients[name] = plex_client
+        except Exception as e:
+            self.log.error('Error adding plex client', error=e, clientName=name)
+            # raise ClientConnectionError
         return plex_client
 
     def add_mdblist_client(self, name, api_key):
         self.log.info('Adding MDBList client', clientName=name)
-        mdblist_client = MdbClient(self.log, api_key)
+        mdblist_client = MdbClient(self.get_logger, api_key)
         self.clients[name] = mdblist_client
         return mdblist_client
 
@@ -260,13 +279,14 @@ class ConfigManager:
 
     def add_emby_client(self, name, server_url, username, api_key):
         self.log.info('Adding emby client', clientName=name)
-        emby_client = Emby(self.log, server_url, username, api_key)
+        emby_client = EmbyClient(self.get_logger, server_url, username, api_key)
         self.clients[name] = emby_client
         return emby_client
 
     def add_jellyfin_client(self, name, server_url, username, api_key):
         self.log.info('Adding jellyfin client', clientName=name)
-        jellyfin_client = Jellyfin(self.log, server_url, username, api_key)
+
+        jellyfin_client = JellyfinClient(self.get_logger, server_url, username, api_key)
         self.clients[name] = jellyfin_client
         return jellyfin_client
 
@@ -286,11 +306,10 @@ class ConfigManager:
     #
     def add_trakt_client(self, name, username, client_id, client_secret):
         self.log.info('Adding trakt client', clientName=name)
-        trakt_client = TraktClient(self.log,
+        trakt_client = TraktClient(self.get_logger,
                                    client_id=client_id, client_secret=client_secret,
                                    token_file=f'{self.config_path}/trakt.json')  # TODO: unique per clientId
         self.clients[name] = trakt_client
-
         return trakt_client
 
     def add_chatGPT_client(self, name, api_key):
@@ -311,8 +330,6 @@ class ConfigManager:
                 return None
 
         else:
-            # Here, you'd search the database for the client's UUID by type
-            # For this step, you'd likely need an additional method or database query
             try:
                 self.log.info('Searching for client by type', type=id_or_type)
                 return self.get_client_by_type(id_or_type)

@@ -11,7 +11,7 @@ def trailer_poster(config):
     config_path = config.config_path
 
     for trailer in trailers:
-        print(trailer)
+        # print(trailer)
 
 
         id = trailer.get('Id', 'N/A')

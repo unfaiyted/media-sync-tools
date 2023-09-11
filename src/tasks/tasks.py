@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from src.clients.emby import Emby
+from src.clients.emby import EmbyClient
 from src.db.queries import media_list_queries
 from typing import Optional
 from typing import List
@@ -216,7 +216,7 @@ async def sync_media_list_to_provider(payload):
         return
 
     # get the emby client
-    emby: Emby = config.get_client('emby')
+    emby: EmbyClient = config.get_client('emby')
 
     embyListId = media_list['sourceListId']
     # Assuming that the media_list model has a 'clientType' field

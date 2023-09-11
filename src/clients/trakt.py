@@ -7,13 +7,13 @@ import time
 class TraktClient:
     TRAKT_API_URL = "https://api.trakt.tv"
 
-    def __init__(self, log, client_id, client_secret, redirect_uri="urn:ietf:wg:oauth:2.0:oob",
+    def __init__(self, get_logger, client_id, client_secret, redirect_uri="urn:ietf:wg:oauth:2.0:oob",
                  token_file="trakt_tokens.json"):
         self.client_id = client_id
         self.client_secret = client_secret
         self.redirect_uri = redirect_uri
         self.token_file = token_file
-        self.log = log
+        self.log = get_logger(__name__)
         self.tokens = self.load_or_get_tokens()
         self.log.info("TraktClient initialized", client_id=self.client_id)
 

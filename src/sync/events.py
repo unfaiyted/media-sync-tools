@@ -39,7 +39,7 @@ def sync_event(event, config):
         series_name = data['SeriesName']
         episode_index = data['IndexNumber']
 
-        print(series_name, episode_index)
+        # print(series_name, episode_index)
 
         imdb_id = data['ProviderIds'].get('Imdb') or None
         tvdb_id = data['ProviderIds'].get('Tvdb') or None
@@ -55,7 +55,7 @@ def sync_event(event, config):
         # tv_show = tv.get(tvdb_id=tvdb_id)
         episode_title = data['Name']
 
-        print('episode_title', episode_title, series_name)
+        # print('episode_title', episode_title, series_name)
         # results = plex.library.section('TV Shows') #.getGuid(f'tvdb://{tvdb_id}')
 
         plex_manager = PlexManager(config)

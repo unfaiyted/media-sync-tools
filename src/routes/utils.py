@@ -39,7 +39,7 @@ async def handle_webhook(request: Request):
         # For example, if it contains JSON data, you can parse it
         event = json.loads(data)
 
-        print('Event received')
+        # print('Event received')
         sync_event(event, config_manager)
         # Process the extracted data as needed
 

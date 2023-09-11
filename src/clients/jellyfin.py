@@ -9,9 +9,8 @@ from mimetypes import guess_type
 import base64
 import time
 
-from src.models import JellyfinFilters
+from src.models import JellyfinFilters, MediaType
 from src.models import MediaList, MediaItem
-from src.create.posters import PosterImageCreator
 
 from enum import Enum
 
@@ -49,10 +48,12 @@ class JellyfinImageType(Enum):
     CHAPTER = "Chapter"
 
 
-class Jellyfin:
-    def __init__(self, log, server_url, username, api_key):
+class JellyfinClient:
+    def __init__(self, get_logger, server_url, username, api_key):
         self.server_url = server_url
-        self.log = log,
+        self.log = get_logger(__name__)
+
+        self.log.debug('Initializing JellyfinClient')
         self.username = username
         self.api_key = api_key
         self.headers = {'X-Emby-Token': api_key}
@@ -112,8 +113,6 @@ class Jellyfin:
 
         # Modify your existing methods to use the new _get_request_with_retry and _post_request_with_retry methods
 
-
-
     def _get_request(self, url, stream=False, retries=5, delay=1):
         return self._get_request_with_retry(url, stream=stream, retries=retries, delay=delay)
 
@@ -131,7 +130,6 @@ class Jellyfin:
         url = self._build_url('Collections', {'Name': name, 'Ids': initial_item_id, 'userId': self.user_id})
         response = self._post_request(url)
         collection = response.json()
-
 
         # TODO: Add sort name if other than None
 
@@ -420,7 +418,9 @@ class Jellyfin:
 
     def get_user_by_username(self, username):
         users = self.get_users()
-        print('users', users)
+        # print('users', users)
+        print(type(self.log))
+        self.log.debug('Got users.', users=users)
         return next((user for user in users if user.get('Name') == username), None)
 
     def set_favorite(self, item_id):
@@ -633,12 +633,12 @@ class Jellyfin:
 
     def upload_image_from_url(self, sourceListId, poster, root_path):
         if poster is None:
-            print('no poster provided')
+            self.log.info('no poster provided', sourceListId=sourceListId)
             return None
 
         # if the media_list.poster is a url, download the image and upload it to the provider
 
-        print('downloading image from url')
+        self.log.debug('downloading image from url', sourceListId=sourceListId, poster=poster)
         response = requests.get(poster, stream=True)
         if response.status_code == 200:
             # Assuming _get_request is using the requests library.
@@ -648,3 +648,59 @@ class Jellyfin:
             poster_location = f'{root_path}/poster.png'
             img.save(poster_location, quality=95)
             self.upload_image(sourceListId, poster_location)
+
+    def search_media_item_by_external_ids(self, media_item=None) -> dict or None:
+
+        if media_item is None:
+            self.log.info('no media item provided')
+            return None
+
+        match = None
+
+        def search_id(external_id: str) -> Optional[dict]:
+            try:
+                search_results = self.get_media(external_id=external_id)
+                if search_results and search_results[0]['Type'] != 'Trailer':
+                    return search_results[0]
+                if search_results and search_results[0]['Type'] == 'Trailer':
+                    return search_results[1]
+
+            except Exception as e:
+                self.log.error(f"Failed searching for {external_id} due to {e}", external_id=external_id, media_item=media_item, error=e)
+            return None
+
+        imdb_result = search_id(f"imdb.{media_item.providers.imdbId}")
+        tvdb_result = search_id(f"tvdb.{media_item.providers.tvdbId}")
+        tmdb_result = search_id(f"Tmdb.{media_item.providers.tmdbId}")
+
+        if imdb_result:
+            return imdb_result
+        elif tvdb_result:
+            return tvdb_result
+        elif tmdb_result:
+            return tmdb_result
+
+        emby_type = 'Movie' if media_item.type == MediaType.MOVIE else 'Series'
+        # Fallback to name and year
+        search_results = self.search(media_item.item.title, emby_type)
+        if search_results:
+            for result in search_results:
+                if int(result['ProductionYear']) == int(media_item.item.year):
+                    match = result
+                    break
+            return match
+        return match
+
+    async def get_poster_from_emby_by_media_item(self, media_item):
+        jellyfin_item = await self.search_media_item_by_external_ids(media_item=media_item)
+
+        if jellyfin_item is None:
+            self.log.info('Item not found in Emby')
+            return None
+
+        if poster_id := jellyfin_item['ImageTags'].get('Primary'):
+            self.log.debug(f"Found poster id {poster_id} for {media_item.item.title}", poster_id=poster_id, media_item=media_item)
+            return f"{self.server_url}/emby/Items/{jellyfin_item['Id']}/Images/Primary?api_key={self.api_key}&X-Emby-Token={self.api_key}"
+        else:
+            return None
+

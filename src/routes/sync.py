@@ -66,7 +66,7 @@ async def trigger_sync_playlist():
             'Rick and Morty'
         ]
         log.info(f'Creating playlist {name} with {len(shows)} shows.')
-        create_emby_playlist(config, name, shows)
+        create_emby_playlist(log, config, name, shows)
 
         return JSONResponse(status_code=200, content={"message": "Sync watchlist started successfully."})
     except Exception as e:
@@ -222,18 +222,21 @@ async def handle_ratings(background_tasks: BackgroundTasks):
 @router.get('/list/{list_id}/client/{client_id}', response_model=MediaList)
 async def sync_list_to_client(list_id: str, client_id: str, ):
     config = await ConfigManager.get_manager()
+    log = config.get_logger(__name__)
     db = (await ConfigManager.get_manager()).get_db()
 
-    list_item = await db.media_lists.find_one({"mediaListId": list_id})
-    if list_item is None:
+    media_list = await db.media_lists.find_one({"mediaListId": list_id})
+    if media_list is None:
+        log.error(f'List not found {list_id}')
         raise HTTPException(status_code=404, detail="List not found")
 
     client = config.get_client(client_id)
 
     # TODO: implement logic to get list and sync to client
-    print('Syncing list to client', list_item, client)
+    log.debug(f'Syncing list to client', list_item=media_list, client=client)
 
     if client is None:
+        log.warn(f'Client not found {client_id}')
         raise HTTPException(status_code=404, detail="Client not found")
 
 

@@ -1,8 +1,12 @@
 
 from dataclasses import field, dataclass
 from enum import Enum
-from pydantic import BaseModel, validator
-from typing import List, Optional, ForwardRef, Tuple, Union
+
+import structlog
+from pydantic import BaseModel, validator, Field
+from typing import List, Optional, ForwardRef, Tuple, Union, Dict, Annotated
+import re
+
 
 
 class FilterType(str, Enum):
@@ -14,10 +18,71 @@ class FilterType(str, Enum):
     TVDB = "TVDB"
     MDB = "MDB"
 
+
 class BaseFilters(BaseModel):
+    _log = structlog.get_logger(__name__)
     clientId: str
     filterType: FilterType
     filtersId: str
+    _invalid_keys: List[str] = ["clientId", "filterType", "filtersId"]  # Blocklist items, get rid of
+    _valid_keys: List[str] = []  # Pass-list Items, keep
+
+    _key_remapping = {}
+
+
+    class Config:
+        json_exclude = {'log'}
+        json_exclude_unset = True
+        allow_population_by_field_name = True
+
+    def to_query_params(self) -> Dict:
+        """Convert object attributes to a dictionary of non-None values."""
+        return {k: v for k, v in self.__dict__.items() if v is not None}
+
+    def remove_invalid_keys(self, filters: Dict[str, str]) -> Dict[str, str]:
+        """Remove invalid keys from the filters dict."""
+        for key in self._invalid_keys:
+            self._log.debug("Removing invalid key", key=key)
+            filters.pop(key, None)
+        return filters
+
+    def filter_invalid_keys(self, filters: Dict[str, str]) -> Dict[str, str]:
+        """Filter to ensure only valid keys are in the filters dict."""
+        if not self._valid_keys:
+            self._log.debug("No valid keys set. Returning filters as-is.")
+            return filters
+
+        for key in self._valid_keys:
+            self._log.debug("Filtering invalid key", key=key)
+            filters.pop(key, None)
+        return filters
+
+    @staticmethod
+    def to_snake_case(string: str) -> str:
+        """Convert camelCase to snake_case."""
+        s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', string)
+        return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+
+    def parse_filters(self) -> Dict[str, str]:
+        """Parse the filter's dict."""
+        parsed_filters = {}
+        self._log.info("Parsing filters", filters=self.dict())
+
+        filters = self.dict()
+        filters = self.remove_invalid_keys(filters)  # Remove invalid keys
+        filters = self.filter_invalid_keys(filters)  # Pass-list to ensure only valid keys
+
+        for key, value in filters.items():
+            self._log.debug("Parsing filter", key=key, value=value)
+            # Rename keys if needed
+            new_key = self._key_remapping.get(key, key)
+            # Convert camelCase to snake_case
+            new_key = self.to_snake_case(new_key)
+            parsed_filters[new_key] = value
+
+        self._log.debug("Parsed filters", parsed_filters=parsed_filters)
+        return parsed_filters
+
 
 class EmbyFilters(BaseFilters):
     listId: Optional[str] = None
@@ -48,6 +113,7 @@ class EmbyFilters(BaseFilters):
     isPlayed: Optional[bool] = None
     isFavorite: Optional[bool] = None
 
+
 class PlexFilters(BaseFilters):
     listId: Optional[str] = None
     library: Optional[str] = None
@@ -68,6 +134,24 @@ class PlexFilters(BaseFilters):
     title: Optional[str] = None
     limit: Optional[int] = None
     offset: Optional[int] = None
+
+    # Keys that shouldn't be passed to Plex
+    _invalid_keys: List[str] = ["clientId", "filterType", "filtersId"]
+
+    # Keys that need to be renamed for Plex
+    _key_remapping = {
+        'offset': 'container_start',
+        'limit': 'maxresults',
+        'type': 'libtype',
+    }
+
+    # Passlist to ensure only these keys are passed to Plex
+    _valid_filters = {
+        'title', 'studio', 'genre', 'contentRating', 'decade',
+        'genre', 'actor', 'country', 'studio', 'actor', 'libtype'
+        'director', 'resolution', 'producer', 'actor', 'country',
+        'addedAt', 'sort', 'year', 'maxresults', 'libtype'
+    }
 
 
 class JellyfinFilters(BaseFilters):
@@ -103,6 +187,7 @@ class TraktFilters(BaseFilters):
     listId: Optional[str] = None
     listSlug: Optional[str] = None
     username: Optional[str] = None
+
 
 
 class TmdbFilters(BaseFilters):
@@ -158,4 +243,4 @@ class MdbFilters(BaseFilters):
     library: Optional[str] = None
 
 
-Filters = Optional[Union[PlexFilters, JellyfinFilters, TraktFilters, TmdbFilters, MdbFilters, TvdbFilters, TmdbShowFilters, EmbyFilters]]
+Filters = Annotated[Union[BaseFilters, PlexFilters, JellyfinFilters, TraktFilters, TmdbFilters, MdbFilters, TvdbFilters, TmdbShowFilters, EmbyFilters], Field(discriminator='filterType')]

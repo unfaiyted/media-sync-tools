@@ -8,7 +8,7 @@ from typing import List, Optional, ForwardRef, Tuple, Union
 from bson import ObjectId
 
 from src.models.filters import TmdbFilters, TraktFilters, JellyfinFilters, PlexFilters, EmbyFilters, \
-    Filters
+    Filters, FilterType
 
 
 class MediaListType(str, Enum):
@@ -42,22 +42,6 @@ class ClientType(str, Enum):
     # ... other types ...
 
 
-class FilterType(str, Enum):
-    UNKNOWN = 'UNKNOWN'
-    STRING = 'STRING'
-    NUMBER = 'NUMBER'
-    BOOLEAN = 'BOOLEAN'
-    DATE = 'DATE'
-    # ... other types ...
-
-
-class FieldType(str, Enum):
-    STRING = 'STRING'
-    BOOLEAN = 'BOOLEAN'
-    NUMBER = 'NUMBER'
-    PASSWORD = 'PASSWORD'  # For sensitive data like passwords or API keys
-
-
 class Config(BaseModel):
     configId: str = None
     user: Optional[ForwardRef('User')]
@@ -73,26 +57,11 @@ class SyncOptions(BaseModel):
     collections: bool
     playlists: bool
     lovedTracks: bool
-    topLists: bool # mdb lists
+    topLists: bool  # mdb lists
     trakt: bool
     watched: bool
     ratings: bool
     libraries: bool
-
-class Filter(BaseModel):
-    filterId: str = None
-    filterTypeId: str
-    mediaListId: str
-    label: str
-    type: str
-    value: str
-
-class FilterTypes(BaseModel):
-    filterTypeId: str = None
-    clientId: str
-    name: str
-    label: str
-    type: FilterType
 
 
 class MediaListOptions(BaseModel):
@@ -114,7 +83,7 @@ class MediaList(BaseModel):
     creatorId: str
     sourceListId: Optional[str]
     name: str
-    poster: Optional[Union[str,ForwardRef('MediaPoster')]]
+    poster: Optional[Union[str, ForwardRef('MediaPoster')]]
     type: MediaListType
     sortName: str
     description: Optional[str]
@@ -122,6 +91,26 @@ class MediaList(BaseModel):
     items: Optional[List[ForwardRef('MediaListItem')]]
     createdAt: datetime
     creator: Optional[ForwardRef('User')]
+
+    @validator('filters', pre=True, always=True)
+    def set_correct_filter_type(cls, filters):
+        if filters is None:
+            return None
+
+        filter_type = filters['filterType']
+
+        if filter_type == FilterType.TRAKT:
+            return TraktFilters(**filters)
+        elif filter_type == FilterType.PLEX:
+            return PlexFilters(**filters)
+        elif filter_type == FilterType.JELLYFIN:
+            return JellyfinFilters(**filters)
+        elif filter_type == FilterType.TMDB:
+            return TmdbFilters(**filters)
+        elif filter_type == FilterType.EMBY:
+            return EmbyFilters(**filters)
+
+        raise ValueError(f"Unknown filter type: {filter_type}")
 
 
 class MediaProviderIds(BaseModel):
@@ -169,7 +158,6 @@ class MediaListItem(BaseModel):
     poster: Optional[ForwardRef('MediaPoster')]
     mediaPosterId: Optional[str]
     item: Optional[ForwardRef('MediaItem')]
-    sourceId: Optional[str]
     dateAdded: Optional[datetime]
 
 
@@ -212,6 +200,15 @@ class ConfigClient(BaseModel):
     configId: str
     clientFields: Optional[List[ForwardRef('ClientField')]]
     clientFieldValues: Optional[List[ForwardRef('ConfigClientFieldsValue')]]
+
+
+class FieldType(str, Enum):
+    STRING = 'STRING'
+    PASSWORD = 'PASSWORD'
+    NUMBER = 'NUMBER'
+    BOOLEAN = 'BOOLEAN'
+    URL = 'URL'
+    EMAIL = 'EMAIL'
 
 
 class ClientField(BaseModel):
@@ -340,7 +337,7 @@ class MediaImageType(str, Enum):
 
 
 class MediaPoster(BaseModel):
-    mediaPosterID: Optional[str] = None
+    mediaPosterId: Optional[str] = None
     mediaItemId: Optional[str] = None
     url: Optional[str] = None
     width: int

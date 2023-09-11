@@ -2,7 +2,6 @@ from io import BytesIO
 from typing import Optional, Tuple
 
 from src.config import ConfigManager
-from src.create.posters import PosterImageCreator
 from pydantic import BaseModel
 from starlette.responses import JSONResponse, StreamingResponse
 from fastapi import FastAPI, UploadFile, File, APIRouter

@@ -1,10 +1,15 @@
 from src.models import MediaItem
-from src.create.providers.posters import EmbyPosterProvider, PlexPosterProvider, TraktPosterProvider, PosterProvider
+from src.create.providers.posters import EmbyPosterProvider, PlexPosterProvider, TraktPosterProvider, PosterProvider, \
+    JellyfinPosterProvider, TmdbPosterProvider
 
 
 class ProviderManager:
 
     def __init__(self, *providers ):
+        """
+        Initialize the ProviderManager.
+        :param providers:
+        """
         self.providers = providers
 
     def prioritize_provider(self, preferred_provider):
@@ -19,18 +24,24 @@ class ProviderManager:
         return head
 
 
-class PosterManager:
+class PosterProviderManager:
 
     def __init__(self, config):
+        """
+        Initialize the PosterManager.
+        :param config:
+        """
         self.config = config
         self.log = config.get_logger(__name__)
         emby = EmbyPosterProvider(config=config)
+        tmdb = TmdbPosterProvider(config=config)
+        jellyfin = JellyfinPosterProvider(config=config)
         plex = PlexPosterProvider(config=config)
         trakt = TraktPosterProvider(config=config)
 
         # Add any other providers you have
-        self.provider_manager = ProviderManager(emby, plex, trakt)
-        self.log.debug("PosterManager initialized")
+        self.provider_manager = ProviderManager(tmdb, emby, jellyfin, plex, trakt)
+        self.log.debug("PosterProviderManager initialized", provider_manager=self.provider_manager)
 
     def get_poster(self, preferred_provider: PosterProvider, media_item: MediaItem):
         self.log.debug("Getting poster for MediaItem", media_item=media_item)

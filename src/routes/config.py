@@ -3,7 +3,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase, AsyncIOMotorClient
 from bson import ObjectId
-from src.models import Config, ConfigClient, ClientField, ConfigClientFieldsValue, Filter
+from src.models import Config, ConfigClient, ClientField, ConfigClientFieldsValue
 from src.config import ConfigManager
 from src.db.queries import config_queries
 router = APIRouter()
@@ -213,9 +213,11 @@ async def delete_config(config_id: str):
 
 @router.get("/client/", response_model=List[ConfigClient])
 async def get_config_clients_by_config_id(configId: str):
-    db = (await ConfigManager.get_manager()).get_db()
-    print('configId', configId)
-    config_clients = await config_queries.get_full_config_clients_by_config_id(db, config_id=configId)
+    config = await ConfigManager.get_manager()
+    db = config.get_db()
+    log = config.get_logger(__name__)
+    log.debug("Getting config clients by config id", configId=configId)
+    config_clients = await config_queries.get_full_config_clients_by_config_id(db, config_id=configId, log=log)
     # print(config_clients)
     if not config_clients:
         raise HTTPException(status_code=404, detail="Config Clients not found")
@@ -361,62 +363,64 @@ async def read_all_config_client_fields_values_by_config_id(config_id: str):
         raise HTTPException(status_code=404, detail="Config Client Fields Value not found")
     return values
 
-
-@router.post("/filter/", response_model=Filter)
-async def create_filter(filter_item: Filter):
-    db = (await ConfigManager.get_manager()).get_db()
-    if await db.filters.find_one({"filterId": filter_item.filterId}):
-        raise HTTPException(status_code=400, detail="Filter already exists")
-    filter_dict = filter_item.dict()
-    await db.filters.insert_one(filter_dict)
-    return filter_dict
-
-@router.get("/filter/{filter_id}", response_model=Filter)
-async def read_filter(filter_id: str):
-    db = (await ConfigManager.get_manager()).get_db()
-    filter_item = await db.filters.find_one({"filterId": filter_id})
-    if filter_item is None:
-        raise HTTPException(status_code=404, detail="Filter not found")
-    return filter_item
-
-@router.put("/filter/{filter_id}", response_model=Filter)
-async def update_filter(filter_id: str, filter_item: Filter):
-    db = (await ConfigManager.get_manager()).get_db()
-    existing_filter = await db.filters.find_one({"filterId": filter_id})
-    if existing_filter is None:
-        raise HTTPException(status_code=404, detail="Filter not found")
-
-    filter_dict = filter_item.dict()
-    await db.filters.replace_one({"filterId": filter_id}, filter_dict)
-    return filter_dict
-
-@router.delete("/filter/{filter_id}", response_model=Filter)
-async def delete_filter(filter_id: str):
-    db = (await ConfigManager.get_manager()).get_db()
-    existing_filter = await db.filters.find_one({"filterId": filter_id})
-    if existing_filter is None:
-        raise HTTPException(status_code=404, detail="Filter not found")
-    await db.filters.delete_one({"filterId": filter_id})
-    return existing_filter
-
-
-# Get all filters by Media ListId
-@router.get("/filter/list/", response_model=List[Filter])
-async def read_all_filters_by_list_id(mediaListId: str):
-    db = (await ConfigManager.get_manager()).get_db()
-    filters = []
-    async for filter_doc in db.filters.find({"mediaListId": mediaListId}):
-        # Create a Client instance from the retrieved document
-        filters.append(filter_doc)
-    if filters is None:
-        raise HTTPException(status_code=404, detail="Filter not found")
-    return filters
-
+#
+# @router.post("/filter/", response_model=Filter)
+# async def create_filter(filter_item: Filter):
+#     db = (await ConfigManager.get_manager()).get_db()
+#     if await db.filters.find_one({"filterId": filter_item.filterId}):
+#         raise HTTPException(status_code=400, detail="Filter already exists")
+#     filter_dict = filter_item.dict()
+#     await db.filters.insert_one(filter_dict)
+#     return filter_dict
+#
+# @router.get("/filter/{filter_id}", response_model=Filter)
+# async def read_filter(filter_id: str):
+#     db = (await ConfigManager.get_manager()).get_db()
+#     filter_item = await db.filters.find_one({"filterId": filter_id})
+#     if filter_item is None:
+#         raise HTTPException(status_code=404, detail="Filter not found")
+#     return filter_item
+#
+# @router.put("/filter/{filter_id}", response_model=Filter)
+# async def update_filter(filter_id: str, filter_item: Filter):
+#     db = (await ConfigManager.get_manager()).get_db()
+#     existing_filter = await db.filters.find_one({"filterId": filter_id})
+#     if existing_filter is None:
+#         raise HTTPException(status_code=404, detail="Filter not found")
+#
+#     filter_dict = filter_item.dict()
+#     await db.filters.replace_one({"filterId": filter_id}, filter_dict)
+#     return filter_dict
+#
+# @router.delete("/filter/{filter_id}", response_model=Filter)
+# async def delete_filter(filter_id: str):
+#     db = (await ConfigManager.get_manager()).get_db()
+#     existing_filter = await db.filters.find_one({"filterId": filter_id})
+#     if existing_filter is None:
+#         raise HTTPException(status_code=404, detail="Filter not found")
+#     await db.filters.delete_one({"filterId": filter_id})
+#     return existing_filter
+#
+#
+# # Get all filters by Media ListId
+# @router.get("/filter/list/", response_model=List[Filter])
+# async def read_all_filters_by_list_id(mediaListId: str):
+#     db = (await ConfigManager.get_manager()).get_db()
+#     filters = []
+#     async for filter_doc in db.filters.find({"mediaListId": mediaListId}):
+#         # Create a Client instance from the retrieved document
+#         filters.append(filter_doc)
+#     if filters is None:
+#         raise HTTPException(status_code=404, detail="Filter not found")
+#     return filters
+#
 
 @router.get("/full/{config_id}", response_model=Config)
 async def read_full_config(config_id: str):
-    db = (await ConfigManager.get_manager()).get_db()
-    config_object = await config_queries.get_full_config(db, config_id=config_id)
+    config = await ConfigManager.get_manager()
+    db = config.get_db()
+    log = config.get_logger(__name__)
+    config_object = await config_queries.get_full_config(db, config_id=config_id, log=log)
     if config_object is None:
         raise HTTPException(status_code=404, detail="Config not found")
     return config_object

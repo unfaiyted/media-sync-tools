@@ -4,8 +4,8 @@ import requests
 class MdbClient:
     BASE_URL = "https://mdblist.com/api/"
 
-    def __init__(self,log, api_key):
-        self.log = log
+    def __init__(self,get_logger, api_key):
+        self.log = get_logger(__name__)
         self.api_key = api_key
 
     def _make_request(self, endpoint, params=None):

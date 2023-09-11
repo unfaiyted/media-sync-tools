@@ -3,7 +3,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
-from src.models import Client, ClientField, Filter, FilterType
+from src.models import Client, ClientField,  FilterType
 from src.config import ConfigManager
 from fastapi import APIRouter, HTTPException, Depends
 

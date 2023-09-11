@@ -1,13 +1,15 @@
+import uuid
+
+from src.create.posters import MediaPosterImageCreator
 from src.create.providers.jellyfin import JellyfinProvider
 from src.create.providers.emby import EmbyProvider
 from src.create.providers.plex import PlexProvider
-from src.create.providers.tmdb import TMDBProvider
-# from src.create.providers.trakt import TraktProvider
-from src.create.posters import PosterImageCreator
+from src.create.providers.tmdb import TmdbProvider
 from src.create.providers.ai import AiProvider
 from src.create.providers.mdb import MdbProvider
 from src.create.providers.trakt import TraktProvider
-from src.models import MediaListType, MediaList, MediaPoster, MediaItem
+from src.models import MediaListType, MediaList, MediaPoster, MediaItem, MediaImageType, MediaPosterTextOptions, \
+    MediaPosterGradientOptions, MediaPosterBorderOptions
 
 
 class ProcessedFilter:
@@ -98,7 +100,7 @@ class ListBuilder:
 
         }
 
-        if(media_list is not None):
+        if (media_list is not None):
             MediaItem.update_forward_refs()
             self.log.info(f'Initializing list from media list {media_list.name}', media_list=media_list.dict())
             self.media_list = media_list
@@ -107,7 +109,6 @@ class ListBuilder:
             self.provider = media_list.clientId
             self.sort_title = media_list.sortName
             self.type = media_list.type
-
 
         if list is not None:
             self._init_list(list)
@@ -212,16 +213,17 @@ class ListBuilder:
             return 'Mixed'
 
     async def _get_media_list_from_provider(self):
+        self.log.info(f'Getting list from provider {self.provider}', provider=self.provider)
 
         provider_mapping = {
             'self': (lambda: print('Using media list')),
             'ai': (lambda: AiProvider(self.media_types, self.description, self._process_filters('ai'), self.limit)),
-            'mdb': (lambda: MdbProvider(self.config, self.filters, listType=self.type)),
-            'trakt': (lambda: TraktProvider(self.config, self.filters, media_list=self.media_list, listType=self.type)),
-            'tmdb': (lambda: TMDBProvider(self.config, self.filters, details=self, listType=self.type)),
+            'mdb': (lambda: MdbProvider(self.config, media_list=self.media_list, list_type=self.type)),
+            'trakt': (lambda: TraktProvider(self.config, media_list=self.media_list, list_type=self.type)),
+            'tmdb': (lambda: TmdbProvider(self.config, media_list=self.media_list, list_type=self.type)),
             'plex': (lambda: PlexProvider(self.config, media_list=self.media_list)),
-            'emby': (lambda: EmbyProvider(self.config, self.filters, details=self, listType=self.type)),
-            'jellyfin': (lambda: JellyfinProvider(self.config, self.filters, details=self, listType=self.type))
+            'emby': (lambda: EmbyProvider(self.config, list_type=self.type)),
+            'jellyfin': (lambda: JellyfinProvider(self.config, media_list=self.media_list, list_type=self.type))
         }
 
         if self.provider in provider_mapping:
@@ -229,9 +231,11 @@ class ListBuilder:
                 self.log.info(f'Using {self.provider.capitalize()} list', provider=self.provider)
                 try:
                     self.media_list = await provider_mapping[self.provider]().get_list()
+                    self.log.info(f'Got list from provider {self.provider}', provider=self.provider,
+                                  media_list=self.media_list)
                     return self.media_list
                 except Exception as e:
-                    self.log.info(f'Error getting list from provider', provider=self.provider, error=e,
+                    self.log.error(f'Error getting list from provider', provider=self.provider, error=e,
                                   error_arguments=e.args)
                     import traceback
                     traceback.print_exc()
@@ -248,12 +252,12 @@ class ListBuilder:
         provider_mapping = {
             'self': (lambda: print('Using media list')),
             'ai': (lambda: AiProvider(self.media_types, self.description, self._process_filters('ai'), self.limit)),
-            'mdb': (lambda: MdbProvider(self.config, self.filters, listType=self.type)),
-            'trakt': (lambda: TraktProvider(self.config, self.filters, media_list=self.media_list, details=self, listType=self.type)),
-            'tmdb': (lambda: TMDBProvider(self.config, self.filters, details=self, listType=self.type)),
-            'plex': (lambda: PlexProvider(self.config, self.filters, listType=self.type)),
-            'emby': (lambda: EmbyProvider(self.config, self.filters, details=self, listType=self.type)),
-            'jellyfin': (lambda: JellyfinProvider(self.config, self.filters, details=self, listType=self.type))
+            'mdb': (lambda: MdbProvider(self.config, media_list=self.media_list, list_type=self.type)),
+            'trakt': (lambda: TraktProvider(self.config, media_list=self.media_list, list_type=self.type)),
+            'tmdb': (lambda: TmdbProvider(self.config, media_list=self.media_list, list_type=self.type)),
+            'plex': (lambda: PlexProvider(self.config, media_list=self.media_list, list_type=self.type)),
+            'emby': (lambda: EmbyProvider(self.config, media_list=self.media_list, list_type=self.type)),
+            'jellyfin': (lambda: JellyfinProvider(self.config, media_list=self.media_list, list_type=self.type))
         }
 
         if provider in provider_mapping:
@@ -262,9 +266,8 @@ class ListBuilder:
                 try:
                     self.media_list = provider_mapping[provider]().upload_list(self.media_list)
                 except Exception as e:
-                    print(f'Error saving list to provider {provider}: {e}, {e.args}', )
-                    self.log.info(f'Error saving list to provider {provider}', provider=provider, error=e,
-                                  error_arguments=e.args)
+                    self.log.error(f'Error saving list to provider {provider}', provider=provider, error=e,
+                                   error_arguments=e.args)
                     import traceback
                     traceback.print_exc()
             else:
@@ -285,11 +288,13 @@ class ListBuilder:
 
         if self.provider in provider_mapping:
             if self.provider != 'self':
-                self.log.info(f'Using {self.provider.capitalize()} list', provider=self.provider, media_list=self.media_list)
+                self.log.info(f'Using {self.provider.capitalize()} list', provider=self.provider,
+                              media_list=self.media_list)
                 try:
                     provider_mapping[self.provider]().save_poster(item_id, poster)
                 except Exception as e:
-                    self.log.error(f'Error saving poster image to provider {self.provider}', provider=self.provider, error=e,
+                    self.log.error(f'Error saving poster image to provider {self.provider}', provider=self.provider,
+                                   error=e,
                                    error_arguments=e.args)
                     import traceback
                     traceback.print_exc()
@@ -301,13 +306,38 @@ class ListBuilder:
             self.log.info('Poster disabled')
             return None
 
-        bg_color = self.poster['bg_color'] if self.poster['bg_color'] is None else 'olive-darkolive'
-
-        width, height = 400, 600
-        start, end = (233, 0, 4), (88, 76, 76)
-        angle = -160
         font_path = f'{self.config.get_root_path()}/resources/fonts/DroneRangerPro-ExtendedBold.ttf'  # path to your .ttf font file
-        poster = PosterImageCreator(width, height, bg_color, angle, font_path)
+
+        media_poster: MediaPoster = MediaPoster(
+            mediaPosterId=str(uuid.uuid4()),
+            # mediaItemId=str(uuid.uuid4()),
+            width=400,
+            height=600,
+            type=MediaImageType.POSTER,
+            text=MediaPosterTextOptions(
+                enabled=True,
+                text=self.title,
+                font=font_path,
+                position=(0, 0),
+                color=(255, 255, 255),
+                border=None,
+                shadow=None
+            ),
+            gradient=MediaPosterGradientOptions(
+                enabled=True,
+                start=(233, 0, 4),
+                end=(88, 76, 76),
+                angle=-160
+            ),
+            border=MediaPosterBorderOptions(
+                enabled=True,
+                color=(255, 255, 255),
+                width=4,
+                height=4
+            )
+        )
+
+        poster = MediaPosterImageCreator(media_poster, self.log)
 
         poster.create_gradient() \
             .add_background_image_from_query(search_query=self.title) \
@@ -328,7 +358,6 @@ class ListBuilder:
 
     async def get_media_list(self):
         return self.media_list
-
 
     async def build(self):
         # join the rules into a string

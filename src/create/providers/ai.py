@@ -68,7 +68,7 @@ class AiProvider:
                             ])
            response = completion.choices[0].message.content
 
-           print(response)
+           # print(response)
 
            try:
                return json.loads(response)

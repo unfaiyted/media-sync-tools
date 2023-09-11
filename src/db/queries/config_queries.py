@@ -1,12 +1,15 @@
 from typing import List, Optional
+
+import structlog.stdlib
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from src.models import Library, LibraryType, ConfigClient, Config
 
 
-async def get_full_config(db: AsyncIOMotorDatabase, config_id: str) -> Config | None:
+async def get_full_config(db: AsyncIOMotorDatabase, config_id: str, log: structlog.stdlib.BoundLogger) -> Config | None:
     """
     Retrieve a library and its associated clients.
+    :param log: structlog logger
     :param db:
     :param config_id:
     :return:
@@ -73,23 +76,27 @@ async def get_full_config(db: AsyncIOMotorDatabase, config_id: str) -> Config | 
     ]
 
     # print('pipeline', pipeline)
+    log.debug('Pipeline sent', pipeline=pipeline)
     configs = await db.configs.aggregate(pipeline).to_list(length=1)
-    # print('configs', configs)
-
-    # Since we used to_list, the result is a list. Return the first (and only) element.
+    log.debug('Pipeline result', configs=configs)
 
     # If no configs found, return None
     if not configs:
+        log.error('No configs found')
         return None
+
+    log.debug('Configs found', configs=configs)
     config_data = configs[0]
 
     # If there are clients in the config data, fetch their details
     if 'clients' in config_data:
+        log.debug('Clients found', clients=config_data['clients'])
         detailed_clients = []
 
         for client in config_data['clients']:
+            log.debug('Client found', client=client)
             # Fetch additional details for the client
-            client_details = await get_client_details(db, client)
+            client_details = await get_client_details(db, client, log)
 
             # Merge the basic client info with the detailed info
             merged_client = {**client, **client_details}
@@ -98,10 +105,11 @@ async def get_full_config(db: AsyncIOMotorDatabase, config_id: str) -> Config | 
         # Replace the original clients list with the detailed one
         config_data['clients'] = detailed_clients
 
+    log.debug('Config data', config_data=config_data)
     return Config.parse_obj(config_data)
 
 
-async def get_client_details(db: AsyncIOMotorDatabase, client: dict) -> dict:
+async def get_client_details(db: AsyncIOMotorDatabase, client: dict, log: structlog.stdlib.BoundLogger) -> dict:
     client_details = {}
 
     # Fetch clientFieldValues
@@ -127,18 +135,22 @@ async def get_client_details(db: AsyncIOMotorDatabase, client: dict) -> dict:
 
     for field in field_values:
         for client_field in client_fields:
+            log.debug('Checking client field', field=field, client_field=client_field)
             if field['configClientFieldId'] == client_field['clientFieldId']:
+                log.info('Found matching client field', field=field, client_field=client_field)
                 field['clientField'] = client_field
 
     # Add to details if data found
     if client_object:
+        log.debug('Client object found', client_object=client_object)
         client_details['client'] = client_object
 
+    log.debug('Client details', client_details=client_details)
     return client_details
 
 
 
-async def get_config_client_with_client(db: AsyncIOMotorDatabase, config_client_id: str) -> Config | None:
+async def get_config_client_with_client(db: AsyncIOMotorDatabase, config_client_id: str, log) -> Config | None:
     """
     Retrieve a library and its associated clients.
     :param db:
@@ -159,15 +171,17 @@ async def get_config_client_with_client(db: AsyncIOMotorDatabase, config_client_
         }
     ]
 
+    log.debug('Pipeline sent', pipeline=pipeline)
     configs = await db.config_clients.aggregate(pipeline).to_list(length=1)
+    log.debug('Configs found', configs=configs)
 
     # Since we used to_list, the result is a list. Return the first (and only) element.
     config = Config.parse_obj(configs[0])
-
+    log.debug('Config found', config=config)
     return config or None
 
 
-async def get_full_config_client(db: AsyncIOMotorDatabase, config_client_id: str) -> ConfigClient | None:
+async def get_full_config_client(db: AsyncIOMotorDatabase, config_client_id: str, log: structlog.stdlib.BoundLogger) -> ConfigClient | None:
     """
     Retrieve a library and its associated clients.
     :param db:
@@ -210,7 +224,7 @@ async def get_full_config_client(db: AsyncIOMotorDatabase, config_client_id: str
     return config or None
 
 
-async def get_config_clients_with_client_by_config_id(db: AsyncIOMotorDatabase, config_id: str) -> list[Config] | None:
+async def get_config_clients_with_client_by_config_id(db: AsyncIOMotorDatabase, config_id: str,  log: structlog.stdlib.BoundLogger) -> list[Config] | None:
     """
     Retrieve all libraries and their associated clients by a configuration ID.
     """
@@ -243,7 +257,7 @@ async def get_config_clients_with_client_by_config_id(db: AsyncIOMotorDatabase, 
 
 
 # Get Library with Library Clients
-async def get_library_with_clients(db: AsyncIOMotorDatabase, library_id: str) -> Library:
+async def get_library_with_clients(db: AsyncIOMotorDatabase, library_id: str,  log: structlog.stdlib.BoundLogger) -> Library:
     """
     Retrieve a library and its associated clients.
     """
@@ -265,9 +279,10 @@ async def get_library_with_clients(db: AsyncIOMotorDatabase, library_id: str) ->
 
     # Since we used to_list, the result is a list. Return the first (and only) element.
     library = Library.parse_obj(libraries[0])
+    return library
 
 
-async def get_full_config_clients_by_config_id(db: AsyncIOMotorDatabase, config_id: str) -> list[ConfigClient] | None:
+async def get_full_config_clients_by_config_id(db: AsyncIOMotorDatabase, config_id: str,  log: structlog.stdlib.BoundLogger) -> list[ConfigClient] | None:
     """
     Retreive all config clients for a given config ID.
     :param db:
@@ -313,7 +328,7 @@ async def get_full_config_clients_by_config_id(db: AsyncIOMotorDatabase, config_
     return configs or None
 
 
-async def find_lists_containing_item(db: AsyncIOMotorDatabase, media_item_id: str):
+async def find_lists_containing_item(db: AsyncIOMotorDatabase, media_item_id: str,  log: structlog.stdlib.BoundLogger):
 
     pipeline = [
         {
@@ -342,12 +357,16 @@ async def find_lists_containing_item(db: AsyncIOMotorDatabase, media_item_id: st
     cursor = db.media_list_items.aggregate(pipeline)  # Adjust if your collection name is different
     return await cursor.to_list(None)
 
-# Sample usage
-# result = await find_lists_containing_item("some_media_item_id")
-# print(result)
 
-async def find_lists_containing_items(db: AsyncIOMotorDatabase, media_item_ids: List[str]):
 
+async def find_lists_containing_items(db: AsyncIOMotorDatabase, media_item_ids: List[str], log: structlog.stdlib.BoundLogger):
+    """
+    Find all lists containing a given media item.
+    :param db:
+    :param media_item_ids:
+    :param log:
+    :return:
+    """
     pipeline = [
         {
             "$match": {"mediaItemId": {"$in": media_item_ids}}
@@ -397,10 +416,9 @@ async def find_lists_containing_items(db: AsyncIOMotorDatabase, media_item_ids: 
         }
     ]
 
+    log.debug('Pipeline sent', pipeline=pipeline)
     cursor = db.media_list_items.aggregate(pipeline)
+    log.debug('Pipeline result', pipeline=pipeline)
     return await cursor.to_list(None)
 
-# # Sample usage
-# media_item_ids = ["item_id_1", "item_id_2"]
-# result = await find_lists_containing_items(media_item_ids)
-# print(result)
+

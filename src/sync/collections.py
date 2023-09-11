@@ -1,5 +1,4 @@
 from src.create.list_builder import ListBuilder
-from src.create.posters import PosterImageCreator
 from src.clients.plex import PlexManager
 
 import logging
@@ -63,6 +62,7 @@ def sync_provider_collections(config):
 def emby_to_plex_sync_collection(config):
     root_path = config.get_root_path()
     config_path = config.get_config_path()
+    log = config.get_logger(__name__)
 
     logging.basicConfig(filename=f'{config_path}/logs/collections.log', level=logging.INFO)
 
@@ -94,7 +94,7 @@ def emby_to_plex_sync_collection(config):
 
             poster_path = f'{config_path}/resources/collections/{plex_collection.title}.jpg'
 
-            poster_response = PlexManager.save_poster(poster_url, poster_path)
+            poster_response = PlexManager.save_poster(log, poster_url, poster_path)
 
             emby_collection = None
 
@@ -150,7 +150,7 @@ def emby_to_plex_sync_collection(config):
 
                         # TODO: add validation for movie poster save?
                         poster_path = f'{root_path}/resources/{library["type"]}/{media.ratingKey}.jpg'
-                        PlexManager.save_poster(poster_url, poster_path)
+                        PlexManager.save_poster(log, poster_url, poster_path)
 
                         # Upload plex poster
 

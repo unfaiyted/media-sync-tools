@@ -20,28 +20,29 @@ class MdbProviderResult:
 class MdbProvider(BaseMediaProvider):
 
     def __init__(self, config: ConfigManager, filters: Optional[MdbFilters] = None, details: Optional[dict] = None,
-                 media_list: Optional[MediaList] = None, listType: MediaListType = MediaListType.COLLECTION):
-
+                 media_list: Optional[MediaList] = None, list_type: MediaListType = MediaListType.COLLECTION):
         """
         Initialize the MdbProvider.
-        :param config:
-        :param filters:
-        :param listType:
+        :param config: Configuration for the provider.
+        :param filters: Optional filters to apply.
+        :param details: Optional override details for MediaList
+        :param list_type: Type of media list. Default is COLLECTION.
         """
         super().__init__(config)
         self.config = config
         self.log = config.get_logger(__name__)
-        self.listType = listType
+        self.listType = list_type
         self.client: MdbClient = config.get_client('mdb')
         self.filters = filters
 
-        if filters is not None:
-            self.id = filters[0].get('value', None)
-
         if media_list:
+            self.log.debug("Using existing MediaList", media_list=media_list)
             self.filters = media_list.filters
             self.id = self.filters.listId
 
+        if filters is not None:
+            self.log.debug("Using filters", filters=filters)
+            self.id = filters.listId
         self.log.info("MdbProvider initialized", filters=filters, id=self.id)
 
     @staticmethod
@@ -75,6 +76,7 @@ class MdbProvider(BaseMediaProvider):
             name=mdb_list['name'],
             type=self.listType,
             sortName=mdb_list['name'],
+            filters=self.filters,
             items=[],
             clientId='mdb',
             createdAt=datetime.now(),
@@ -85,8 +87,10 @@ class MdbProvider(BaseMediaProvider):
 
         for item in list_items:
             media_item = self._map_mdb_item_to_media_item(item)
+            self.log.debug("Appending media item", item=item, media_list=media_list)
             media_list.items.append(await self.create_media_list_item(media_item, media_list))
 
+        self.log.debug("Returning media list", media_list=media_list)
         return media_list
 
     async def upload_list(self, media_list: MediaList):

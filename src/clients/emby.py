@@ -9,7 +9,7 @@ from mimetypes import guess_type
 import base64
 import time
 
-from src.models import EmbyFilters
+from src.models import EmbyFilters, MediaType
 from src.models import MediaList, MediaItem
 
 from enum import Enum
@@ -48,10 +48,10 @@ class EmbyImageType(Enum):
     CHAPTER = "Chapter"
 
 
-class Emby:
-    def __init__(self, log, server_url, username, api_key):
+class EmbyClient:
+    def __init__(self, get_logger, server_url, username, api_key):
         self.server_url = server_url
-        self.log = log
+        self.log = get_logger(__name__)
         self.username = username
         self.api_key = api_key
         self.headers = {'X-Emby-Token': api_key}
@@ -75,9 +75,9 @@ class Emby:
                 else:
                     return response.json()
             except (Timeout, requests.exceptions.RequestException, requests.exceptions.ReadTimeout) as e:
-                print(f"Request failed: {e}")
+                self.log.error(f"Request failed: {e}", url=url, exception=e)
                 if attempt < retries - 1:
-                    print(f"Retrying in {delay} seconds...")
+                    self.log.debug(f"Retrying in {delay} seconds...", delay=delay)
                     time.sleep(delay)
         raise Exception(f"Failed to make the request after {retries} attempts.")
 
@@ -88,9 +88,9 @@ class Emby:
                 response.raise_for_status()  # Raise an exception for non-2xx status codes
                 return response
             except (Timeout, requests.exceptions.RequestException, requests.exceptions.ReadTimeout) as e:
-                print(f"Request failed: {e}")
+                self.log.error(f"Request failed: {e}", url=url, exception=e)
                 if attempt < retries - 1:
-                    print(f"Retrying in {delay} seconds...")
+                    self.log.debug(f"Retrying in {delay} seconds...", delay=delay)
                     time.sleep(delay)
         raise Exception(f"Failed to make the request after {retries} attempts.")
 
@@ -113,7 +113,7 @@ class Emby:
 
         # TODO: Add sort name if other than None
 
-        print(f"Created collection: {collection['Name']} ({collection['Id']})")
+        self.log.info(f"Created collection: {collection['Name']} ({collection['Id']})")
 
         if sort_name:
             self.update_item_sort_name(collection['Id'], sort_name)
@@ -125,7 +125,7 @@ class Emby:
         try:
             self.delete_item_from_collection(collection['Id'], initial_item_id)
         except:
-            print(f"Failed to remove initial item #{initial_item_id}  from collection")
+            self.log.info(f"Failed to remove initial item #{initial_item_id}  from collection")
 
         return collection
 
@@ -138,7 +138,7 @@ class Emby:
         response = self._post_request(url)
         playlist = response.json()
 
-        print(f"Created playlist: {playlist['Name']} ({playlist['Id']})")
+        self.log.info(f"Created playlist: {playlist['Name']} ({playlist['Id']})")
 
         return playlist
 
@@ -208,7 +208,7 @@ class Emby:
         response = self._get_request(url)
         items = response.get('Items', [])
         total_count = response.get('TotalRecordCount', 0)
-        # print(items, total_count)
+        self.log.debug('Items from parent', items=items, total_count=total_count)
         return items, total_count
 
     def get_libraries(self):
@@ -233,17 +233,17 @@ class Emby:
         response = self._get_request(url)
         items = response.get('Items', [])
         total_count = response.get('TotalRecordCount', 0)
-        print(items, total_count)
+        self.log.debug('List items', items=items, total_count=total_count)
         return items, total_count
 
     def get_seasons(self, series_id):
-        print(f"Getting seasons for series {series_id}")
+        self.log.info(f"Getting seasons for series {series_id}")
         url = self._build_url(f'Shows/{series_id}/Seasons')
         response = self._get_request(url)
         return response.get('Items', [])
 
     def get_episodes(self, series_id, season_id):
-        print(f"Getting episodes for series {series_id} season {season_id}")
+        self.log.info(f"Getting episodes for series {series_id} season {season_id}")
         url = self._build_url(f'Shows/{series_id}/Episodes', {'SeasonId': season_id})
         response = self._get_request(url)
         return response.get('Items', [])
@@ -252,6 +252,7 @@ class Emby:
         collections = self.get_collections()
         for collection in collections:
             if collection.get('Name') == collection_name:
+                self.log.info(f"Collection {collection_name} already exists")
                 return True
         return False
 
@@ -282,10 +283,11 @@ class Emby:
 
     def get_item_image(self, item_id):
         url = self._build_url(f'Items/{item_id}/Images/Primary')
-        print(url)
+        self.log.info(f"Getting image for item {item_id}", url=url)
         response = self._get_request(url, stream=True, retries=1)
 
         if response.status_code == 200:
+            self.log.debug(f"Got image for item {item_id}")
             # Assuming _get_request is using the requests library.
             # Use BytesIO to convert the response content into a file-like object so it can be opened by PIL
             img = Image.open(BytesIO(response.content)).convert('RGBA')
@@ -312,7 +314,7 @@ class Emby:
             if (collection.get('Name') == 'Watchlist'):
                 continue
 
-            print(f"Deleting collection {collection.get('Name')} ({collection.get('Id')})")
+            self.log.info(f"Deleting collection {collection.get('Name')} ({collection.get('Id')})")
             self.delete_collection(collection.get('Id'))
         return
 
@@ -325,16 +327,16 @@ class Emby:
     def add_search_results_to_collection(self, collection_id, results):
         for item in results.get('Items', []):
             item_id = item.get('Id')
-            print(f"Found {item.get('Name')} with id {item_id}")
+            self.log.info(f"Found {item.get('Name')} with id {item_id}", item=item)
             self.add_item_to_collection(collection_id, item_id)
-            print(f"Added {item.get('Name')} to {collection_id}")
+            self.log.info(f"Added {item.get('Name')} to {collection_id}", item=item)
 
     def delete_search_results_from_collection(self, collection_id, results):
         for item in results.get('Items', []):
             item_id = item.get('Id')
-            print(f"Found {item.get('Name')} with id {item_id}")
+            self.log.info(f"Removing {item.get('Name')} from {collection_id}")
             self.delete_item_from_collection(collection_id, item_id)
-            print(f"Removed {item.get('Name')} from {collection_id}")
+            self.log.debug(f"Removed {item.get('Name')} from {collection_id}")
 
     def get_items_by_type(self, item_types='Series', limit=50):
         url = self._build_url(f'Users/{self.user_id}/Items',
@@ -381,7 +383,7 @@ class Emby:
             image_data = f.read()
         encoded_image_data = base64.b64encode(image_data)
         headers = {'Content-Type': mime_type}
-        print('Uploading collection image: ', image_path, mime_type)
+        self.log.debug('Uploading collection image: ', image_path=image_path, mime_type=mime_type, headers=headers)
         url = self._build_url(f'Items/{id}/Images/{imgType}')
         response = requests.post(url, data=encoded_image_data, headers=headers)
         return response
@@ -550,14 +552,14 @@ class Emby:
                 if search_results and search_results[0]['Type'] != 'Trailer':
                     return search_results[0]
             except Exception as e:
-                print(f"Failed searching for {external_id} due to {e}")
+                self.log.error(f"Failed searching for {external_id} due to {e}", external_id=external_id, exception=e)
             return None
 
         try:
             imdb_result = search_id(f"imdb.{media_item.providers.imdbId}")
             tvdb_result = search_id(f"tvdb.{media_item.providers.tvdbId}")
         except Exception as e:
-            print(f"Failed searching for {media_item} due to {e}")
+            self.log.error(f"Failed searching for {media_item} due to {e}", media_item=media_item, exception=e)
             return None
 
         if imdb_result:
@@ -571,11 +573,11 @@ class Emby:
         # search emby for the items
         # add the first result to the collection
 
-        print('-------------', media_list.items)
         for item in media_list.items:
-            print('-------------', item)
+            self.log.debug(f"Searching for {item}", item=item)
             media_item = self.search_for_external_ids(item)
             if media_item:
+                self.log.debug(f"Adding {media_item} to {collection}", media_item=media_item, collection=collection)
                 self.add_item_to_collection(collection['Id'], media_item['Id'])
         return collection
 
@@ -597,7 +599,7 @@ class Emby:
         # add the first result to the collection
 
         for item in media_list.items:
-            print('-------------', item)
+            self.log.debug(f"Searching for {item}", item=item)
             emby_media_item = self.search_for_external_ids(item)
             if emby_media_item:
                 self.add_item_to_playlist(playlist['Id'], emby_media_item['Id'])
@@ -611,14 +613,14 @@ class Emby:
 
     def upload_image_from_url(self, sourceListId, poster, root_path):
         if poster is None:
-            print('no poster provided')
+            self.log.info('no poster provided')
             return None
 
         # if the media_list.poster is a url, download the image and upload it to the provider
 
-        print('downloading image from url')
         response = requests.get(poster, stream=True)
         if response.status_code == 200:
+            self.log.info(f"Got image for poster", poster=poster)
             # Assuming _get_request is using the requests library.
             # Use BytesIO to convert the response content into a file-like object so it can be opened by PIL
             img = Image.open(BytesIO(response.content)).convert('RGBA')
@@ -626,3 +628,62 @@ class Emby:
             poster_location = f'{root_path}/poster.png'
             img.save(poster_location, quality=95)
             self.upload_image(sourceListId, poster_location)
+            self.log.info(f"Uploaded image for poster", poster=poster)
+
+    def search_media_item_by_external_ids(self, media_item=None) -> dict or None:
+        # if media_list_item is none we should set the media_item to a media_list_item object
+
+        if media_item is None:
+            self.log.info('no media item provided')
+            return None
+
+        match = None
+
+        def search_id(external_id: str) -> Optional[dict]:
+            try:
+                search_results = self.get_media(external_id=external_id)
+                if search_results and search_results[0]['Type'] != 'Trailer':
+                    return search_results[0]
+                if search_results and search_results[0]['Type'] == 'Trailer':
+                    return search_results[1]
+
+            except Exception as e:
+                self.log.error(f"Failed searching for {external_id} due to {e}", external_id=external_id, exception=e)
+            return None
+
+        imdb_result = search_id(f"imdb.{media_item.providers.imdbId}")
+        tvdb_result = search_id(f"tvdb.{media_item.providers.tvdbId}")
+        tmdb_result = search_id(f"Tmdb.{media_item.providers.tmdbId}")
+
+        if imdb_result:
+            return imdb_result
+        elif tvdb_result:
+            return tvdb_result
+        elif tmdb_result:
+            return tmdb_result
+
+
+        emby_type = 'Movie' if media_item.type == MediaType.MOVIE else 'Series'
+        # Fallback to name and year
+        search_results = self.search(media_item.item.title, emby_type)
+        # print('SEARCH RESULTS::::', search_results)
+        if search_results:
+            for result in search_results:
+                if int(result['ProductionYear']) == int(media_item.item.year):
+                    match = result
+                    break
+            return match
+        return match
+
+    async def get_poster_from_emby_by_media_item(self, media_item):
+        emby_item = await self.search_media_item_by_external_ids(media_item=media_item)
+
+        if emby_item is None:
+            self.log.info('Item not found in Emby')
+            return None
+
+        if poster_id := emby_item['ImageTags'].get('Primary'):
+            self.log.info(f"Found poster for {media_item.item.title} in Emby", poster_id=poster_id)
+            return f"{self.server_url}/emby/Items/{emby_item['Id']}/Images/Primary?api_key={self.api_key}&X-Emby-Token={self.api_key}"
+        else:
+            return None

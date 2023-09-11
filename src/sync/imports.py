@@ -18,7 +18,7 @@ async def import_url(config: ConfigManager, url) -> MediaList:
     url_type = identify_url_type(url)
     filters = None
 
-    log.info(f"Filter type set: {type(filters)}", filter=filters, type=type(filters))
+
     media_list = MediaList(
         mediaListId=str(uuid.uuid4()),
         # sourceListId=filters.listId if filters.listId else None,
@@ -72,8 +72,11 @@ async def import_url(config: ConfigManager, url) -> MediaList:
         media_list.sourceListId = media_list.filters.listId
 
     log.info(f'Created media list', media_list=media_list.dict())
+    log.debug(f"Filter type set: {type(media_list.filters)}", filter=media_list.filters, type=type(media_list.filters))
 
-    list = ListBuilder(config, media_list=media_list)
-    media_list = (await list.build()).get_media_list()
+    built_list = ListBuilder(config, media_list=media_list)
+    built_list = await built_list.build()
+    media_list = await built_list.get_media_list()
+    log.debug(f"Media list built", media_list=media_list.dict())
     return media_list
 

@@ -1,274 +1,189 @@
 import uuid
 from datetime import datetime
-
-from src.create.posters import MediaPosterImageCreator
-from src.models import MediaList, MediaListItem, MediaType, MediaListType, MediaItem, MediaProviderIds, MediaPoster
-
 from typing import Optional
 
+from src.config import ConfigManager
+from src.models import JellyfinFilters
+from src.create.providers.posters import JellyfinPosterProvider
+from src.create.providers.base_provider import BaseMediaProvider
+from src.create.posters import MediaPosterImageCreator
+from src.create.providers.managers import PosterProviderManager
+from src.models import MediaList, MediaType, MediaListType, MediaItem, MediaProviderIds, MediaPoster
+from src.clients.jellyfin import JellyfinClient
 
-class JellyfinProvider:
-    def __init__(self, config, filters=None, details=None, listType=MediaListType.COLLECTION):
+
+class JellyfinProvider(BaseMediaProvider):
+    def __init__(self, config: ConfigManager, filters: Optional[JellyfinFilters] = None, details: Optional[dict] = None,
+                 media_list: Optional[MediaList] = None, list_type: MediaListType = MediaListType.COLLECTION):
+        """
+        Initialize the JellyfinProvider.
+        :param config: Instance of ConfigManager
+        :param filters:
+        :param details:
+        :param list_type:
+        """
+        super().__init__(config)  # Initialize the BaseMediaProvider
         self.config = config
-        self.log = config.get_logger(__name__)
-        self.client = config.get_client('jellyfin')
+        self.log = config.get_logger()
+        self.client: JellyfinClient = config.get_client('emby')
         self.filters = filters
+        self.media_list = media_list
         self.server_url = self.client.server_url
         self.api_key = self.client.api_key
-        self.listType = listType
+        self.poster_manager = PosterProviderManager(config=config)
+        self.list_type = list_type
         self.details = details
 
-        self.id, self.library_name = self.parse_filters(filters if filters is not None else [])
+        if media_list:
+            self.log.debug("Using existing MediaList", media_list=media_list)
+            self.filters = media_list.filters
 
-    def parse_filters(self, filters):
-        id_value = None
-        library_value = None
+        if filters is not None:
+            self.log.debug("Using filters", filters=filters)
+            self.id = filters.listId
+            self.library_name = filters.library
 
-        for f in filters:
-            try:
-                if f['type'] == 'list_id':
-                    id_value = f.get('value')
-                elif f['type'] == 'library':
-                    library_value = f.get('value')
-            except KeyError:
-                print(f"Key 'name' missing in filter: {f}")
-
-        return id_value, library_value
+        self.log.debug("JellyfinProvider initialized", id=self.id, library_name=self.library_name)
 
     async def get_list(self):
-        print('get list')
+        """
+        Retrieve MediaList from Jellyfin.
+        :return:
+        """
+        self.log.info("Getting Jellyfin list")
         if self.id is None and self.library_name is None:
-            print('No filter provided. Cannot get list.')
+            self.log.error("No filter provided. Cannot get list.")
             return None
         elif self.library_name is not None:
+            self.log.debug("Getting library by name", library_name=self.library_name)
             self.id = self.client.get_library(self.library_name)
 
         if self.id is not None:
+            self.log.debug("Getting items from parent", parent_id=self.id)
             limit = 100
             offset = 0
             all_list_items = []
 
             while True:
                 list_items, list_items_count = self.client.get_items_from_parent(self.id, limit=limit, offset=offset)
-                print('Getting items from parent', offset, list_items_count)
+                self.log.info("Getting items from parent", offset=offset, list_items_count=list_items_count)
                 all_list_items.extend(list_items)
                 offset += limit
                 if offset > list_items_count:
                     break
 
-            list_ = self.client.get_list(list_id=self.id)  # Renamed to avoid conflict with built-in name 'list'
+            emby_list = self.client.get_list(list_id=self.id)
             db = self.config.get_db()
 
             media_list = MediaList(
                 mediaListId=str(uuid.uuid4()),
-                name=list_['Name'],
-                type=self.listType,
-                sourceListId=list_['Id'],
-                # filters=self.filters,
+                name=emby_list['Name'],
+                type=self.list_type,
+                sourceListId=emby_list['Id'],
                 items=[],  # Will be populated later
-                sortName=list_['SortName'],
-                clientId='JELLYFINCLIENTID',
+                sortName=emby_list['SortName'],
+                clientId='emby',
                 createdAt=datetime.now(),
                 creatorId=self.config.get_user().userId
             )
 
             db.media_lists.insert_one(media_list.dict())
+            self.log.debug("Inserted MediaLis in database", media_list=media_list)
 
             for item in all_list_items:
-                print('-------------', item)
-                media_list.items.append(await self.create_media_item(item, media_list))
+                self.log.debug("Creating media list item", item=item, media_list=media_list)
+                media_item = self._map_emby_item_to_media_item(item, self.log)
+                media_list.items.append(await self.create_media_list_item(media_item, media_list, JellyfinPosterProvider(config=self.config)))
 
             return media_list
         return None
 
-    def process_list_items(self, list_items):
-        db = self.config.get_db()
-        media_list_data = self.client.get_list(list_id=self.id)
-
-        media_list = MediaList(
-            mediaListId=str(uuid.uuid4()),
-            name=media_list_data['Name'],
-            type=self.listType,
-            sortName=media_list_data['SortName'],
-            clientId='JELLYFINCLIENTID',
-            createdAt=datetime.now(),
-            creatorId=self.config.get_user().userId
-        )
-
-        db.media_lists.insert_one(media_list.dict())
-
-        primary_list = []
-
-        for item in list_items:
-            media_item, media_list_item = self.create_media_item(item, media_list)
-            db.media_list_items.insert_one(media_list_item.dict())
-            primary_list.extend(self.search_jellyfin_for_external_ids(media_item))
-
-        return primary_list
-
-    async def create_media_item(self, item, media_list):
-        db = self.config.get_db()
-
-        poster_id = item['ImageTags'].get('Primary')
-        poster_url = f"{self.server_url}/Items/{item['Id']}/Images/Primary?api_key={self.api_key}&X-Emby-Token={self.api_key}" if poster_id else None
-
-        media_item = MediaItem(
+    @staticmethod
+    def _map_emby_item_to_media_item(provider_item: dict, log) -> MediaItem:
+        """
+        Map a Jellyfin item to a MediaItem.
+        :param provider_item:
+        :param log:
+        :return:
+        """
+        log.info(f"Mapping Jellyfin item to MediaItem", provider_item=provider_item)
+        return MediaItem(
             mediaItemId=str(uuid.uuid4()),
-            title=item.get('Name', 'TITLE MISSING'),
-            year=item.get('ProductionYear', None),
-            type=MediaType.MOVIE if item['Type'] == 'Movie' else MediaType.SHOW,
-            poster=poster_url,
+            title=provider_item.get('Name', 'TITLE MISSING'),
+            year=provider_item.get('ProductionYear', None),
+            description=provider_item.get('Overview', None),
+            type=MediaType.MOVIE if provider_item['Type'] == 'Movie' else MediaType.SHOW,
             providers=MediaProviderIds(
-                imdbId=item['ProviderIds'].get('IMDB', None),
-                tvdbId=item['ProviderIds'].get('Tvdb', None)
+                imdbId=provider_item['ProviderIds'].get('IMDB', None),
+                tvdbId=provider_item['ProviderIds'].get('Tvdb', None)
             ),
-            # ... add any other fields you need here ...
         )
-
-        # Check for existing mediaItem
-        existing_media_item = None
-        if media_item.providers.imdbId:
-            existing_media_item = await db.media_items.find_one({"providers.imdbId": media_item.providers.imdbId})
-        elif media_item.providers.tvdbId:
-            existing_media_item = await db.media_items.find_one({"providers.tvdbId": media_item.providers.tvdbId})
-
-        if existing_media_item:
-            media_item.mediaItemId = existing_media_item['mediaItemId']
-            valid_fields = {k: v for k, v in media_item.dict().items() if v}
-            # Update missing fields
-            # for field, value in media_item.dict().items():
-            #     if value and not existing_media_item.get(field):
-            #         existing_media_item[field] = value
-            db.media_items.update_one(
-                {"mediaItemId": existing_media_item["mediaItemId"]},
-                {"$set": valid_fields}
-            )
-        # media_item.dict()
-        else:
-            print('inserting new media item')
-            db.media_items.insert_one(media_item.dict())
-            # return media_item.dict()
-
-        media_list_item = MediaListItem(
-            mediaListItemId=str(uuid.uuid4()),
-            mediaListId=media_list.mediaListId,
-            mediaItemId=media_item.mediaItemId,
-            sourceId=item['Id'],
-            dateAdded=datetime.now()
-        )
-
-        db.media_list_items.insert_one(media_list_item.dict())
-
-        media_list_item.item = media_item
-
-        return media_item
-
-    def search_jellyfin_for_external_ids(self, media_item: MediaItem) -> dict or None:
-        print('searching jellyfin for external ids', media_item)
-        match = None
-
-        def search_id(external_id: str) -> Optional[dict]:
-            try:
-                search_results = self.client.get_media(external_id=external_id)
-                if search_results and search_results[0]['Type'] != 'Trailer':
-                    return search_results[0]
-                if search_results and search_results[0]['Type'] == 'Trailer':
-                    return search_results[1]
-
-            except Exception as e:
-                print(f"Failed searching for {external_id} due to {e}")
-            return None
-
-        imdb_result = search_id(f"imdb.{media_item.providers.imdbId}")
-        tvdb_result = search_id(f"tvdb.{media_item.providers.tvdbId}")
-        tmdb_result = search_id(f"Tmdb.{media_item.providers.tmdbId}")
-
-        if imdb_result:
-            return imdb_result
-        elif tvdb_result:
-            return tvdb_result
-        elif tmdb_result:
-            return tmdb_result
-
-            # emby_media_items = self.emby.search(media.title, emby_type)
-            # for emby_media in emby_media_items:
-            # try:
-            # if emby_media['ProductionYear'] == media.year:
-
-        emby_type = 'Movie' if media_item.type == MediaType.MOVIE else 'Series'
-        # Fallback to name and year
-        search_results = self.client.search(media_item.title, emby_type)
-        print('SEARCH RESULTS::::', search_results)
-        if search_results:
-            for result in search_results:
-                if int(result['ProductionYear']) == int(media_item.year):
-                    match = result
-                    break
-            return match
-        return match
 
     def upload_list(self, media_list: MediaList):
+        """
+        Upload a MediaList to Jellyfin.
+        :param media_list:
+        :return:
+        """
         if media_list is None:
-            print('no list provided')
+            self.log.info('no list provided')
             return None
+        list_type: MediaListType = media_list.type
 
-        # Will expect a media_list object and upload it to the provider
-        # create a playlist or collection based on type
-        # add items to the playlist or collection
-        # return the playlist or collection id
-
-        type = media_list.type
-        print(media_list)
-
-        if type == MediaListType.COLLECTION:
-            list = self.client.create_collection(media_list.name, media_list.sortName)
-        elif type == MediaListType.PLAYLIST:
-            list = self.client.create_playlist(media_list.name, media_list.sortName)
+        if list_type == MediaListType.COLLECTION:
+            emby_list = self.client.create_collection(media_list.name, media_list.sortName)
+        elif list_type == MediaListType.PLAYLIST:
+            emby_list = self.client.create_playlist(media_list.name, media_list.sortName)
         else:
-            print('invalid list type')
+            self.log.info('invalid list type')
             return None
 
         # Main List Poster
         self.save_poster(media_list.sourceListId, media_list.poster)
 
-        print(f'adding {len(media_list.items)} items to list {list["Id"]}')
-        print(f'media list items', media_list.items)
+        self.log.debug(f'adding {len(media_list.items)} items to list {emby_list["Name"]}', emby_list=emby_list)
         for media_list_item in media_list.items:
-            print(f'adding item {media_list_item.item.title} to list {list["Id"]}')
-            jellyItem = self.search_jellyfin_for_external_ids(media_list_item.item)
+            self.log.debug(f'adding item {media_list_item.item.title} to list {emby_list["Name"]}', emby_list=emby_list)
+            emby_item = self.client.search_media_item_by_external_ids(media_list_item.item)
 
-            if jellyItem is None:
-                print('item not found')
+            if emby_item is None:
+                self.log.info(f'item {media_list_item.item.title} not found', title=media_list_item.item.title)
                 continue
 
-            if type == MediaListType.PLAYLIST:
-                self.client.add_item_to_playlist(list['Id'], jellyItem['Id'])
-            elif type == MediaListType.COLLECTION:
-                self.client.add_item_to_collection(list['Id'], jellyItem['Id'])
+            if list_type == MediaListType.PLAYLIST:
+                self.log.debug(f'adding item {media_list_item.item.title} to playlist {emby_list["Name"]}', emby_list=emby_list)
+                self.client.add_item_to_playlist(emby_list['Id'], emby_item['Id'])
+            elif list_type == MediaListType.COLLECTION:
+                self.log.debug(f'adding item {media_list_item.item.title} to collection {emby_list["Name"]}', emby_list=emby_list)
+                self.client.add_item_to_collection(emby_list['Id'], emby_item['Id'])
 
             poster = (media_list_item.poster if media_list_item.poster is not None else media_list_item.item.poster)
             # Item Poster
-            self.save_poster(jellyItem['Id'], poster)
+            self.save_poster(emby_item['Id'], poster)
+            self.log.debug(f'added item {media_list_item.item.title} to list {emby_list["Name"]}', emby_list=emby_list)
         return media_list
 
     def save_poster(self, item_id: str, poster: MediaPoster or str):
+        # TODO: Look into moving logic to JellyfinClient
+        """
+        Save a poster to Jellyfin.
+        :param item_id:
+        :param poster:
+        :return:
+        """
         if poster is None:
-            print('no poster provided')
+            self.log.info('no poster provided')
             return None
 
-        # if the media_list.poster is a url, download the image and upload it to the provider
-        # if the media_list.poster is a file path, upload the image to the provider
-        # through the PosterImage class and upload it to the provider
-
         if poster.startswith('http'):
-            print('downloading image from url')
+            self.log.info('downloading image from url', url=poster)
             self.client.upload_image_from_url(item_id, poster, root_path=self.config.get_root_path())
         elif poster.startswith('/'):
-            print('uploading image from local')
+            self.log.info('uploading image from local', path=poster)
             self.client.upload_image(item_id, poster)
         # if the poster is a MediaPoster object, process the image
         elif isinstance(poster, MediaPoster):
-            print('uploading image from MediaPoster')
+            self.log.info('uploading image from MediaPoster instance', poster=poster)
             # create image from MediaPoster
             poster = MediaPosterImageCreator(poster, self.log)
             poster = poster.create()

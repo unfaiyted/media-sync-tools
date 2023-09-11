@@ -1,50 +1,60 @@
 import uuid
-from abc import ABC
 from datetime import datetime
+from typing import Optional
 
+from src.config import ConfigManager
+from src.models import EmbyFilters
 from src.create.providers.posters import EmbyPosterProvider
 from src.create.providers.base_provider import BaseMediaProvider
 from src.create.posters import MediaPosterImageCreator
-from src.create.providers.managers import PosterManager
-from src.models import MediaList, MediaListItem, MediaType, MediaListType, MediaItem, MediaProviderIds, MediaPoster
-from src.clients.emby import Emby
-from typing import Optional
+from src.create.providers.managers import PosterProviderManager
+from src.models import MediaList, MediaType, MediaListType, MediaItem, MediaProviderIds, MediaPoster
+from src.clients.emby import EmbyClient
 
 
 class EmbyProvider(BaseMediaProvider):
-    def __init__(self, config, filters=None, details=None, listType=MediaListType.COLLECTION):
+    def __init__(self, config: ConfigManager, filters: Optional[EmbyFilters] = None, details: Optional[dict] = None,
+                 media_list: Optional[MediaList] = None, list_type: MediaListType = MediaListType.COLLECTION):
+        """
+        Initialize the EmbyProvider.
+        :param config: Instance of ConfigManager
+        :param filters:
+        :param details:
+        :param list_type:
+        """
         super().__init__(config)  # Initialize the BaseMediaProvider
         self.config = config
-        self.log = config.get_logger()
-        self.client: Emby = config.get_client('emby')
+        self.log = config.get_logger(__name__)
+        self.client: EmbyClient = config.get_client('emby')
         self.filters = filters
+        self.media_list = media_list
         self.server_url = self.client.server_url
         self.api_key = self.client.api_key
-        self.poster_manager = PosterManager(config=config)
-        self.listType = listType
+        self.poster_manager = PosterProviderManager(config=config)
+        self.list_type = list_type
         self.details = details
 
-        self.id, self.library_name = self.parse_filters(filters if filters is not None else [])
-        self.log.debug("EmbyProvider initialized", id=self.id, library_name=self.library_name)
+        if media_list:
+            self.log.debug("Using existing MediaList", media_list=media_list)
+            self.filters = media_list.filters
 
-    def parse_filters(self, filters):
-        self.log.debug("Parsing filters", filters=filters)
-        id_value = None
-        library_value = None
+        if self.filters is not None:
+            if isinstance(self.filters, EmbyFilters):
+                self.log.debug("Using filters", filters=filters)
+                self.id = self.filters.listId
+                self.library_name = self.filters.library
+                self.log.debug("Emby type Filter initialized", id=self.id, library_name=self.library_name)
+            else:
+                self.log.warn("Invalid filters provided", filters=filters)
 
-        for f in filters:
-            try:
-                if f['type'] == 'list_id':
-                    id_value = f.get('value')
-                elif f['type'] == 'library':
-                    library_value = f.get('value')
-            except KeyError:
-                print(f"Key 'name' missing in filter: {f}")
-
-        return id_value, library_value
+        self.log.debug("EmbyProvider initialized", filters=self.filters)
 
     async def get_list(self):
-        self.log.info("Getting  Emby list")
+        """
+        Retrieve MediaList from Emby.
+        :return:
+        """
+        self.log.info("Getting Emby list")
         if self.id is None and self.library_name is None:
             self.log.error("No filter provided. Cannot get list.")
             return None
@@ -66,32 +76,41 @@ class EmbyProvider(BaseMediaProvider):
                 if offset > list_items_count:
                     break
 
-            list_ = self.client.get_list(list_id=self.id)  # Renamed to avoid conflict with built-in name 'list'
+            emby_list = self.client.get_list(list_id=self.id)
             db = self.config.get_db()
 
             media_list = MediaList(
                 mediaListId=str(uuid.uuid4()),
-                name=list_['Name'],
-                type=self.listType,
-                sourceListId=list_['Id'],
+                name=emby_list['Name'],
+                type=self.list_type,
+                sourceListId=emby_list['Id'],
+                filters=self.filters,
                 items=[],  # Will be populated later
-                sortName=list_['SortName'],
+                sortName=emby_list['SortName'],
                 clientId='emby',
                 createdAt=datetime.now(),
                 creatorId=self.config.get_user().userId
             )
 
             db.media_lists.insert_one(media_list.dict())
+            self.log.debug("Inserted MediaLis in database", media_list=media_list)
 
             for item in all_list_items:
-                self.log.debug("Creating media item", item=item, media_list=media_list)
-                media_list.items.append(await self.create_media_item(item, media_list))
+                self.log.debug("Creating media list item", item=item, media_list=media_list)
+                media_item = self._map_emby_item_to_media_item(item, self.log)
+                media_list.items.append(await self.create_media_list_item(media_item, media_list, EmbyPosterProvider(config=self.config)))
 
             return media_list
         return None
 
     @staticmethod
     def _map_emby_item_to_media_item(provider_item: dict, log) -> MediaItem:
+        """
+        Map an Emby item to a MediaItem.
+        :param provider_item:
+        :param log:
+        :return:
+        """
         log.info(f"Mapping Emby item to MediaItem", provider_item=provider_item)
         return MediaItem(
             mediaItemId=str(uuid.uuid4()),
@@ -105,100 +124,21 @@ class EmbyProvider(BaseMediaProvider):
             ),
         )
 
-    async def create_media_item(self, provider_item, media_list):
-        self.log.info(f"Creating media item", provider_item=provider_item, media_list=media_list)
-        db = self.config.get_db()
-
-        media_item = self._map_emby_item_to_media_item(provider_item, self.log)
-
-        media_item.poster = await self.poster_manager.get_poster(
-            preferred_provider=EmbyPosterProvider(config=self.config),
-            media_item=media_item)
-
-        # Check for existing mediaItem
-        existing_media_item = await self.get_existing_media_item(media_item)
-
-        if existing_media_item:
-            self.log.debug(f"Existing media item found", existing_media_item=existing_media_item)
-            media_item = await self.merge_and_update_media_item(media_item, existing_media_item)
-
-        media_list_item = MediaListItem(
-            mediaListItemId=str(uuid.uuid4()),
-            mediaListId=media_list.mediaListId,
-            mediaItemId=media_item.mediaItemId,
-            sourceId=provider_item['Id'],
-            dateAdded=datetime.now()
-        )
-
-        db.media_list_items.insert_one(media_list_item.dict())
-
-        media_list_item.item = media_item
-        self.log.info(f"Media item created", media_item=media_item, media_list_item=media_list_item)
-        return media_list_item
-
-    def search_emby_for_external_ids(self, media_list_item: MediaItem = None, media_item=None) -> dict or None:
-        # if media_list_item is none we should set the media_item to a media_list_item object
-
-        if media_list_item is None and media_item is None:
-            self.log.info('no media item provided')
-            return None
-
-        if media_list_item is None:
-            self.log.debug('no media list item provided')
-            media_list_item = MediaListItem(item=media_item)
-
-        match = None
-
-        def search_id(external_id: str) -> Optional[dict]:
-            try:
-                search_results = self.client.get_media(external_id=external_id)
-                if search_results and search_results[0]['Type'] != 'Trailer':
-                    return search_results[0]
-                if search_results and search_results[0]['Type'] == 'Trailer':
-                    return search_results[1]
-
-            except Exception as e:
-                print(f"Failed searching for {external_id} due to {e}")
-            return None
-
-        imdb_result = search_id(f"imdb.{media_list_item.item.providers.imdbId}")
-        tvdb_result = search_id(f"tvdb.{media_list_item.item.providers.tvdbId}")
-        tmdb_result = search_id(f"Tmdb.{media_list_item.item.providers.tmdbId}")
-
-        if imdb_result:
-            return imdb_result
-        elif tvdb_result:
-            return tvdb_result
-        elif tmdb_result:
-            return tmdb_result
-
-            # emby_media_items = self.emby.search(media.title, emby_type)
-            # for emby_media in emby_media_items:
-            # try:
-            # if emby_media['ProductionYear'] == media.year:
-
-        emby_type = 'Movie' if media_list_item.item.type == MediaType.MOVIE else 'Series'
-        # Fallback to name and year
-        search_results = self.client.search(media_list_item.item.title, emby_type)
-        # print('SEARCH RESULTS::::', search_results)
-        if search_results:
-            for result in search_results:
-                if int(result['ProductionYear']) == int(media_list_item.item.year):
-                    match = result
-                    break
-            return match
-        return match
-
     def upload_list(self, media_list: MediaList):
+        """
+        Upload a MediaList to Emby.
+        :param media_list:
+        :return:
+        """
         if media_list is None:
             self.log.info('no list provided')
             return None
         list_type: MediaListType = media_list.type
 
         if list_type == MediaListType.COLLECTION:
-            list = self.client.create_collection(media_list.name, media_list.sortName)
+            emby_list = self.client.create_collection(media_list.name, media_list.sortName)
         elif list_type == MediaListType.PLAYLIST:
-            list = self.client.create_playlist(media_list.name, media_list.sortName)
+            emby_list = self.client.create_playlist(media_list.name, media_list.sortName)
         else:
             self.log.info('invalid list type')
             return None
@@ -206,41 +146,49 @@ class EmbyProvider(BaseMediaProvider):
         # Main List Poster
         self.save_poster(media_list.sourceListId, media_list.poster)
 
-        self.log.debug(f'adding {len(media_list.items)} items to list {list["Name"]}', list=list)
+        self.log.debug(f'Adding {len(media_list.items)} items to list {emby_list["Name"]}', emby_list=emby_list)
         for media_list_item in media_list.items:
-            self.log.debug(f'adding item {media_list_item.item.title} to list {list["Name"]}', list=list)
-            emby_item = self.search_emby_for_external_ids(media_list_item)
+            self.log.debug(f'Adding item {media_list_item.item.title} to list {emby_list["Name"]}', emby_list=emby_list)
+            emby_item = self.client.search_media_item_by_external_ids(media_list_item.item)
 
             if emby_item is None:
-                self.log.info(f'item {media_list_item.item.title} not found')
+                self.log.info(f'Item {media_list_item.item.title} not found', title=media_list_item.item.title)
                 continue
 
             if list_type == MediaListType.PLAYLIST:
-                self.log.debug(f'adding item {media_list_item.item.title} to playlist {list["Name"]}', list=list)
-                self.client.add_item_to_playlist(list['Id'], emby_item['Id'])
+                self.log.debug(f'Adding item {media_list_item.item.title} to playlist {emby_list["Name"]}', emby_list=emby_list)
+                self.client.add_item_to_playlist(emby_list['Id'], emby_item['Id'])
             elif list_type == MediaListType.COLLECTION:
-                self.log.debug(f'adding item {media_list_item.item.title} to collection {list["Name"]}', list=list)
-                self.client.add_item_to_collection(list['Id'], emby_item['Id'])
+                self.log.debug(f'Adding item {media_list_item.item.title} to collection {emby_list["Name"]}', emby_list=emby_list)
+                self.client.add_item_to_collection(emby_list['Id'], emby_item['Id'])
 
             poster = (media_list_item.poster if media_list_item.poster is not None else media_list_item.item.poster)
             # Item Poster
             self.save_poster(emby_item['Id'], poster)
+            self.log.debug('Poster saved', poster=poster)
         return media_list
 
     def save_poster(self, item_id: str, poster: MediaPoster or str):
+        # TODO: Look into moving logic to EmbyClient
+        """
+        Save a poster to Emby.
+        :param item_id:
+        :param poster:
+        :return:
+        """
         if poster is None:
-            self.log.info('no poster provided')
+            self.log.info('No poster provided')
             return None
 
         if poster.startswith('http'):
-            self.log.info('downloading image from url', url=poster)
+            self.log.info('Downloading image from url', url=poster)
             self.client.upload_image_from_url(item_id, poster, root_path=self.config.get_root_path())
         elif poster.startswith('/'):
-            self.log.info('uploading image from local', path=poster)
+            self.log.info('Uploading image from local', path=poster)
             self.client.upload_image(item_id, poster)
         # if the poster is a MediaPoster object, process the image
         elif isinstance(poster, MediaPoster):
-            self.log.info('uploading image from MediaPoster instance', poster=poster)
+            self.log.info('Uploading image from MediaPoster', poster=poster)
             # create image from MediaPoster
             poster = MediaPosterImageCreator(poster, self.log)
             poster = poster.create()

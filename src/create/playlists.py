@@ -1,6 +1,5 @@
 import random
 import logging
-from src.create.posters import PosterImageCreator
 
 def create_emby_playlist(config, name, shows, if_exists_delete=True):
     root_path = config.get_root_path()

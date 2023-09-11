@@ -23,7 +23,7 @@ def printJson(data):
     # check if its a json object already
     if(type(data) == str):
         data = json.loads(data)
-    print(json.dumps(data, indent=4, sort_keys=True))
+    # print(json.dumps(data, indent=4, sort_keys=True))
 
 
 

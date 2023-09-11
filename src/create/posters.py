@@ -1,10 +1,363 @@
-import io
-import os
 import numpy as np
 import requests
-from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter
+import os
+import io
 
+from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter
 from src.models import MediaPosterOverlayOptions, MediaPoster, MediaPosterTextOptions
+
+class MediaPosterImageCreator:
+    def __init__(self, media_poster: MediaPoster, log):
+        """
+        Initialize the MediaPosterImageCreator.
+        :param media_poster: MediaPoster instance
+        :param log:
+        """
+        self.log = log
+        self.media_poster = media_poster
+        width = media_poster.width
+        height = media_poster.height
+        self.image = Image.new('RGB', (width, height), color=(0, 0, 0))  # Default to black
+        self.log.debug('Initialized MediaPosterImageCreator', width=width, height=height)
+
+    def create(self):
+        media_poster = self.media_poster
+        self.log.info('Creating poster', media_poster=media_poster)
+
+        # Main function that will orchestrate the creation of the poster image.
+        if media_poster.gradient and media_poster.gradient.enabled:
+            self.log.debug('Adding gradient')
+            self._apply_gradient()
+
+        if media_poster.background and media_poster.background.enabled:
+            self.log.debug('Adding background')
+            self._apply_background()
+
+        if (media_poster.text and media_poster.text.enabled and
+                media_poster.icon and media_poster.icon.enabled):
+            self.log.debug('Adding icon with text')
+            self._apply_icon_with_text()
+
+        if media_poster.text.enabled and not media_poster.icon.enabled:
+            self.log.debug('Adding text')
+            self._apply_text()
+
+        if (media_poster.icon and media_poster.icon.enabled and
+                not media_poster.text and not media_poster.text.enabled):
+            self.log.debug('Adding icon')
+            self._apply_icon()
+
+        if media_poster.border and media_poster.border.enabled:
+            self.log.debug('Adding border')
+            self._apply_border()
+
+        if media_poster.overlays:
+            self.log.debug('Adding overlays')
+            self._add_overlays()
+
+        # ... add more methods as needed, based on the MediaPoster attributes.
+
+        return self._generate_poster()
+
+    @staticmethod
+    def _fetch_image_from_path(path, log):
+        log.info('Fetching image from path', path=path)
+        return Image.open(path)
+
+    @staticmethod
+    def _fetch_image_from_url(url, log):
+        log.info('Fetching image from url', url=url)
+        # This method fetches the image from the provided URL.
+        # For simplicity, let's assume you've a method implemented to fetch an image from a URL.
+        # If not, you can use libraries like 'requests' to fetch the image.
+        response = requests.get(url)
+        return Image.open(io.BytesIO(response.content)).convert('RGBA')
+
+    def _process_fetched_image(self, background_image):
+        base_aspect_ratio = self.image.width / self.image.height
+        background_aspect_ratio = background_image.width / background_image.height
+        aspect_ratio_threshold = 0.1
+
+        if abs(base_aspect_ratio - background_aspect_ratio) < aspect_ratio_threshold:
+            pass
+        elif background_image.width > self.image.width:
+            left = (background_image.width - self.image.width) / 2
+            right = left + self.image.width
+            background_image = background_image.crop((int(left), 0, int(right), background_image.height))
+        elif background_image.height > self.image.height:
+            top = (background_image.height - self.image.height) / 2
+            bottom = top + self.image.height
+            background_image = background_image.crop((0, int(top), background_image.width, int(bottom)))
+        background_image = background_image.resize(self.image.size, Image.LANCZOS)
+        return background_image
+
+    def _blend_with_background(self, background_image, blend_alpha=0.5):
+        if background_image.size != self.image.size:
+            background_image = background_image.resize(self.image.size, Image.LANCZOS)
+        blended_image = Image.blend(self.image, background_image, alpha=blend_alpha)
+        self.image = blended_image
+
+    def _apply_background(self):
+        # If the color attribute is present, apply it as background
+        if self.media_poster.background.color:
+            r, g, b = self.media_poster.background.color
+            self.image = Image.new('RGB', self.image.size, (r, g, b))
+
+        # If the url attribute is present, fetch, process and blend the image
+        if self.media_poster.background.url:
+            # check if its a http path or local
+            if self.media_poster.background.url.startswith('http'):
+                background_image = self._fetch_image_from_url(self.media_poster.background.url, self.log)
+            else:
+                background_image = self._fetch_image_from_path(self.media_poster.background.url, self.log)
+            processed_bg_image = self._process_fetched_image(background_image)
+            self._blend_with_background(processed_bg_image, self.media_poster.background.opacity)
+
+        return self
+
+    def _apply_gradient(self):
+        diagonal = int((self.media_poster.width ** 2 + self.media_poster.height ** 2) ** 0.5)
+        data = np.zeros((diagonal, diagonal, 3), dtype=np.uint8)
+
+        gradient_options = self.media_poster.gradient
+        if gradient_options.colors and len(gradient_options.colors) >= 2:
+            self._apply_multi_color_gradient(gradient_options, diagonal, data)
+        return self
+
+    def _apply_multi_color_gradient(self, gradient_options, diagonal, data):
+        colors = gradient_options.colors
+        sections = len(colors) - 1
+        section_length = diagonal // sections
+
+        for section in range(sections):
+            start_color = colors[section]
+            end_color = colors[section + 1]
+
+            r, g, b = start_color
+            delta_r, delta_g, delta_b = np.array(end_color) - np.array(start_color)
+            for x in range(section_length):
+                weight = x / section_length
+                col = r + weight * delta_r, g + weight * delta_g, b + weight * delta_b
+                data[:, section * section_length + x] = col
+
+        img = Image.fromarray(data)
+        img = img.rotate(gradient_options.angle)
+        start_x = (diagonal - self.media_poster.width) // 2
+        start_y = (diagonal - self.media_poster.height) // 2
+        img = img.crop((start_x, start_y, start_x + self.media_poster.width, start_y + self.media_poster.height))
+
+        # You may want to blend the gradient with the existing image
+        # or you can simply assign it, as per the old logic
+        if self.image:
+            # Assuming an opacity attribute, you may blend using alpha composite
+            gradient_img = Image.new("RGBA", img.size, (255, 255, 255, int(255 * gradient_options.opacity)))
+            img = Image.alpha_composite(img.convert("RGBA"), gradient_img)
+            self.image = Image.alpha_composite(self.image.convert("RGBA"), img).convert("RGB")
+        else:
+            self.image = img
+
+    def _apply_text(self, text_options: MediaPosterOverlayOptions = None):
+        if not text_options:
+            text_options = self.media_poster.text
+        if not text_options or not text_options.enabled:
+            return
+
+        draw = ImageDraw.Draw(self.image)
+
+        text = text_options.text
+        color = text_options.color or (255, 255, 255)
+
+        font_path = text_options.font or "./src/resources/fonts/DroneRangerPro-ExtendedBold.ttf"  # Update with your default font path
+        font_size = int(self.media_poster.width / len(text)) + 22 if len(text) > 8 else 60
+        font = ImageFont.truetype(font_path, font_size)
+
+        def draw_with_effects(x, y, line_text):
+            if text_options.shadow:
+                shadow_color = text_options.shadow.color or (0, 0, 0)
+                shadow_offset = text_options.shadow.offset or 0
+                shadow_opacity = text_options.shadow.transparency / 100  # Convert to 0 to 1 range
+                shadow_blur_radius = text_options.shadow.blur or 0
+
+                # Create a new shadow layer
+                shadow_layer = Image.new('RGBA', self.image.size, (0, 0, 0, 0))
+                shadow_draw = ImageDraw.Draw(shadow_layer)
+
+                # Draw the shadow text
+                shadow_draw.text((x + shadow_offset, y + shadow_offset), line_text, font=font,
+                                 fill=shadow_color + (int(255 * shadow_opacity),))
+                # Apply Gaussian blur
+                shadow_layer = shadow_layer.filter(ImageFilter.GaussianBlur(shadow_blur_radius))
+
+                # Merge the shadow layer onto the main image
+                self.image.paste(shadow_layer, (0, 0), shadow_layer)
+
+            if text_options.border:
+                border_size = text_options.border.width
+                border_color = text_options.border.color or (0, 0, 0)
+
+                # Draw text for each side of the border
+                for dx in [-border_size, border_size, 0]:
+                    for dy in [-border_size, border_size, 0]:
+                        if dx != 0 or dy != 0:
+                            draw.text((x + dx, y + dy), line_text, font=font, fill=border_color)
+
+            draw.text((x, y), line_text, font=font, fill=color)
+
+        text_size = font.font.getsize(text)
+        text_width, text_height = text_size[0][0], text_size[0][1]
+        if text_width > self.media_poster.width:
+            n_chars = len(text) * self.media_poster.width // text_width
+            words = text.split()
+            lines = ['']
+            for word in words:
+                if len(lines[-1] + ' ' + word) <= n_chars - 2:
+                    lines[-1] += ' ' + word
+                else:
+                    lines.append(word)
+
+            for i, line in enumerate(lines):
+                if line == "":
+                    continue
+                line_width, line_height = font.font.getsize(line)[0]
+
+                x = (self.media_poster.width - line_width) / 2 + text_options.position[0]
+                y = (self.media_poster.height - text_height) / 2 + text_options.position[1] + (i * line_height)
+                draw_with_effects(x, y, line)
+        else:
+            x = (self.media_poster.width - text_width) / 2 + text_options.position[0]
+            y = (self.media_poster.height - text_height) / 2 + text_options.position[1]
+            draw_with_effects(x, y, text)
+        return self
+
+    def _apply_icon(self):
+        icon_options = self.media_poster.icon
+        if not icon_options or not icon_options.enabled:
+            return
+
+        icon_path = icon_options.path
+        icon_img = Image.open(icon_path).convert("RGBA")
+        icon_img = ImageOps.invert(icon_img)
+        if icon_size := icon_options.size:
+            icon_img = icon_img.resize(icon_size, Image.LANCZOS)
+
+        img_width, img_height = self.image.size
+        icon_width, icon_height = icon_img.size
+        icon_x = (img_width - icon_width) // 2
+        icon_y = (img_height - icon_height) // 2
+
+        self.image.paste(icon_img, (icon_x, icon_y), mask=icon_img)
+        return self
+
+    def _apply_icon_with_text(self):
+        if not self.media_poster.icon or not self.media_poster.icon.enabled:
+            return self
+
+        icon_path = self.media_poster.icon.path
+        icon_size = self.media_poster.icon.size if self.media_poster.icon.size else None
+
+        text_options = self.media_poster.text
+        text = text_options.text if text_options else None
+
+        # Defaults and other configurations
+        text_color = text_options.color if text_options and text_options.color else (255, 255, 255)
+        border = text_options.border if text_options and text_options.border else None
+        shadow = text_options.shadow if text_options and text_options.shadow else None
+
+        if not icon_path or not text:
+            return self
+
+        icon_img = Image.open(icon_path).convert("RGBA")
+        if icon_size:
+            icon_img = icon_img.resize(icon_size, Image.LANCZOS)
+        else:
+            icon_img = icon_img.resize((250, 200), Image.LANCZOS)
+
+        img_width, img_height = self.image.size
+        icon_width, icon_height = icon_img.size
+        icon_x = (img_width - icon_width) // 2
+        icon_y = (img_height - icon_height - 90) // 2
+        text_x = (img_width - icon_width) // 2
+        text_y_offset = (icon_height / 2) + 5
+
+        self.image.paste(icon_img, (icon_x, icon_y), mask=icon_img)
+
+        text_options.position = (0, text_y_offset)
+
+        self._apply_text(text_options)
+        return self
+
+    def _apply_border(self):
+        if not self.media_poster.border or not self.media_poster.border.enabled:
+            return
+
+        border_width = self.media_poster.border.width if self.media_poster.border.width else 4
+        border_height = self.media_poster.border.height if self.media_poster.border.height else 4
+        border_color = tuple(self.media_poster.border.color) if self.media_poster.border.color else (255, 255, 255)
+
+        img_width, img_height = self.image.size
+        crop_width = img_width - (border_width * 2)
+        crop_height = img_height - (border_height * 2)
+
+        new_img = Image.new('RGB', (img_width, img_height), border_color)
+
+        # Resize the image to the new dimensions
+        resized_img = self.image.resize((crop_width, crop_height))
+
+        # Calculate center position
+        paste_x = (img_width - crop_width) // 2
+        paste_y = (img_height - crop_height) // 2
+        new_img.paste(resized_img, (paste_x, paste_y))
+
+        self.image = new_img
+
+    # ... [Other methods]
+    def resize(self, width, height):
+        """
+        Resize the image to the specified width and height.
+
+        :param width: New width for the image.
+        :param height: New height for the image.
+        :return: self
+        """
+        self.image = self.image.resize((width, height), Image.LANCZOS)
+        self.log.debug('Resized image', width=width, height=height)
+        return self
+
+    def save(self, path, quality=99):
+        self.log.debug('Saving image', path=path, quality=quality)
+        self.image.convert("RGBA").save(path, quality=quality)
+        return self
+
+    def save_original(self, path, quality=99, use_original=False):
+        self.log.debug('Saving original image', path=path, quality=quality, use_original=use_original)
+        # poster = poster_creator.create()
+        # check if file exists
+        if os.path.isfile(path):
+            self.log.info('File already exists. ', path=path)
+            if use_original:
+                self.log.info('Using the original file.', path=path)
+                self.image = Image.open(path).convert("RGBA")
+            return self
+
+        self.image.convert("RGBA").save(path, quality=quality)
+        return self
+
+    def _add_overlays(self):
+        # Method to add overlay elements to the poster.
+        for overlay in self.media_poster.overlays:
+            self.log.debug('Adding overlay', overlay=overlay)
+            self._add_single_overlay(overlay)
+
+    def _add_single_overlay(self, overlay: MediaPosterOverlayOptions):
+        self.log.debug('Adding single overlay', overlay=overlay)
+        # Method to add a single overlay element to the poster.
+        pass
+
+    def _generate_poster(self):
+        # Method to generate the final poster and return it.
+        self.log.info('Poster created successfully.')
+        return self.image
+
 # class PosterImageCreator:
 #     gradient_colors = {
 #         'red-darkred': ((255, 0, 0), (128, 0, 0)),
@@ -365,355 +718,4 @@ from src.models import MediaPosterOverlayOptions, MediaPoster, MediaPosterTextOp
 #
 #         img.save(path, quality=95)
 #         return img
-
-class MediaPosterImageCreator:
-    def __init__(self, media_poster: MediaPoster, log):
-        """
-        Initialize the MediaPosterImageCreator.
-        :param media_poster: MediaPoster instance
-        :param log:
-        """
-        self.log = log
-        self.media_poster = media_poster
-        width = media_poster.width
-        height = media_poster.height
-        self.image = Image.new('RGB', (width, height), color=(0, 0, 0))  # Default to black
-
-    def create(self):
-        media_poster = self.media_poster
-        self.log.info('Creating poster', media_poster=media_poster)
-
-        # Main function that will orchestrate the creation of the poster image.
-        if media_poster.gradient and media_poster.gradient.enabled:
-            self.log.debug('Adding gradient')
-            self._apply_gradient()
-
-        if media_poster.background and media_poster.background.enabled:
-            self.log.debug('Adding background')
-            self._apply_background()
-
-        if (media_poster.text and media_poster.text.enabled and
-                media_poster.icon and media_poster.icon.enabled):
-            self.log.debug('Adding icon with text')
-            self._apply_icon_with_text()
-
-        if media_poster.text.enabled and not media_poster.icon.enabled:
-            self.log.debug('Adding text')
-            self._apply_text()
-
-        if (media_poster.icon and media_poster.icon.enabled and
-                not media_poster.text and not media_poster.text.enabled):
-            self.log.debug('Adding icon')
-            self._apply_icon()
-
-        if media_poster.border and media_poster.border.enabled:
-            self.log.debug('Adding border')
-            self._apply_border()
-
-        if media_poster.overlays:
-            self.log.debug('Adding overlays')
-            self._add_overlays()
-
-        # ... add more methods as needed, based on the MediaPoster attributes.
-
-        return self._generate_poster()
-
-    @staticmethod
-    def _fetch_image_from_path(path, log):
-        log.info('Fetching image from path', path=path)
-        return Image.open(path)
-
-    @staticmethod
-    def _fetch_image_from_url(url, log):
-        log.info('Fetching image from url', url=url)
-        # This method fetches the image from the provided URL.
-        # For simplicity, let's assume you've a method implemented to fetch an image from a URL.
-        # If not, you can use libraries like 'requests' to fetch the image.
-        response = requests.get(url)
-        return Image.open(io.BytesIO(response.content)).convert('RGBA')
-
-    def _process_fetched_image(self, background_image):
-        base_aspect_ratio = self.image.width / self.image.height
-        background_aspect_ratio = background_image.width / background_image.height
-        aspect_ratio_threshold = 0.1
-
-        if abs(base_aspect_ratio - background_aspect_ratio) < aspect_ratio_threshold:
-            pass
-        elif background_image.width > self.image.width:
-            left = (background_image.width - self.image.width) / 2
-            right = left + self.image.width
-            background_image = background_image.crop((int(left), 0, int(right), background_image.height))
-        elif background_image.height > self.image.height:
-            top = (background_image.height - self.image.height) / 2
-            bottom = top + self.image.height
-            background_image = background_image.crop((0, int(top), background_image.width, int(bottom)))
-        background_image = background_image.resize(self.image.size, Image.LANCZOS)
-        return background_image
-
-    def _blend_with_background(self, background_image, blend_alpha=0.5):
-        if background_image.size != self.image.size:
-            background_image = background_image.resize(self.image.size, Image.LANCZOS)
-        blended_image = Image.blend(self.image, background_image, alpha=blend_alpha)
-        self.image = blended_image
-
-    def _apply_background(self):
-        # If the color attribute is present, apply it as background
-        if self.media_poster.background.color:
-            r, g, b = self.media_poster.background.color
-            self.image = Image.new('RGB', self.image.size, (r, g, b))
-
-        # If the url attribute is present, fetch, process and blend the image
-        if self.media_poster.background.url:
-            # check if its a http path or local
-            if self.media_poster.background.url.startswith('http'):
-                background_image = self._fetch_image_from_url(self.media_poster.background.url, self.log)
-            else:
-                background_image = self._fetch_image_from_path(self.media_poster.background.url, self.log)
-            processed_bg_image = self._process_fetched_image(background_image)
-            self._blend_with_background(processed_bg_image, self.media_poster.background.opacity)
-
-        return self
-
-    def _apply_gradient(self):
-        diagonal = int((self.media_poster.width ** 2 + self.media_poster.height ** 2) ** 0.5)
-        data = np.zeros((diagonal, diagonal, 3), dtype=np.uint8)
-
-        gradient_options = self.media_poster.gradient
-        if gradient_options.colors and len(gradient_options.colors) >= 2:
-            self._apply_multi_color_gradient(gradient_options, diagonal, data)
-        return self
-
-    def _apply_multi_color_gradient(self, gradient_options, diagonal, data):
-        colors = gradient_options.colors
-        sections = len(colors) - 1
-        section_length = diagonal // sections
-
-        for section in range(sections):
-            start_color = colors[section]
-            end_color = colors[section + 1]
-
-            r, g, b = start_color
-            delta_r, delta_g, delta_b = np.array(end_color) - np.array(start_color)
-            for x in range(section_length):
-                weight = x / section_length
-                col = r + weight * delta_r, g + weight * delta_g, b + weight * delta_b
-                data[:, section * section_length + x] = col
-
-        img = Image.fromarray(data)
-        img = img.rotate(gradient_options.angle)
-        start_x = (diagonal - self.media_poster.width) // 2
-        start_y = (diagonal - self.media_poster.height) // 2
-        img = img.crop((start_x, start_y, start_x + self.media_poster.width, start_y + self.media_poster.height))
-
-        # You may want to blend the gradient with the existing image
-        # or you can simply assign it, as per the old logic
-        if self.image:
-            # Assuming an opacity attribute, you may blend using alpha composite
-            gradient_img = Image.new("RGBA", img.size, (255, 255, 255, int(255 * gradient_options.opacity)))
-            img = Image.alpha_composite(img.convert("RGBA"), gradient_img)
-            self.image = Image.alpha_composite(self.image.convert("RGBA"), img).convert("RGB")
-        else:
-            self.image = img
-
-    def _apply_text(self, text_options: MediaPosterOverlayOptions = None):
-        if not text_options:
-            text_options = self.media_poster.text
-        if not text_options or not text_options.enabled:
-            return
-
-        draw = ImageDraw.Draw(self.image)
-
-        text = text_options.text
-        color = text_options.color or (255, 255, 255)
-
-        font_path = text_options.font or "./src/resources/fonts/DroneRangerPro-ExtendedBold.ttf"  # Update with your default font path
-        font_size = int(self.media_poster.width / len(text)) + 22 if len(text) > 8 else 60
-        font = ImageFont.truetype(font_path, font_size)
-
-        def draw_with_effects(x, y, line_text):
-            if text_options.shadow:
-                shadow_color = text_options.shadow.color or (0, 0, 0)
-                shadow_offset = text_options.shadow.offset or 0
-                shadow_opacity = text_options.shadow.transparency / 100  # Convert to 0 to 1 range
-                shadow_blur_radius = text_options.shadow.blur or 0
-
-                # Create a new shadow layer
-                shadow_layer = Image.new('RGBA', self.image.size, (0, 0, 0, 0))
-                shadow_draw = ImageDraw.Draw(shadow_layer)
-
-                # Draw the shadow text
-                shadow_draw.text((x + shadow_offset, y + shadow_offset), line_text, font=font,
-                                 fill=shadow_color + (int(255 * shadow_opacity),))
-                # Apply Gaussian blur
-                shadow_layer = shadow_layer.filter(ImageFilter.GaussianBlur(shadow_blur_radius))
-
-                # Merge the shadow layer onto the main image
-                self.image.paste(shadow_layer, (0, 0), shadow_layer)
-
-            if text_options.border:
-                border_size = text_options.border.width
-                border_color = text_options.border.color or (0, 0, 0)
-
-                # Draw text for each side of the border
-                for dx in [-border_size, border_size, 0]:
-                    for dy in [-border_size, border_size, 0]:
-                        if dx != 0 or dy != 0:
-                            draw.text((x + dx, y + dy), line_text, font=font, fill=border_color)
-
-            draw.text((x, y), line_text, font=font, fill=color)
-
-        text_size = font.font.getsize(text)
-        text_width, text_height = text_size[0][0], text_size[0][1]
-        if text_width > self.media_poster.width:
-            n_chars = len(text) * self.media_poster.width // text_width
-            words = text.split()
-            lines = ['']
-            for word in words:
-                if len(lines[-1] + ' ' + word) <= n_chars - 2:
-                    lines[-1] += ' ' + word
-                else:
-                    lines.append(word)
-
-            for i, line in enumerate(lines):
-                if line == "":
-                    continue
-                line_width, line_height = font.font.getsize(line)[0]
-
-                x = (self.media_poster.width - line_width) / 2 + text_options.position[0]
-                y = (self.media_poster.height - text_height) / 2 + text_options.position[1] + (i * line_height)
-                draw_with_effects(x, y, line)
-        else:
-            x = (self.media_poster.width - text_width) / 2 + text_options.position[0]
-            y = (self.media_poster.height - text_height) / 2 + text_options.position[1]
-            draw_with_effects(x, y, text)
-        return self
-
-    def _apply_icon(self):
-        icon_options = self.media_poster.icon
-        if not icon_options or not icon_options.enabled:
-            return
-
-        icon_path = icon_options.path
-        icon_img = Image.open(icon_path).convert("RGBA")
-        icon_img = ImageOps.invert(icon_img)
-        if icon_size := icon_options.size:
-            icon_img = icon_img.resize(icon_size, Image.LANCZOS)
-
-        img_width, img_height = self.image.size
-        icon_width, icon_height = icon_img.size
-        icon_x = (img_width - icon_width) // 2
-        icon_y = (img_height - icon_height) // 2
-
-        self.image.paste(icon_img, (icon_x, icon_y), mask=icon_img)
-        return self
-
-    def _apply_icon_with_text(self):
-        if not self.media_poster.icon or not self.media_poster.icon.enabled:
-            return self
-
-        icon_path = self.media_poster.icon.path
-        icon_size = self.media_poster.icon.size if self.media_poster.icon.size else None
-
-        text_options = self.media_poster.text
-        text = text_options.text if text_options else None
-
-        # Defaults and other configurations
-        text_color = text_options.color if text_options and text_options.color else (255, 255, 255)
-        border = text_options.border if text_options and text_options.border else None
-        shadow = text_options.shadow if text_options and text_options.shadow else None
-
-        if not icon_path or not text:
-            return self
-
-        icon_img = Image.open(icon_path).convert("RGBA")
-        if icon_size:
-            icon_img = icon_img.resize(icon_size, Image.LANCZOS)
-        else:
-            icon_img = icon_img.resize((250, 200), Image.LANCZOS)
-
-        img_width, img_height = self.image.size
-        icon_width, icon_height = icon_img.size
-        icon_x = (img_width - icon_width) // 2
-        icon_y = (img_height - icon_height - 90) // 2
-        text_x = (img_width - icon_width) // 2
-        text_y_offset = (icon_height / 2) + 5
-
-        self.image.paste(icon_img, (icon_x, icon_y), mask=icon_img)
-
-        text_options.position = (0, text_y_offset)
-
-        self._apply_text(text_options)
-        return self
-
-    def _apply_border(self):
-        if not self.media_poster.border or not self.media_poster.border.enabled:
-            return
-
-        border_width = self.media_poster.border.width if self.media_poster.border.width else 4
-        border_height = self.media_poster.border.height if self.media_poster.border.height else 4
-        border_color = tuple(self.media_poster.border.color) if self.media_poster.border.color else (255, 255, 255)
-
-        img_width, img_height = self.image.size
-        crop_width = img_width - (border_width * 2)
-        crop_height = img_height - (border_height * 2)
-
-        new_img = Image.new('RGB', (img_width, img_height), border_color)
-
-        # Resize the image to the new dimensions
-        resized_img = self.image.resize((crop_width, crop_height))
-
-        # Calculate center position
-        paste_x = (img_width - crop_width) // 2
-        paste_y = (img_height - crop_height) // 2
-        new_img.paste(resized_img, (paste_x, paste_y))
-
-        self.image = new_img
-
-    # ... [Other methods]
-    def resize(self, width, height):
-        """
-        Resize the image to the specified width and height.
-
-        :param width: New width for the image.
-        :param height: New height for the image.
-        :return: self
-        """
-        self.image = self.image.resize((width, height), Image.LANCZOS)
-        self.log.debug('Resized image', width=width, height=height)
-        return self
-
-    def save(self, path, quality=99):
-        self.log.debug('Saving image', path=path, quality=quality)
-        self.image.convert("RGBA").save(path, quality=quality)
-        return self
-
-    def save_original(self, path, quality=99, use_original=False):
-        self.log.debug('Saving original image', path=path, quality=quality, use_original=use_original)
-        # poster = poster_creator.create()
-        # check if file exists
-        if os.path.isfile(path):
-            self.log.info('File already exists. ', path=path)
-            if use_original:
-                self.log.info('Using the original file.', path=path)
-                self.image = Image.open(path).convert("RGBA")
-            return self
-
-        self.image.convert("RGBA").save(path, quality=quality)
-        return self
-
-    def _add_overlays(self):
-        # Method to add overlay elements to the poster.
-        for overlay in self.media_poster.overlays:
-            self.log.debug('Adding overlay', overlay=overlay)
-            self._add_single_overlay(overlay)
-
-    def _add_single_overlay(self, overlay: MediaPosterOverlayOptions):
-        self.log.debug('Adding single overlay', overlay=overlay)
-        # Method to add a single overlay element to the poster.
-        pass
-
-    def _generate_poster(self):
-        # Method to generate the final poster and return it.
-        self.log.info('Poster created successfully.')
-        return self.image
 
