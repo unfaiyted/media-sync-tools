@@ -19,7 +19,7 @@ for year in range(start_year, end_year + 1, 10):
     # Loop through all libraries and all items in each library
     for library in plex_libraries:
         print(f"Processing library: {library.title} for {year} to {year + 9}")
-        print(library)
+        # print(library)
 
         # Filter items based on the year range
         filter = {
@@ -34,7 +34,7 @@ for year in range(start_year, end_year + 1, 10):
         for item in filtered_items:
             print(f"Processing item: {item.title}")
 
-            print(item)
+            # print(item)
 
             # Check if the item is a favorite in Plex
             #TODO: Calculate favorite plex does not have this status code

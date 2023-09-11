@@ -65,7 +65,7 @@ async def sync_libraries_from_provider(payload):
         # list_items = emby.get_items_for_library(embyLibrary['id'])
 
 
-        print('embyLibrary',embyLibrary)
+        # print('embyLibrary',embyLibrary)
         # Now, fetch the list items from emby for thisembyLibrary
         if embyLibrary['CollectionType'] in embyCollectionTypes:
 
@@ -92,7 +92,7 @@ async def sync_libraries_from_provider(payload):
             }
 
 
-            print('details',details)
+            # print('details',details)
             # Here, I'm assuming you want to process movie lists only. Adjust this if lists can be for other media types too.
             print('About to build list')
             list_builder = ListBuilder(config, list=details, list_type=MediaListType.LIBRARY)

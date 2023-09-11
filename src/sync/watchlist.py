@@ -18,7 +18,7 @@ def sync_watchlist(config):
     # emby.delete_collection_by_name('Watchlist') # Delete any existing watchlist collection
     emby_watchlist = emby.create_collection('Watchlist', 'Mixed', '!000_Watchlist')  # 'Mixed' type to allow both movies and series
 
-    print(emby_watchlist)
+    # print(emby_watchlist)
 
     # Create poster
     icon_path = f'{root_dir}/resources/eye.png'
@@ -41,7 +41,7 @@ def sync_watchlist(config):
                     # If we find a match, add it to the Emby watchlist
                     print(f'Adding {media.title} to Emby Watchlist {emby_media["Type"]}')
                     if emby_media['Type'] == 'Episode':
-                        print(emby_media)
+                        # print(emby_media)
                         emby.add_item_to_collection(emby_watchlist['Id'], emby_media['SeriesId'])
                     else:
                         emby.add_item_to_collection(emby_watchlist['Id'], emby_media['Id'])

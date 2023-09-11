@@ -3,20 +3,22 @@ import logging
 import uuid
 from datetime import datetime
 
+from src.config import ConfigManager
 from src.create import ListBuilder
 from src.models import MediaList, MediaListType, TraktFilters
 from src.models.filters import TvdbFilters, TmdbFilters, FilterType
 from src.utils.url import identify_url_type, get_list_details_from_url
 
 
-async def import_url(config, url) -> MediaList:
+async def import_url(config: ConfigManager, url) -> MediaList:
     config_path = config.get_config_path()
+    log = config.get_logger(__name__)
     root_dir = config.get_root_path()
 
     url_type = identify_url_type(url)
     filters = None
 
-    print(f"Filter type set: {type(filters)}")
+    log.info(f"Filter type set: {type(filters)}", filter=filters, type=type(filters))
     media_list = MediaList(
         mediaListId=str(uuid.uuid4()),
         # sourceListId=filters.listId if filters.listId else None,
@@ -31,7 +33,8 @@ async def import_url(config, url) -> MediaList:
     )
 
     if url_type == 'trakt':
-        print(f'Found Trakt list: {url}')
+        log.info(f'Found Trakt list', url=url)
+
         media_list.filters = TraktFilters(
             clientId=url_type,
             filterType=FilterType.TRAKT,
@@ -40,10 +43,10 @@ async def import_url(config, url) -> MediaList:
             listSlug=get_list_details_from_url(url)
         )
     elif url_type == 'imdb':
-        print(f'Found IMDB list: {url}')
+        log.info(f'Found IMDB list', url=url)
         filters = None
     elif url_type == 'tvdb':
-        print(f'Found TVDb list: {url}')
+        log.info(f'Found TVDb list', url=url)
         media_list.filters = TvdbFilters(
             clientId=url_type,
             filterType=FilterType.TVDB,
@@ -52,7 +55,7 @@ async def import_url(config, url) -> MediaList:
             listId=get_list_details_from_url(url)
         )
     elif url_type == 'tmdb':
-        print(f'Found TmDb list: {url}')
+        log.info(f'Found TmDb list', url=url)
         media_list.filters = TmdbFilters(
             clientId=url_type,
             filterType=FilterType.TMDB,
@@ -61,15 +64,16 @@ async def import_url(config, url) -> MediaList:
             listId=get_list_details_from_url(url)
         )
     else:
-        print(f'Unknown URL type: {url_type}')
+        log.error(f'Unknown URL type', url=url)
         return
 
     if media_list.filters.listId:
-        print(f'Found source list id: {media_list.filters.listId}')
+        log.info(f'Found source list id: {media_list.filters.listId}')
         media_list.sourceListId = media_list.filters.listId
 
-    print(f'Created media list: {media_list}')
+    log.info(f'Created media list', media_list=media_list.dict())
 
     list = ListBuilder(config, media_list=media_list)
-    return await list.build()
+    media_list = (await list.build()).get_media_list()
+    return media_list
 

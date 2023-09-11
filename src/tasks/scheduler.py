@@ -7,8 +7,8 @@ from datetime import datetime, timedelta
 
 scheduler = AsyncIOScheduler()
 
-async def check_and_execute_tasks():
 
+async def check_and_execute_tasks():
     config = await ConfigManager().get_manager()
     db = config.get_db()  # Get your database connection, similar to what's in your routes
     now = datetime.now()
@@ -26,12 +26,14 @@ async def check_and_execute_tasks():
         # If there are other schedules, handle them accordingly.
         await db.scheduledTasks.replace_one({"_id": task["_id"]}, task)
 
+
 # In your scheduler setup
 def start_scheduler():
     # Check every minute for tasks ready to be executed
     trigger = IntervalTrigger(minutes=1)
     scheduler.add_job(check_and_execute_tasks, trigger)
     scheduler.start()
+
 
 def stop_scheduler():
     scheduler.shutdown()

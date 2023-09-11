@@ -7,7 +7,7 @@ from plexapi.server import PlexServer
 from plexapi.video import Movie, Show
 import re
 
-from create.providers.posters import PosterProvider
+from src.create.providers.posters import PosterProvider
 from src.models import MediaList, MediaListItem, MediaType, MediaListType, MediaItem, MediaProviderIds
 
 

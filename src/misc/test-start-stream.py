@@ -71,7 +71,7 @@ response.raise_for_status()
 data = response.json()
 machineIdentifier = data['MediaContainer']['machineIdentifier']
 
-print(machineIdentifier)
+# print(machineIdentifier)
 
 
 

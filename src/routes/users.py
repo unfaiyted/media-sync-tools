@@ -10,7 +10,7 @@ router = APIRouter()
 @router.post("/", response_model=User)
 async def create_user(user: User):
     db = (await ConfigManager.get_manager()).get_db()
-    print('user', user)
+    # print('user', user)
     if await db.users.find_one({"userId": user.userId}):
         raise HTTPException(status_code=400, detail="User already registered")
     user_dict = user.dict()

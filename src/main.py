@@ -4,9 +4,9 @@ import os
 src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'src'))
 sys.path.append(src_path)
 
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI
 
-from src.config import ConfigManager, config_manager
+from src.config import ConfigManager
 from src.routes import poster, images, sync, utils, config, client, lists, users, library, tasks
 from src.tasks.scheduler import start_scheduler, stop_scheduler
 from src.utils.db_init import DatabaseInitializer
@@ -31,9 +31,7 @@ app.add_middleware(
 async def on_startup():
     root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..','config'))
     await DatabaseInitializer(f'{root_path}/config.yml', ConfigManager.get_db()).run()
-
     start_scheduler()
-    print("Database Initialized..")
 
 
 @app.on_event("shutdown")
@@ -41,7 +39,6 @@ async def on_shutdown():
     stop_scheduler()
 
 
-print("Config Manager Loaded. Waiting for Requests...")
 
 app.include_router(images.router, prefix="/image", tags=["images"])
 app.include_router(sync.router, prefix="/sync", tags=["sync"])
@@ -53,7 +50,6 @@ app.include_router(users.router, prefix="/user", tags=["users"])
 app.include_router(library.router, prefix="/library", tags=["library"])
 app.include_router(poster.router, prefix="/poster", tags=["poster"])
 app.include_router(tasks.router, prefix="/task", tags=["tasks"])
-
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8000)

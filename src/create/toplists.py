@@ -11,7 +11,7 @@ async def sync_top_lists(config):
     # print(top_lists)
 
     for top_list in top_lists[:100]:
-        print(top_list['name'], top_list['id'], top_list['description'], top_list['items'])
+        # print(top_list['name'], top_list['id'], top_list['description'], top_list['items'])
         details = {
             'name': top_list['name'],
             'description': top_list['description'],

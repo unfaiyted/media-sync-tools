@@ -52,14 +52,14 @@ async def get_libraries_with_clients_by_config_id(db: AsyncIOMotorDatabase, conf
         }
     ]
 
-    print('pipeline ',pipeline)
+    # print('pipeline ',pipeline)
     raw_libraries = await db.libraries.aggregate(pipeline).to_list(length=1000)  # Adjust length as necessary
 
-    print('raw_libraries ',raw_libraries)
+    # print('raw_libraries ',raw_libraries)
     # Convert the raw dictionary data into Pydantic Library models
     libraries = [Library.parse_obj(lib) for lib in raw_libraries]
 
-    print('libraries ',libraries)
+    # print('libraries ',libraries)
     return libraries
 
 

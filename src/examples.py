@@ -61,7 +61,7 @@ def main():
     config = ConfigManager()
     # url = "https://www.example.com"
     result = asyncio.run(examples(config))
-    print(result)
+    # print(result)
 
 if __name__ == "__main__":
     main()

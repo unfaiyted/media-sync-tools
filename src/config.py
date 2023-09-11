@@ -1,4 +1,7 @@
+import logging
 import os
+
+import structlog
 import yaml
 import openai
 from plexapi.myplex import MyPlexAccount
@@ -13,20 +16,14 @@ from src.clients.emby import Emby
 from dotenv import load_dotenv
 from pyarr import RadarrAPI
 from src.clients.mdblist import MDBListClient
-from pymongo import MongoClient
 
 import motor.motor_asyncio
 import motor
-import re
+
+from src.utils.string import is_uuid
+from src.utils.logs import NamedPrintLoggerFactory, CenteredConsoleRenderer
 
 config_manager = None
-
-
-def is_uuid(string):
-    """Check if string is a valid UUID"""
-    regex = r'^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\Z'
-    match = re.fullmatch(regex, string, re.I)
-    return bool(match)
 
 
 class ConfigManager:
@@ -34,6 +31,8 @@ class ConfigManager:
 
     def __init__(self, config_path=None, config_id=None):
         load_dotenv()
+        self.log = self.get_logger(__name__)
+        self.setup_logging()
         self.clients = {}
         self.clients_details = {}
         self.accounts = {}
@@ -70,6 +69,64 @@ class ConfigManager:
         if self.config_id:
             await self.fetch_and_load_config_from_db()
 
+    def setup_logging(self):
+        self.log.info('Setting up logging')
+       # self.log.info('Setting up logging', level=logging.INFO)
+       # logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+       # structlog.configure(
+       #     processors=[
+       #         structlog.stdlib.filter_by_level,
+       #         structlog.stdlib.add_logger_name,
+       #         structlog.stdlib.add_log_level,
+       #         structlog.stdlib.PositionalArgumentsFormatter(),
+       #         structlog.processors.TimeStamper(fmt="iso"),
+       #         structlog.processors.StackInfoRenderer(),
+       #         structlog.processors.format_exc_info,
+       #         structlog.stdlib.render_to_log_kwargs,
+       #         structlog.processors.JSONRenderer()  # Use JSON renderer
+       #     ],
+       #     context_class=dict,
+       #     logger_factory=structlog.stdlib.LoggerFactory(),
+       #     wrapper_class=structlog.stdlib.BoundLogger,
+       #     cache_logger_on_first_use=True,
+       # )
+
+        # def add_name(logger, _, event_dict):
+        #     event_dict["name"] = logger.__name__
+        #     return event_dict
+
+
+        structlog.configure(
+        processors=[
+            structlog.stdlib.add_logger_name,
+            structlog.contextvars.merge_contextvars,
+            structlog.processors.add_log_level,
+            structlog.processors.StackInfoRenderer(),
+            structlog.dev.set_exc_info,
+            structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S"),
+            CenteredConsoleRenderer(),
+        ],
+        wrapper_class=structlog.make_filtering_bound_logger(logging.NOTSET),
+        context_class=dict,
+        logger_factory=NamedPrintLoggerFactory(),
+        cache_logger_on_first_use=False
+        )
+    # log = structlog.get_logger()
+        self.log = structlog.get_logger(__name__)
+
+
+    @staticmethod
+    def get_logger(name=None):
+        print('Getting logger', name)
+        """
+        Retrieve a structured logger.
+
+        :param name: Optional name for the logger. If not provided, will default to calling module's name.
+        :return: Structured logger
+        """
+        return structlog.get_logger(name)
+
     @staticmethod
     def get_db() -> motor.motor_asyncio.AsyncIOMotorDatabase:
         client = motor.motor_asyncio.AsyncIOMotorClient(
@@ -77,64 +134,36 @@ class ConfigManager:
         return client['sync-tools-db']
 
     async def fetch_and_load_config_from_db(self):
-        print('Fetching config from DB for config ID: ', self.config_id)
+        self.log.info('Fetching config from DB for config ID', configId=self.config_id)
         db = self.get_db()
         config_data = await config_queries.get_full_config(db, config_id=self.config_id)
-
-        # print('Config data: ', config_data)
 
         if not config_data:
             raise ValueError(
                 f"No configuration found for ID: {self.config_id}")
 
-        # self.user = config_data.get('user')
-        print('Config data: ', config_data)
-        print(
-            f'Found config for user: {self.user.name} and config ID: {self.config_id}')
-        print(f'Total clients: {len(config_data.clients)}')
-        # If 'clients' in the config is a list, you'll need to iterate through it.
+        self.log.info('Found config for user', userName=self.user.name, config_id=self.config_id,
+                      len=len(config_data.clients))
+
         for config_client in config_data.clients:
-            print(f'Processing client: {config_client.client.name}')
+            self.log.info(f'Processing client:', clientName=config_client.client.name)
             details = {
                 'type': config_client.client.name.lower(),
             }
 
-            # print('config_client: ', config_client.clientFieldValues)
-
             client_fields = config_client.clientFields
             field_values = config_client.clientFieldValues
 
-            print(
-                f'Found {len(field_values)} field values for client: {config_client.client.name}')
+            self.log.info(f'Found {len(field_values)} field values for client:', total=len(field_values),
+                          clientName=config_client.client.name)
             for field in field_values:
                 details[field.clientField.name] = field.value
-
-                # details[field_values['fieldId']] = field['value']
 
                 # Use client ID (or name) as the key for the clients dictionary.
                 self.clients_details[config_client.configClientId] = details
 
-            print('Client Details: ',
-                  self.clients_details[config_client.configClientId])
-
-        # self.clients_details = config_data.clients
-        print(f'Added {len(self.clients_details)} clients to config')
+        self.log.info(f'Added {len(self.clients_details)} clients to config', clients=self.clients_details)
         self.add_clients(self.clients_details)
-        # self.add_library_data(config_data.get('libraries', {}))
-        # self.add_collection_data(config_data.get('collections', {}))
-        # self.add_playlist_data(config_data.get('playlists', {}))
-        # self.add_sync_data(config_data.get('sync', {}))
-        # If 'clients' in the config is a list, you'll need to iterate through it.
-        # for client_data in config_data.get('clients', []):
-        # process each client_data as you were doing in your 'add_clients' method.
-
-        # Similar approach for libraries and sync
-        # for library_data in config_data.get('libraries', []):
-        # process each library_data
-
-        # sync_data = config_data.get('sync')
-        # if sync_data:
-        # process sync_data
 
     def get_user(self):
         return self.user
@@ -163,19 +192,19 @@ class ConfigManager:
     def add_library_data(self, libraries):
         for library_name in libraries.keys():
             library_data = libraries[library_name]
-            print('Adding library', library_name, library_data)
+            self.log.info('Adding library', library_name=library_name, library_data=library_data)
             self.libraries[library_name] = library_data
 
     def add_collection_data(self, collections):
         for collection_name in collections.keys():
             collection_data = collections[collection_name]
-            print('Adding collection', collection_name, collection_data)
+            self.log.info('Adding collection', collection_name=collection_name, collection_data=collection_data)
             self.collections[collection_name] = collection_data
 
     def add_playlist_data(self, playlists):
         for playlist_name in playlists.keys():
             playlist_data = playlists[playlist_name]
-            print('Adding playlist', playlist_name, playlist_data)
+            self.log.info('Adding playlist', playlist_name=playlist_name, playlist_data=playlist_data)
             self.playlists[playlist_name] = playlist_data
 
     def add_sync_data(self, sync):
@@ -230,21 +259,20 @@ class ConfigManager:
     # Rest of the methods remain the same
 
     def add_plex_client(self, name, server_url, access_token):
-        print('Adding plex client', server_url, access_token)
+        self.log.info('Adding plex client', clientName=name)
         plex_client = PlexServer(server_url, access_token, timeout=120)
         self.clients[name] = plex_client
         return plex_client
 
     def add_mdblist_client(self, name, api_key):
-        print('Adding MDBList client', api_key, name)
+        self.log.info('Adding MDBList client', clientName=name)
         mdblist_client = MDBListClient(api_key)
         self.clients[name] = mdblist_client
-        print('MDBList client added', self.clients[name])
         return mdblist_client
 
     # Client to login through plex online plex.myapp.com
     def add_my_plex_client(self, name, username, password, resource):
-        print('Adding myplex client', username, password, resource)
+        self.log.info('Adding myplex client', clientName=name)
         account = MyPlexAccount(username, password)
         my_plex_client = account.resource(resource).connect()
         self.clients[name] = my_plex_client
@@ -252,18 +280,19 @@ class ConfigManager:
         return my_plex_client
 
     def add_emby_client(self, name, server_url, username, api_key):
-        print('Adding emby client', server_url, username, api_key)
-        emby_client = Emby(server_url, username, api_key)
+        self.log.info('Adding emby client', clientName=name)
+        emby_client = Emby(self.log, server_url, username, api_key)
         self.clients[name] = emby_client
         return emby_client
 
     def add_jellyfin_client(self, name, server_url, username, api_key):
-        print('Adding jellyfin client', server_url, username, api_key)
-        jellyfin_client = Jellyfin(server_url, username, api_key)
+        self.log.info('Adding jellyfin client', clientName=name)
+        jellyfin_client = Jellyfin(self.log, server_url, username, api_key)
         self.clients[name] = jellyfin_client
         return jellyfin_client
 
     def add_radarr_client(self, name, host, api_key):
+        self.log.info('Adding radarr client', clientName=name)
         radarr_client = RadarrAPI(host, api_key)
         self.clients[name] = radarr_client
         return radarr_client  # https://docs.totaldebug.uk/pyarr/modules/radarr.html
@@ -272,24 +301,20 @@ class ConfigManager:
 
     # TODO: Implement these
     # def add_portainer_client(self, name, server_url, username, password):
-    #     print('Adding portainer client', server_url, username, password)
     #     portainer_client = Portainer(server_url, username, password)
     #     self.clients.ts[name] = portainer_client
     #     return portainer_client
     #
     def add_trakt_client(self, name, username, client_id, client_secret):
-        # TODO implement based on client_id and client_secret oauth
-        print('Adding trakt client', name, username, client_id, client_secret)
-
-        trakt_client = TraktClient(
-            client_id, client_secret, token_file=f'{self.config_path}/trakt.json')
-
+        self.log.info('Adding trakt client', clientName=name)
+        trakt_client = TraktClient(self.log,
+            client_id=client_id, client_secret=client_secret, token_file=f'{self.config_path}/trakt.json')  # TODO: unique per clientId
         self.clients[name] = trakt_client
 
         return trakt_client
 
     def add_chatGPT_client(self, name, api_key):
-        print('Adding chatGPT client', api_key)
+        self.log.info('Adding chatGPT client', clientName=name)
         openai.api_key = api_key
         self.clients[name] = openai
         return openai
@@ -302,31 +327,30 @@ class ConfigManager:
             try:
                 return self.clients[id_or_type]
             except KeyError:
-                print(f'Client with UUID {id_or_type} not found!')
+                self.log.info('Client with UUID not found!', uuid=id_or_type)
                 return None
 
         else:
             # Here, you'd search the database for the client's UUID by type
             # For this step, you'd likely need an additional method or database query
             try:
-                print('Searching for client by type', id_or_type)
+                self.log.info('Searching for client by type', type=id_or_type)
                 return self.get_client_by_type(id_or_type)
             except KeyError:
-                print(f'Client by {id_or_type} not found!')
+                self.log.info('Client by type not found!', type=id_or_type)
                 return None
 
     def get_client_details(self, name):
         try:
             return self.clients_details[name]
         except:
-            print(f'{name} client details not found!')
+            self.log.info(f'{name} client details not found!', clientName=name)
             return None
 
     def get_account(self, name):
         return self.accounts[name]
 
     def get_root_path(self):
-        print('Root path: ', self.root_path)
         return self.root_path
 
     def get_config_path(self):
@@ -339,9 +363,8 @@ class ConfigManager:
         return self.collections
 
     def add_tmdb_client(self, name, api_key, username, password):
-        print('Adding tmdb client', api_key)
-
-        tmdb_client = TmdbClient(api_key, username, password)
+        self.log.info('Adding tmdb client', clientName=name)
+        tmdb_client = TmdbClient(self.log, api_key, username, password)
         self.clients[name] = tmdb_client
         return tmdb_client
 
@@ -353,14 +376,9 @@ class ConfigManager:
 
     def get_client_by_type(self, type):
         # loop through clients and find the one with the matching type
-        print(
-            f'Looking for client by type: {type}, total clients: {len(self.clients_details)}')
-        print('Clients: ', self.clients_details)
+        self.log.info('Looking for client by type', total=len(self.clients_details), type=type)
         for clientId, client in self.clients_details.items():
-            print('Checking client', client, clientId)
-            # print('Checking client', client_id)
             if client['type'] == type:
-                print('Found client by type', clientId, client)
-                print('self.clients', self.clients[clientId])
+                self.log.info('Found client by type', clientId=clientId, client=client)
                 return self.clients[clientId]
-        print('Client not found by type', type)
+        self.log.info('Client not found by type', type=type)

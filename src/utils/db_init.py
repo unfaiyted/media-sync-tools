@@ -112,17 +112,19 @@ from src.config import ConfigManager
 
 # ... [keep your clients_data unchanged] ...
 
-def read_config_yml(file_path: str) -> dict:
+def read_config_yml(file_path: str, log) -> dict:
+    log.info("Reading config.yml file...", file_path=file_path)
     with open(file_path, 'r') as file:
         config = yaml.safe_load(file)
+        log.info("Config.yml file read successfully!")
     return config
 
 
 class DatabaseInitializer:
     def __init__(self, ymlFile: str, db):
-        self.yml_config = read_config_yml(ymlFile)
-        print(self.yml_config)
         self.db = db
+        self.log = ConfigManager.get_logger(__name__)
+        self.yml_config = read_config_yml(ymlFile, self.log)
         self.users = self.db["users"]
         self.configs = self.db["configs"]
         self.sync_options = self.db["sync_options"]
@@ -132,6 +134,7 @@ class DatabaseInitializer:
 
     async def create_indexes(self):
         # Index for users collection
+        self.log.info("Creating indexes...")
         await self.users.create_index("userId", unique=True)
 
         # Index for configs collection
@@ -164,17 +167,17 @@ class DatabaseInitializer:
 
         # Indexes for the media_lists collection
         await self.db["media_lists"].create_index("mediaListId", unique=True)
-        print("Indexes created successfully!")
+        self.log.info("Indexes created successfully!")
 
 
     async def list_indexes(self):
          db = self.db
          for collection_name in await db.list_collection_names():
-            print('collection_name', collection_name)
             collection = db[str(collection_name)]
             indexes = collection.list_indexes()
 
-            print(f"Indexes for {collection_name}:")
+
+            self.log.info('Indexes for collection', collection_name=collection_name)
             index_list = await indexes.to_list(length=None)  # Get all the items
             for index in index_list:
                 print(f"  - {index['name']}: {index['key']}")
@@ -190,6 +193,7 @@ class DatabaseInitializer:
             "password": "hashed_password",
         }
         admin = User(**admin_user)
+        self.log.info("Creating admin user...", user=admin.dict())
         await self.users.insert_one(admin.dict())
         return admin_user
 
@@ -206,6 +210,7 @@ class DatabaseInitializer:
             "libraries": [],
             "sync": None
         }
+        self.log("Creating default config...", config=default_config)
         await self.configs.insert_one(default_config)
         return default_config
 
@@ -229,6 +234,7 @@ class DatabaseInitializer:
         }
 
         sync = SyncOptions(**sync_options)
+        self.log.info("Creating default sync options...", sync=sync.dict())
         await self.sync_options.insert_one(sync.dict())
         return sync_options
 
@@ -275,6 +281,7 @@ class DatabaseInitializer:
         }
         config_client = ConfigClient(**config_client_data)
         await self.db.config_clients.insert_one(config_client.dict())
+        self.log.info(f"Created config_client for {client_key}...", client=client_key)
 
         # Create ConfigClientFieldsValue for each field
         client_field_values = []
@@ -306,10 +313,12 @@ class DatabaseInitializer:
 
         client_collection_exists = await self.db.list_collection_names(filter={"name": "clients"})
         if not client_collection_exists or await self.db.clients.count_documents({}) == 0:
+            self.log.info("Initializing clients and client_fields...")
             client_entries = []
             client_field_entries = []
 
             for key, client_info in clients_data.items():
+                self.log.info(f"Initializing client {key}...", client=key)
 
                 clientId = str(uuid.uuid4())
 
@@ -322,6 +331,7 @@ class DatabaseInitializer:
                 client_entries.append(client_entry)
 
                 for field_name, field_info in client_info['fields'].items():
+                    self.log.info(f"Initializing client_field {field_name}...", client=key)
                     client_field_entry = {
                         "clientFieldId": str(uuid.uuid4()),
                         "clientId": clientId,
@@ -338,8 +348,10 @@ class DatabaseInitializer:
             # Now, after initializing clients and client_fields
             config = await self.get_config()  # Assuming you have a config object in db
             for key in clients_data.keys():
+                self.log.info(f"Initializing config_client for {key}...", client=key)
                 client_in_db = await self.db.clients.find_one({"name": key.upper()})
                 if client_in_db:
+                    self.log.info(f"Creating config_client for {key}...", client=key)
                     await self.create_config_client_and_fields(client_in_db["clientId"], key, config["configId"])
 
             # Create indexes

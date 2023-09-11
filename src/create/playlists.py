@@ -15,7 +15,7 @@ def create_emby_playlist(config, name, shows, if_exists_delete=True):
     all_media = []
 
     playlists = emby.get_playlists()
-    print(playlists)
+    # print(playlists)
 
     if if_exists_delete:
         try:

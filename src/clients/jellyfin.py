@@ -50,8 +50,9 @@ class JellyfinImageType(Enum):
 
 
 class Jellyfin:
-    def __init__(self, server_url, username, api_key):
+    def __init__(self, log, server_url, username, api_key):
         self.server_url = server_url
+        self.log = log,
         self.username = username
         self.api_key = api_key
         self.headers = {'X-Emby-Token': api_key}
@@ -429,7 +430,6 @@ class Jellyfin:
 
     def get_users(self):
         url = self._build_url(f'Users')
-        print('get users url', url)
         response = self._get_request(url)
         return response
 

@@ -5,15 +5,15 @@ async def sync_trakt_lists(config, fetch_function, list_type_name):
     trakt_api: TraktClient = config.get_client('trakt')
     lists = fetch_function()
 
-    print(f'Trakt {list_type_name} Lists ======================')
+    # print(f'Trakt {list_type_name} Lists ======================')
     # print(lists)
 
     for lst in lists:
         if(lst['list']):
-            print('----xxx---------', lst)
+            # print('----xxx---------', lst)
             lst = lst['list']
 
-        print('----xxx---------', lst)
+        # print('----xxx---------', lst)
 
         print(lst['name'], lst['ids']['slug'], lst.get('description', ''), lst['item_count'])
 

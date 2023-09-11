@@ -13,7 +13,7 @@ router = APIRouter()
 @router.post("/", response_model=Client)
 async def create_client(client: Client, ):
     db = (await ConfigManager.get_manager()).get_db()
-    print('client', client)
+    # print('client', client)
 
     try:
         client_dict = client.dict()

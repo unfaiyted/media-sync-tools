@@ -216,7 +216,7 @@ async def get_config_clients_by_config_id(configId: str):
     db = (await ConfigManager.get_manager()).get_db()
     print('configId', configId)
     config_clients = await config_queries.get_full_config_clients_by_config_id(db, config_id=configId)
-    print(config_clients)
+    # print(config_clients)
     if not config_clients:
         raise HTTPException(status_code=404, detail="Config Clients not found")
     return config_clients

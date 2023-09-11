@@ -16,7 +16,7 @@ def sync_watchlist(config):
     # emby.delete_collection_by_name('Watchlist')  # Delete any existing watchlist collectio
     emby_watchlist = emby.create_collection('Watchlist', 'Mixed')  # 'Mixed' type to allow both movies and series
 
-    print(emby_watchlist)
+    # print(emby_watchlist)
 
     # Adjust the SortName attribute to move the collection to the top
     emby_watchlist_metadata = emby.get_item_metadata(emby_watchlist['Id'])
@@ -44,7 +44,7 @@ def sync_watchlist(config):
         print(f'Processing media: {media.title}')
         logging.info(f'Processing media: {media.title}')
 
-        print(media.type, media, media.year, media.title)
+        # print(media.type, media, media.year, media.title)
 
         emby_type = 'Series' if (media.type == 'episode' or media.type == 'show') else 'Movie'      # Emby uses 'Series' instead of 'Show'
 

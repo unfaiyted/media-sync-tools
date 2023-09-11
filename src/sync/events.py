@@ -19,7 +19,7 @@ def sync_event(event, config):
     date = event.get("Date")
     event_name = event.get("Event")
     # server = event.get("Server")
-    print(title, description, date, event_name)
+    # print(title, description, date, event_name)
 
     if event_name == "item.rate": # liked or not boolean value
         print("Item rated", event)

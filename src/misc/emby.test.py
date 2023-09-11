@@ -15,11 +15,11 @@ plex = config.get_client('plex')
 emby = config.get_client('emby')
 
 sessions = emby.get_sessions()
-print('Sessions: ', sessions)
+# print('Sessions: ', sessions)
 
 
 for session in sessions:
-    print(session['Id'], session['Client'], session['DeviceName'])
+    # print(session['Id'], session['Client'], session['DeviceName'])
     # emby.stop_session(session['Id'])
 
 

@@ -69,6 +69,7 @@ class ListBuilder:
 
     def __init__(self, config, list_type=MediaListType.COLLECTION, list=None, media_list: MediaList = None):
         self.config = config
+        self.log = config.get_logger(__name__)
         self._ai_list = []
         self.rules = []
         self.filters = []
@@ -98,12 +99,10 @@ class ListBuilder:
         }
 
         if(media_list is not None):
-            print(media_list)
             MediaItem.update_forward_refs()
-            # media_list = MediaList(**media_list)
-            print(f'Initializing list from media list {media_list.name}')
+            self.log.info(f'Initializing list from media list {media_list.name}', media_list=media_list.dict())
             self.media_list = media_list
-            # self.description = media_list.description
+            self.description = media_list.description
             self.title = media_list.name
             self.provider = media_list.clientId
             self.sort_title = media_list.sortName
@@ -114,7 +113,7 @@ class ListBuilder:
             self._init_list(list)
 
     def _init_list(self, list):
-        print(f'Initializing list {list}')
+        self.log.info(f'Initializing list {list}', list=list)
         self.set_title(list.get("name", self.title))
         self.set_description(list.get("description", self.description))
         self.set_sort_title(list.get("sort_name", self.title))
@@ -212,25 +211,6 @@ class ListBuilder:
         else:
             return 'Mixed'
 
-    # def _create_collection(self, rules):
-    #
-    # def _create_playlist(self):
-    def print_list(self):
-        print(f'List: {self.title}')
-        print(f'Rules: {self.rules}')
-        print(f'Filters: {self.filters}')
-        print(f'Limit: {self.limit}')
-        print(f'Library: {self.library_name}')
-        print(f'Icon Path: {self.icon_path}')
-        print(f'Add Missing: {self.add_missing}')
-        print(f'Delete Existing: {self.delete_existing}')
-        print(f'Media Types: {self.media_types}')
-        print(f'Provider: {self.provider}')
-        print(f'Sort Title: {self.sort_title}')
-        print(f'Description: {self.description}')
-        print(f'Retry Count: {self.retry_count}')
-        print(f'Media List: {self.media_list}')
-
     async def _get_media_list_from_provider(self):
 
         provider_mapping = {
@@ -246,18 +226,19 @@ class ListBuilder:
 
         if self.provider in provider_mapping:
             if self.provider != 'self':
-                print(f'Using {self.provider.capitalize()} list')
+                self.log.info(f'Using {self.provider.capitalize()} list', provider=self.provider)
                 try:
                     self.media_list = await provider_mapping[self.provider]().get_list()
                     return self.media_list
                 except Exception as e:
-                    print(f'Error getting list from provider {self.provider}: {e}, {e.args}', )
+                    self.log.info(f'Error getting list from provider', provider=self.provider, error=e,
+                                  error_arguments=e.args)
                     import traceback
                     traceback.print_exc()
-                print('Media List', self.media_list)
             else:
                 provider_mapping[self.provider]()  # Only prints a message for 'self'
         else:
+            self.log.error(f"Unknown provider: {self.provider}", provider=self.provider)
             raise ValueError(f"Unknown provider: {self.provider}")
 
         return None
@@ -277,17 +258,19 @@ class ListBuilder:
 
         if provider in provider_mapping:
             if provider != 'self':
-                print(f'Using {provider.capitalize()} list')
-                print('Media List', self.media_list)
+                self.log.info(f'Using {provider.capitalize()} list', provider=provider, media_list=self.media_list)
                 try:
-                    media_list = provider_mapping[provider]().upload_list(self.media_list)
+                    self.media_list = provider_mapping[provider]().upload_list(self.media_list)
                 except Exception as e:
                     print(f'Error saving list to provider {provider}: {e}, {e.args}', )
+                    self.log.info(f'Error saving list to provider {provider}', provider=provider, error=e,
+                                  error_arguments=e.args)
                     import traceback
                     traceback.print_exc()
             else:
                 provider_mapping[provider]()  # Only prints a message for 'self'
         else:
+            self.log.error(f"Unknown provider: {provider}", provider=provider)
             raise ValueError(f"Unknown provider: {provider}")
 
         return self.media_list
@@ -302,12 +285,12 @@ class ListBuilder:
 
         if self.provider in provider_mapping:
             if self.provider != 'self':
-                print(f'Using {self.provider.capitalize()} list')
-                print('Media List', self.media_list)
+                self.log.info(f'Using {self.provider.capitalize()} list', provider=self.provider, media_list=self.media_list)
                 try:
                     provider_mapping[self.provider]().save_poster(item_id, poster)
                 except Exception as e:
-                    print(f'Error saving poster image to provider {self.provider}: {e}, {e.args}', )
+                    self.log.error(f'Error saving poster image to provider {self.provider}', provider=self.provider, error=e,
+                                   error_arguments=e.args)
                     import traceback
                     traceback.print_exc()
             else:
@@ -315,7 +298,7 @@ class ListBuilder:
 
     def _create_poster(self):
         if self.poster['enabled'] is False:
-            print('Poster disabled')
+            self.log.info('Poster disabled')
             return None
 
         bg_color = self.poster['bg_color'] if self.poster['bg_color'] is None else 'olive-darkolive'
@@ -335,32 +318,33 @@ class ListBuilder:
         return poster_location
 
     async def sync(self, provider: str):
-        print(f'Syncing list {self.title} with provider {provider}')
+        self.log.info(f'Syncing list {self.title} with provider {provider}', provider=provider)
         if self.media_list is None:
-            print('No media list found')
+            self.log.info(f'No media list found', provider=provider)
             return self
 
         await self._save_media_list_to_provider(provider)
         return self
 
+    async def get_media_list(self):
+        return self.media_list
+
+
     async def build(self):
         # join the rules into a string
         rules_string = ','.join(self.rules)
         if self.delete_existing:
-            print(f'Deleting existing list {self.title}')
+            self.log.info(f'Deleting existing list {self.title}', title=self.title)
 
-        print(f'Creating {self.type} - {self.title}')
-
+        self.log.info(f'Creating {self.type} - {self.title}', title=self.title, type=self.type)
         media_list: MediaList = await self._get_media_list_from_provider()
 
         # print('MEDIA_LIST', media_list)
 
         if media_list is None:
-            print(f'ERROR: Unable to get media list!!!')
+            self.log.info(f'Unable to get media list', title=self.title)
             return self
 
-        # add the media to the list
-        print(f'Adding {len(media_list.items)} items to {self.title}')
-        print('Completed list creation')
+        self.log.info(f'Adding {len(media_list.items)} items to {self.title}', title=self.title, items=media_list.items)
         self.media_list = media_list
         return self

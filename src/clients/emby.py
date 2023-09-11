@@ -50,8 +50,9 @@ class EmbyImageType(Enum):
 
 
 class Emby:
-    def __init__(self, server_url, username, api_key):
+    def __init__(self, log, server_url, username, api_key):
         self.server_url = server_url
+        self.log = log
         self.username = username
         self.api_key = api_key
         self.headers = {'X-Emby-Token': api_key}

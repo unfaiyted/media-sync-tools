@@ -28,7 +28,7 @@ class PosterCreationQuery(BaseModel):
 @router.post("/poster/create")
 async def create_poster(q: PosterCreationQuery):
     config_manager = await ConfigManager.get_manager()
-    print(q)
+    # print(q)
 
     try:
         # Create a new PosterImage
@@ -93,7 +93,7 @@ async def list_uploads_files():
 
     config_manager = await ConfigManager.get_manager()
     config_path = config_manager.get_config_path()
-    print(config_path)
+    # print(config_path)
 
     try:
         files = os.listdir(f"{config_path}/uploads")

@@ -233,9 +233,9 @@ async def get_config_clients_with_client_by_config_id(db: AsyncIOMotorDatabase, 
         }
     ]
 
-    print(pipeline)
+    # print(pipeline)
     raw_configs = await db.config_clients.aggregate(pipeline).to_list(length=1)  # Adjust length as necessary
-    print(raw_configs)
+    # print(raw_configs)
     # Convert the raw dictionary data into Pydantic Library models
     configs = [ConfigClient.parse_obj(config) for config in raw_configs]
 
@@ -304,9 +304,9 @@ async def get_full_config_clients_by_config_id(db: AsyncIOMotorDatabase, config_
         # }
     ]
 
-    print(pipeline)
+    # print(pipeline)
     raw_configs = await db.config_clients.aggregate(pipeline).to_list(length=1000)# Adjust length as necessary
-    print(list(raw_configs))
+    # print(list(raw_configs))
     # Convert the raw dictionary data into Pydantic Library models
     configs = [ConfigClient.parse_obj(config) for config in raw_configs]
 

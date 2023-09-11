@@ -39,6 +39,7 @@ async def trigger_sync_watchlist():
 @router.get("/playlists")
 async def trigger_sync_playlist():
     config = await ConfigManager.get_manager()
+    log = config.get_logger(__name__)
     try:
 
         name = 'Sleeping Shows'
@@ -64,7 +65,7 @@ async def trigger_sync_playlist():
             'Friends',
             'Rick and Morty'
         ]
-
+        log.info(f'Creating playlist {name} with {len(shows)} shows.')
         create_emby_playlist(config, name, shows)
 
         return JSONResponse(status_code=200, content={"message": "Sync watchlist started successfully."})
@@ -350,7 +351,6 @@ async def delete_sync_options(sync_options_id: str, ):
         raise HTTPException(status_code=404, detail="SyncOption not found")
     await db.sync_options.delete_one({"syncOptionsId": sync_options_id})
     return existing_sync_option
-
 
 
 class ImportUrlRequest(BaseModel):

@@ -1,24 +1,30 @@
 import uuid
-from abc import ABC
-from ctypes import Union
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
-from src.create.providers.posters import PosterProvider, PosterManager
+from src.clients.trakt import TraktClient
+from src.create.providers.base_provider import BaseMediaProvider
+from src.create.providers.managers import PosterManager
+from src.create.providers.posters import TmdbPosterProvider
+from src.models import TraktFilters, MediaListType, MediaList, MediaItem, MediaProviderIds, MediaType, MediaListItem
 
-from src.config import ConfigManager
-from src.create.providers.tmdb import TmdbPosterProvider
-from src.models import TraktFilters
-from src.models import MediaListType, MediaList, MediaItem, MediaProviderIds, MediaType, MediaListItem
 
+class TraktProvider(BaseMediaProvider):
+    def __init__(self, config, filters: Optional[TraktFilters] = None, details: Optional[dict] = None,
+                 media_list: Optional[MediaList] = None, listType: MediaListType = MediaListType.COLLECTION):
+        """
+        Initialize the TraktProvider.
 
-class TraktProvider:
-    def __init__(self, config, filters: TraktFilters = None, details=None, media_list: MediaList = None,
-                 listType=MediaListType.COLLECTION):
-        self.config = config
+        :param config: Configuration for the provider.
+        :param filters: Optional filters to apply.
+        :param details: Optional details for media list.
+        :param media_list: Optional existing media list.
+        :param listType: Type of media list. Default is COLLECTION.
+        """
+        super().__init__(config)
         self.listType = listType
-        self.client = config.get_client('trakt')
-        self.poster_manager = PosterManager()
+        self.client: TraktClient = config.get_client('trakt')
+        self.poster_manager = PosterManager(config=config)
         self.username = None
         self.details = details
         self.list_slug_or_id = None
@@ -31,32 +37,27 @@ class TraktProvider:
                     self.list_slug_or_id = filter_item['value']
 
         if media_list:
-            print('media_list = ', media_list)
-            # self.list_slug_or_id = media_list.sourceListId
             self.filters = media_list.filters
             self.username = self.filters.username
             self.list_slug_or_id = self.filters.listSlug if self.filters.listSlug else self.filters.listId
 
-        # if not self.username or not self.list_slug_or_id:
-        #     print("Both username and list_slug/list_id are required.")
-        # Handle error or throw exception
+        self.log = config.get_logger(__name__)
+        self.log.info("TraktProvider initialized", user=self.username, list_slug_or_id=self.list_slug_or_id)
 
-    async def get_list(self):
+    async def get_list(self) -> MediaList or None:
+        """
+        Retrieve media list from Trakt.
+
+        :return: MediaList containing items fetched from Trakt.
+        """
         if self.list_slug_or_id is None:
-            print('No list id provided. Cannot get list.')
+            self.log.error('No list id provided. Cannot get list.')
             return None
 
-        if self.username:
-            list_items = self.client.get_list_items(username=self.username, list_id_or_slug=self.list_slug_or_id)
-        else:
-            list_items = self.client.get_list_items_by_id(list_id=self.list_slug_or_id)
+        list_items = self.client.get_list_items(username=self.username, list_id_or_slug=self.list_slug_or_id) if self.username else self.client.get_list_items_by_id(list_id=self.list_slug_or_id)
 
-        if self.details is None:
-            print('Details not provided, getting list info')
-            if self.username:
-                list_info = self.client.get_list(username=self.username, list_id_or_slug=self.list_slug_or_id)
-            else:
-                list_info = self.client.get_list_by_id(list_id=self.list_slug_or_id)
+        if not self.details:
+            list_info = self.client.get_list(username=self.username, list_id_or_slug=self.list_slug_or_id) if self.username else self.client.get_list_by_id(list_id=self.list_slug_or_id)
 
             self.details = {
                 'title': list_info['name'],
@@ -70,7 +71,6 @@ class TraktProvider:
             name=self.details['title'],
             type=self.listType,
             sourceListId=self.list_slug_or_id,
-            # filters=self.filters,
             items=[],
             description=self.details['description'],
             sortName=self.details['sort_title'],
@@ -79,87 +79,62 @@ class TraktProvider:
             creatorId=self.config.get_user().userId
         )
 
-        print('-------------', media_list.dict())
-
         db = self.config.get_db()
         await db.media_lists.insert_one(media_list.dict())
 
         for item in list_items:
-            # Assuming items contain these fields, you'll need to adjust based on Trakt API documentation
-            # print('-------------', item['show']['ids'], item['show']['title'], item['show']['year'])
-            print(item)
-            print('------------')
             media_list.items.append(await self.create_media_item(item, media_list))
 
         return media_list
 
-    async def create_media_item(self, provider_item, media_list):
-        db = self.config.get_db()
+    @staticmethod
+    def _map_trakt_item_to_media_item(provider_item: dict, log) -> MediaItem:
+        log.info("Mapping Trakt item to MediaItem", provider_item=provider_item)
+        """
+        Map a Trakt item to MediaItem object.
 
+        :param provider_item: Item fetched from Trakt.
+        :return: Mapped MediaItem object.
+        """
         item = provider_item['show'] if 'show' in provider_item else provider_item['movie']
-        # poster_id = item['ImageTags'].get('Primary')
-        # poster_url = f"{self.server_url}/emby/Items/{item['Id']}/Images/Primary?api_key={self.api_key}&X-Emby-Token={self.api_key}" if poster_id else None
-
-        print('ITEM = ', item)
-
-        media_item = MediaItem(
-            mediaItemId=str(uuid.uuid4()),
+        return MediaItem(
             title=item['title'],
             year=item['year'],
             type=MediaType.MOVIE if provider_item['type'] == 'movie' else MediaType.SHOW,
-            # poster=poster_url,
             providers=MediaProviderIds(
-                imdbId=item['ids'].get('imdb', None),
-                tvdbId=item['ids'].get('tvdb', None),
-                traktId=item['ids'].get('trakt', None),
-                tmdbId=item['ids'].get('tmdb', None),
-                tvRageId=item['ids'].get('tvrage', None),
-            ),
-            # ... add any other fields you need here ...
-        )
+                imdbId=item['ids'].get('imdb'),
+                tvdbId=item['ids'].get('tvdb'),
+                traktId=item['ids'].get('trakt'),
+                tmdbId=item['ids'].get('tmdb'),
+                tvRageId=item['ids'].get('tvrage'),
+            ))
 
-        media_item.poster = await self.poster_manager.get_poster(
-            preferred_provider=TmdbPosterProvider(config=self.config),
-            media_item=media_item)
+    async def create_media_item(self, provider_item: dict, media_list: MediaList) -> MediaItem:
+        """
+        Create a MediaItem based on provided Trakt item.
 
-        # Check for existing mediaItem
-        existing_media_item = None
-        if media_item.providers.traktId:
-            existing_media_item = await db.media_items.find_one({"providers.traktId": media_item.providers.traktId})
-        elif media_item.providers.imdbId:
-            existing_media_item = await db.media_items.find_one({"providers.imdbId": media_item.providers.imdbId})
-        elif media_item.providers.tvdbId:
-            existing_media_item = await db.media_items.find_one({"providers.tvdbId": media_item.providers.tvdbId})
-        elif media_item.title and media_item.year:
-            existing_media_item = await db.media_items.find_one({"title": media_item.title, "year": media_item.year})
+        :param provider_item: Item fetched from Trakt.
+        :param media_list: Media list to which item belongs.
+        :return: Created MediaItem.
+        """
+        db = self.config.get_db()
 
+        media_item = self._map_trakt_item_to_media_item(provider_item, self.log)
+        media_item.poster = await self.poster_manager.get_poster(preferred_provider=TmdbPosterProvider(config=self.config), media_item=media_item)
+
+        existing_media_item = await self.get_existing_media_item(media_item)
         if existing_media_item:
-            print('updating existing media item')
-            media_item.mediaItemId = existing_media_item['mediaItemId']
-
-            # Filter out fields in the media item that are not valid
-            valid_fields = {k: v for k, v in media_item.dict().items() if v}
-
-            db.media_items.update_one(
-                {"mediaItemId": existing_media_item["mediaItemId"]},
-                {"$set": valid_fields}
-            )
-        # media_item.dict()
-        else:
-            print('inserting new media item')
-            db.media_items.insert_one(media_item.dict())
-            # return media_item.dict()
+            media_item = await self.merge_and_update_media_item(media_item, existing_media_item)
 
         media_list_item = MediaListItem(
             mediaListItemId=str(uuid.uuid4()),
             mediaListId=media_list.mediaListId,
             mediaItemId=media_item.mediaItemId,
-            sourceId=item['ids']['trakt'],
+            sourceId=media_item.providers.traktId,
             dateAdded=datetime.now()
         )
 
-        db.media_list_items.insert_one(media_list_item.dict())
-
+        await db.media_list_items.insert_one(media_list_item.dict())
         media_list_item.item = media_item
 
         return media_item

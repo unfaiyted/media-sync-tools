@@ -138,7 +138,7 @@ async def find_lists_containing_item(db, media_item_id: str):
     ]
 
     results = await db.media_list_items.aggregate(pipeline).to_list(length=None)
-    print(results)
+    # print(results)
 
     # Parse the results into the desired format
     item_name = results[0]['item']['title'] if results else None
