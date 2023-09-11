@@ -29,6 +29,19 @@ class TMDBProvider(BaseMediaProvider):
     def _convert_filters_to_query_params(self):
         return {filter_item['type']: filter_item['value'] for filter_item in self.filters}
 
+    def _map_tmdb_item_to_media_item(self, item):
+        return MediaItem(
+            mediaItemId=str(uuid.uuid4()),
+            title=item['title'],
+            year=item['release_date'].split('-')[0],
+            description=item['overview'],
+            releaseDate=item['release_date'],
+            type=MediaType.MOVIE,
+            providers=MediaProviderIds(
+                tmdbId=item['id'],
+            ),
+        )
+
     async def get_list(self):
         db = self.get_db()
         filter_query_params = self._convert_filters_to_query_params()
@@ -52,7 +65,10 @@ class TMDBProvider(BaseMediaProvider):
         media_list.items = []
 
         for item in movie_results:
-            media_list.items.append(await self.create_media_item(item, media_list))
+            media_item = self._map_tmdb_item_to_media_item(item)
+            media_list.items.append(
+                await self.create_media_list_item(media_item, media_list,
+                                                  provider_list_id=['id']))
 
         return media_list
 
@@ -61,38 +77,38 @@ class TMDBProvider(BaseMediaProvider):
         poster_url = f"https://image.tmdb.org/t/p/original/{poster_id}"
         return poster_url
 
-    async def create_media_item(self, item, media_list):
-        db = self.get_db()
-
-        poster_url = await self.get_poster(item)
-
-        media_item = MediaItem(
-            mediaItemId=str(uuid.uuid4()),
-            title=item['title'],
-            year=item.get('release_date', None).split('-')[0],
-            description=item.get('overview', None),
-            releaseDate=item.get('release_date', None),
-            type=MediaType.MOVIE,
-            poster=poster_url,
-            providers=MediaProviderIds(
-                tmdbId=item['id'],
-            ),
-        )
-
-        existing_media_item = await self.get_existing_media_item(media_item)
-
-        if existing_media_item:
-            media_item = await self.merge_and_update_media_item(media_item, existing_media_item)
-
-        media_list_item = MediaListItem(
-            mediaListItemId=str(uuid.uuid4()),
-            mediaListId=media_list.mediaListId,
-            mediaItemId=media_item.mediaItemId,
-            sourceId=item['id'],
-            dateAdded=datetime.now()
-        )
-
-        await db.media_list_items.insert_one(media_list_item.dict())
-        media_list_item.item = media_item
-
-        return media_list_item
+    # async def create_media_item(self, item, media_list):
+    #     db = self.get_db()
+    #
+    #     poster_url = await self.get_poster(item)
+    #
+    #     media_item = MediaItem(
+    #         mediaItemId=str(uuid.uuid4()),
+    #         title=item['title'],
+    #         year=item.get('release_date', None).split('-')[0],
+    #         description=item.get('overview', None),
+    #         releaseDate=item.get('release_date', None),
+    #         type=MediaType.MOVIE,
+    #         poster=poster_url,
+    #         providers=MediaProviderIds(
+    #             tmdbId=item['id'],
+    #         ),
+    #     )
+    #
+    #     existing_media_item = await self.get_existing_media_item(media_item)
+    #
+    #     if existing_media_item:
+    #         media_item = await self.merge_and_update_media_item(media_item, existing_media_item)
+    #
+    #     media_list_item = MediaListItem(
+    #         mediaListItemId=str(uuid.uuid4()),
+    #         mediaListId=media_list.mediaListId,
+    #         mediaItemId=media_item.mediaItemId,
+    #         sourceId=item['id'],
+    #         dateAdded=datetime.now()
+    #     )
+    #
+    #     await db.media_list_items.insert_one(media_list_item.dict())
+    #     media_list_item.item = media_item
+    #
+    #     return media_list_item

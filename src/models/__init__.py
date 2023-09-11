@@ -112,6 +112,7 @@ class MediaList(BaseModel):
     mediaListId: str = None
     clientId: str  # client provider
     creatorId: str
+    sourceListId: Optional[str]
     name: str
     poster: Optional[Union[str,ForwardRef('MediaPoster')]]
     type: MediaListType

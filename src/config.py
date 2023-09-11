@@ -9,13 +9,13 @@ from plexapi.server import PlexServer
 
 from src.clients.jellyfin import Jellyfin
 from src.db.queries import config_queries
-from src.models import User
+from src.models import User, ClientType
 from src.clients.tmdb import TmdbClient
 from src.clients.trakt import TraktClient
 from src.clients.emby import Emby
 from dotenv import load_dotenv
 from pyarr import RadarrAPI
-from src.clients.mdblist import MDBListClient
+from src.clients.mdblist import MdbClient
 
 import motor.motor_asyncio
 import motor
@@ -47,9 +47,11 @@ class ConfigManager:
         self.db = self.get_db()
 
         if config_path:
+            self.log.info('Config path found', configPath=config_path)
             self.load_config()
 
         if config_id:
+            self.log.debug('Config ID found', configId=config_id)
             self.config_id = config_id
             # await self.fetch_and_load_config_from_db()
 
@@ -67,54 +69,29 @@ class ConfigManager:
     async def init_async(self):
         self.db = self.get_db()
         if self.config_id:
+            self.log.debug('Config ID found', configId=self.config_id)
             await self.fetch_and_load_config_from_db()
 
     def setup_logging(self):
         self.log.info('Setting up logging')
-       # self.log.info('Setting up logging', level=logging.INFO)
-       # logging.basicConfig(level=logging.INFO, format="%(message)s")
-
-       # structlog.configure(
-       #     processors=[
-       #         structlog.stdlib.filter_by_level,
-       #         structlog.stdlib.add_logger_name,
-       #         structlog.stdlib.add_log_level,
-       #         structlog.stdlib.PositionalArgumentsFormatter(),
-       #         structlog.processors.TimeStamper(fmt="iso"),
-       #         structlog.processors.StackInfoRenderer(),
-       #         structlog.processors.format_exc_info,
-       #         structlog.stdlib.render_to_log_kwargs,
-       #         structlog.processors.JSONRenderer()  # Use JSON renderer
-       #     ],
-       #     context_class=dict,
-       #     logger_factory=structlog.stdlib.LoggerFactory(),
-       #     wrapper_class=structlog.stdlib.BoundLogger,
-       #     cache_logger_on_first_use=True,
-       # )
-
-        # def add_name(logger, _, event_dict):
-        #     event_dict["name"] = logger.__name__
-        #     return event_dict
-
 
         structlog.configure(
-        processors=[
-            structlog.stdlib.add_logger_name,
-            structlog.contextvars.merge_contextvars,
-            structlog.processors.add_log_level,
-            structlog.processors.StackInfoRenderer(),
-            structlog.dev.set_exc_info,
-            structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S"),
-            CenteredConsoleRenderer(),
-        ],
-        wrapper_class=structlog.make_filtering_bound_logger(logging.NOTSET),
-        context_class=dict,
-        logger_factory=NamedPrintLoggerFactory(),
-        cache_logger_on_first_use=False
+            processors=[
+                structlog.stdlib.add_logger_name,
+                structlog.contextvars.merge_contextvars,
+                structlog.processors.add_log_level,
+                structlog.processors.StackInfoRenderer(),
+                structlog.dev.set_exc_info,
+                structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S"),
+                CenteredConsoleRenderer(),
+            ],
+            wrapper_class=structlog.make_filtering_bound_logger(logging.NOTSET),
+            context_class=dict,
+            logger_factory=NamedPrintLoggerFactory(),
+            cache_logger_on_first_use=False
         )
-    # log = structlog.get_logger()
+        # log = structlog.get_logger()
         self.log = structlog.get_logger(__name__)
-
 
     @staticmethod
     def get_logger(name=None):
@@ -211,7 +188,9 @@ class ConfigManager:
         self.sync = sync
 
     def add_clients(self, clients):
+        self.log.debug('Adding clients', clients=clients)
         for name, client_data in clients.items():
+            self.log.debug('Adding client', clientName=name, clientData=client_data)
             client_type = client_data.get('type')
 
             if client_type == 'plex':
@@ -266,7 +245,7 @@ class ConfigManager:
 
     def add_mdblist_client(self, name, api_key):
         self.log.info('Adding MDBList client', clientName=name)
-        mdblist_client = MDBListClient(api_key)
+        mdblist_client = MdbClient(self.log, api_key)
         self.clients[name] = mdblist_client
         return mdblist_client
 
@@ -308,7 +287,8 @@ class ConfigManager:
     def add_trakt_client(self, name, username, client_id, client_secret):
         self.log.info('Adding trakt client', clientName=name)
         trakt_client = TraktClient(self.log,
-            client_id=client_id, client_secret=client_secret, token_file=f'{self.config_path}/trakt.json')  # TODO: unique per clientId
+                                   client_id=client_id, client_secret=client_secret,
+                                   token_file=f'{self.config_path}/trakt.json')  # TODO: unique per clientId
         self.clients[name] = trakt_client
 
         return trakt_client
@@ -374,11 +354,11 @@ class ConfigManager:
             ConfigManager.instance = await ConfigManager.create(config_id=config_id)
         return ConfigManager.instance
 
-    def get_client_by_type(self, type):
-        # loop through clients and find the one with the matching type
-        self.log.info('Looking for client by type', total=len(self.clients_details), type=type)
+    def get_client_by_type(self, client_type: ClientType):
+        # loop through clients and find the one with the matching client_type
+        self.log.info('Looking for client by type', total=len(self.clients_details), client_type=client_type)
         for clientId, client in self.clients_details.items():
-            if client['type'] == type:
-                self.log.info('Found client by type', clientId=clientId, client=client)
+            if client['type'] == client_type:
+                self.log.info('Found client by client_type', clientId=clientId, client=client)
                 return self.clients[clientId]
-        self.log.info('Client not found by type', type=type)
+        self.log.info('Client not found by client_type', client_type=type)

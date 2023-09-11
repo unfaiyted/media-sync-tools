@@ -79,3 +79,7 @@ setuptools~=65.5.1
 packaging~=23.1
 
 motor~=3.2.0
+
+APScheduler~=3.10.4
+structlog~=23.1.0
+pytz~=2023.3

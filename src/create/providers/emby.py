@@ -74,7 +74,6 @@ class EmbyProvider(BaseMediaProvider):
                 name=list_['Name'],
                 type=self.listType,
                 sourceListId=list_['Id'],
-                # filters=self.filters,
                 items=[],  # Will be populated later
                 sortName=list_['SortName'],
                 clientId='emby',
@@ -90,7 +89,6 @@ class EmbyProvider(BaseMediaProvider):
 
             return media_list
         return None
-
 
     @staticmethod
     def _map_emby_item_to_media_item(provider_item: dict, log) -> MediaItem:
@@ -121,6 +119,7 @@ class EmbyProvider(BaseMediaProvider):
         existing_media_item = await self.get_existing_media_item(media_item)
 
         if existing_media_item:
+            self.log.debug(f"Existing media item found", existing_media_item=existing_media_item)
             media_item = await self.merge_and_update_media_item(media_item, existing_media_item)
 
         media_list_item = MediaListItem(
@@ -192,67 +191,58 @@ class EmbyProvider(BaseMediaProvider):
 
     def upload_list(self, media_list: MediaList):
         if media_list is None:
-            print('no list provided')
+            self.log.info('no list provided')
             return None
+        list_type: MediaListType = media_list.type
 
-        # Will expect a media_list object and upload it to the provider
-        # create a playlist or collection based on type
-        # add items to the playlist or collection
-        # return the playlist or collection id
-
-        # print(media_list)
-        type = media_list.type
-
-        if type == MediaListType.COLLECTION:
+        if list_type == MediaListType.COLLECTION:
             list = self.client.create_collection(media_list.name, media_list.sortName)
-        elif type == MediaListType.PLAYLIST:
+        elif list_type == MediaListType.PLAYLIST:
             list = self.client.create_playlist(media_list.name, media_list.sortName)
         else:
-            print('invalid list type')
+            self.log.info('invalid list type')
             return None
 
         # Main List Poster
         self.save_poster(media_list.sourceListId, media_list.poster)
 
-        print(f'adding {len(media_list.items)} items to list {list["Name"]}')
+        self.log.debug(f'adding {len(media_list.items)} items to list {list["Name"]}', list=list)
         for media_list_item in media_list.items:
-            print(f'adding item {media_list_item.item.title} to list {list["Name"]}')
-            embyItem = self.search_emby_for_external_ids(media_list_item)
+            self.log.debug(f'adding item {media_list_item.item.title} to list {list["Name"]}', list=list)
+            emby_item = self.search_emby_for_external_ids(media_list_item)
 
-            if embyItem is None:
-                print('item not found')
+            if emby_item is None:
+                self.log.info(f'item {media_list_item.item.title} not found')
                 continue
 
-            if type == MediaListType.PLAYLIST:
-                self.client.add_item_to_playlist(list['Id'], embyItem['Id'])
-            elif type == MediaListType.COLLECTION:
-                self.client.add_item_to_collection(list['Id'], embyItem['Id'])
+            if list_type == MediaListType.PLAYLIST:
+                self.log.debug(f'adding item {media_list_item.item.title} to playlist {list["Name"]}', list=list)
+                self.client.add_item_to_playlist(list['Id'], emby_item['Id'])
+            elif list_type == MediaListType.COLLECTION:
+                self.log.debug(f'adding item {media_list_item.item.title} to collection {list["Name"]}', list=list)
+                self.client.add_item_to_collection(list['Id'], emby_item['Id'])
 
             poster = (media_list_item.poster if media_list_item.poster is not None else media_list_item.item.poster)
             # Item Poster
-            self.save_poster(embyItem['Id'], poster)
+            self.save_poster(emby_item['Id'], poster)
         return media_list
 
     def save_poster(self, item_id: str, poster: MediaPoster or str):
         if poster is None:
-            print('no poster provided')
+            self.log.info('no poster provided')
             return None
 
-        # if the media_list.poster is a url, download the image and upload it to the provider
-        # if the media_list.poster is a file path, upload the image to the provider
-        # through the PosterImage class and upload it to the provider
-
         if poster.startswith('http'):
-            print('downloading image from url')
+            self.log.info('downloading image from url', url=poster)
             self.client.upload_image_from_url(item_id, poster, root_path=self.config.get_root_path())
         elif poster.startswith('/'):
-            print('uploading image from local')
+            self.log.info('uploading image from local', path=poster)
             self.client.upload_image(item_id, poster)
         # if the poster is a MediaPoster object, process the image
         elif isinstance(poster, MediaPoster):
-            print('uploading image from MediaPoster')
+            self.log.info('uploading image from MediaPoster instance', poster=poster)
             # create image from MediaPoster
-            poster = MediaPosterImageCreator(poster)
+            poster = MediaPosterImageCreator(poster, self.log)
             poster = poster.create()
             poster_location = f'{self.config.get_root_path()}/poster.png'
             poster.save(poster_location)

@@ -6,6 +6,7 @@ import string
 class PlexManager:
     def __init__(self, config):
         self.client = config.get_client("plex")
+        self.log = config.get_logger(__name__)
         # self.account = config.get_account("plex")
         self.guidLookup = self.get_all("TV Shows")
 

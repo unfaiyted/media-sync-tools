@@ -91,17 +91,21 @@ class TmdbPosterProvider(PosterProvider, ABC):
         tmdb: TmdbClient = self.config.get_client('tmdb')
         # Attempt to fetch from Tmdb
         poster = tmdb.get_movie_poster_path(media_item.providers.tmdbId, full_path=True)
-        self.log.info(f'Fetched poster from Tmdb', poster=poster)
+        self.log.info('Fetched poster from Tmdb', poster=poster)
 
         if poster is None:
-            self.log.info(f'Poster not found by Tmdb Id! Attempting to fetch by name and year.')
+            self.log.info(
+                'Poster not found by Tmdb Id! Attempting to fetch by name and year.'
+            )
             if movie := tmdb.get_movie_by_name_and_year(media_item.title, media_item.year):
-                self.log.info(f'Found movie by name and year', movie=movie)
+                self.log.info('Found movie by name and year', movie=movie)
                 poster = tmdb.get_movie_poster_path(movie['id'], full_path=True)
-                self.log.info(f'Fetched poster from Tmdb', poster=poster)
+                self.log.info('Fetched poster from Tmdb', poster=poster)
 
         if poster is None and self.next_provider:
-            self.log.info(f'Poster not found in Tmdb! Attempting to fetch from next provider.')
+            self.log.info(
+                'Poster not found in Tmdb! Attempting to fetch from next provider.'
+            )
             return await self.next_provider.get_poster(media_item)  # Ensure this is awaited if it's async
         return poster
 

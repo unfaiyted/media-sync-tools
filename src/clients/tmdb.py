@@ -26,10 +26,12 @@ class TmdbClient:
         delay = self.RETRY_DELAY
 
         while retries <= self.RETRY_MAX:
+            self.log.debug("Making request", method=method, endpoint=endpoint, retries=retries)
             response = requests.request(
                 method, f"{self.TMDB_API_URL}{endpoint}", headers=self._headers(), **kwargs)
 
             if response.status_code == 429:  # Too Many Requests
+                self.log.warning('Too many requests. Retrying after delay.', delay=delay, response=response)
                 time.sleep(delay)
                 retries += 1
                 delay *= 2
@@ -37,13 +39,10 @@ class TmdbClient:
 
             # response.raise_for_status()
             if response.status_code == 200:
+                self.log.debug("Got response", response=response)
                 return response.json()
 
-            if response.status_code == 404:
-                return None
-
-            return response.json()
-
+            return None if response.status_code == 404 else response.json()
         raise Exception("Max retries exceeded")
 
     def get_popular_movies(self, page=1):
@@ -51,20 +50,20 @@ class TmdbClient:
         return self._request("GET", f"/movie/popular?language=en-US&page={page}")
 
     def search_movie(self, query):
-        self.log.debug(f"Searching for movie", query=query)
+        self.log.debug("Searching for movie", query=query)
         return self._request("GET", f"/search/movie?query={query}")
 
     def get_movie_details(self, movie_id):
-        self.log.debug(f"Getting movie details", movie_id=movie_id)
+        self.log.debug("Getting movie details", movie_id=movie_id)
         return self._request("GET", f"/movie/{movie_id}")
 
     def discover_movie(self, **kwargs):
         """
-        Uses the discover endpoint to search for movies based on specific criteria.
+        Uses the Discover endpoint to search for movies based on specific criteria.
         Accepts various keyword arguments as filters for discovery.
         """
         query_params = '&'.join([f"{k}={v}" for k, v in kwargs.items()])
-        self.log.debug(f"Discovering movies", query_params=query_params)
+        self.log.debug("Discovering movies", query_params=query_params)
         return self._request("GET", f"/discover/movie?{query_params}")
 
     # ... Add other methods as required ...
@@ -75,17 +74,20 @@ class TmdbClient:
         :param movie_id: ID of the movie.
         :return: poster path.
         """
+
+        relative_path = self.get_movie_details(movie_id)
+
         if full_path:
-            self.log.debug(f"Getting full movie poster path", movie_id=movie_id)
-            return f"{self.TMDB_IMAGE_URL}{self.get_movie_poster_path(movie_id)}"
+            self.log.debug("Getting full movie poster path", movie_id=movie_id)
+            return f"{self.TMDB_IMAGE_URL}{relative_path}"
 
         movie_details = self.get_movie_details(movie_id)
 
         try:
-            self.log.debug(f"Getting movie poster path", movie_details=movie_details)
-            poster_path = movie_details.get('poster_path')
-            return poster_path
-        except:
+            self.log.debug("Getting movie poster path", movie_details=movie_details)
+            return movie_details.get('poster_path')
+        except Exception:
+            self.log.error("Movie poster path not found", movie_details=movie_details)
             return None
 
     def get_movie_by_name_and_year(self, name, year):
@@ -96,7 +98,7 @@ class TmdbClient:
         :param year: Year of release.
         :return: JSON response containing the search results.
         """
-        self.log.debug(f"Searching for movie by name and year", name=name, year=year)
+        self.log.debug("Searching for movie by name and year", name=name, year=year)
         endpoint = f"/search/movie?query={name}&primary_release_year={year}"
         return self._request("GET", endpoint)
 
@@ -107,16 +109,22 @@ class TmdbClient:
         :return: PIL Image object in RGBA format.
         """
         poster_path = self.get_movie_poster_path(movie_id)
-        self.log.debug(f"Getting movie poster", movie_id=movie_id, poster_path=poster_path)
+        self.log.debug(
+            "Getting movie poster", movie_id=movie_id, poster_path=poster_path
+        )
         if not poster_path:
             return None
 
         response = requests.get(f"{self.TMDB_IMAGE_URL}{poster_path}", stream=True)
         response.raise_for_status()
         if response.status_code == 200:
-            self.log.debug(f"Got movie poster.", movie_id=movie_id, poster_path=poster_path)
+            self.log.debug("Got movie poster.", movie_id=movie_id, poster_path=poster_path)
             image = Image.open(BytesIO(response.content)).convert("RGBA")
-            self.log.debug(f"Converted movie poster to RGBA.", movie_id=movie_id, poster_path=poster_path)
+            self.log.debug(
+                "Converted movie poster to RGBA.",
+                movie_id=movie_id,
+                poster_path=poster_path,
+            )
             return image
 
         return None

@@ -11,7 +11,6 @@ import time
 
 from src.models import EmbyFilters
 from src.models import MediaList, MediaItem
-from src.create.posters import PosterImageCreator
 
 from enum import Enum
 
@@ -526,7 +525,7 @@ class Emby:
         return self.get_media(limit, "Movie", genre=genre)
 
     @staticmethod
-    def create_poster(path, text, root_path, icon_path=f'/resources/icons/tv.png'):
+    def create_poster(path, text, root_path, icon_path='/resources/icons/tv.png'):
         width, height = 400, 600
         start, end = (233, 0, 4), (88, 76, 76)
         angle = -160

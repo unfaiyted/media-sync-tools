@@ -1,10 +1,15 @@
 import uuid
 from datetime import datetime
+from typing import Optional
 
+from src.clients.mdblist import MdbClient
+from src.config import ConfigManager
+from src.create.providers.base_provider import BaseMediaProvider
 from src.models import MediaList, MediaListItem, MediaType, MediaListType, MediaItem, MediaProviderIds
+from src.models.filters import MdbFilters
 
 
-class ListProviderResult:
+class MdbProviderResult:
     def __init__(self, id, name, description, movies):
         self.id = id
         self.name = name
@@ -12,100 +17,79 @@ class ListProviderResult:
         self.movies = movies
 
 
-class MdbProvider:
+class MdbProvider(BaseMediaProvider):
 
-    def __init__(self, config, filters=None, listType=MediaListType.COLLECTION):
+    def __init__(self, config: ConfigManager, filters: Optional[MdbFilters] = None, details: Optional[dict] = None,
+                 media_list: Optional[MediaList] = None, listType: MediaListType = MediaListType.COLLECTION):
+
+        """
+        Initialize the MdbProvider.
+        :param config:
+        :param filters:
+        :param listType:
+        """
+        super().__init__(config)
         self.config = config
+        self.log = config.get_logger(__name__)
         self.listType = listType
-        self.client = config.get_client('mdb')
+        self.client: MdbClient = config.get_client('mdb')
         self.filters = filters
 
         if filters is not None:
             self.id = filters[0].get('value', None)
 
+        if media_list:
+            self.filters = media_list.filters
+            self.id = self.filters.listId
 
-    async def get_list(self):
+        self.log.info("MdbProvider initialized", filters=filters, id=self.id)
+
+    @staticmethod
+    def _map_mdb_item_to_media_item(item):
+        return MediaItem(
+            mediaItemId=str(uuid.uuid4()),
+            title=item['title'],
+            year=item['release_year'],
+            type=MediaType.MOVIE if item['mediatype'] == 'movie' else MediaType.SHOW,
+            providers=MediaProviderIds(
+                imdbId=item['imdb_id'],
+                tvdbId=item['tvdb_id']
+            ),
+        )
+
+    async def get_list(self) -> MediaList or None:
+        """
+        Retrieve media list from Mdb.
+        :return:
+        """
         if self.id is None:
-            print('No list id provided. Cannot get list.')
+            self.log.error('No list id provided. Cannot get list.')
             return None
 
-        list = self.client.get_list_information(list_id=self.id)[0]
-        list_items = self.client.get_list_items(list['id'])
+        mdb_list = self.client.get_list_information(list_id=self.id)[0]
+        list_items = self.client.get_list_items(mdb_list['id'])
         db = self.config.get_db()
 
         media_list = MediaList(
             mediaListId=str(uuid.uuid4()),
-            name=list['name'],
+            name=mdb_list['name'],
             type=self.listType,
-            sortName=list['name'],
+            sortName=mdb_list['name'],
             items=[],
-            clientId='MDBCLIENTID',
+            clientId='mdb',
             createdAt=datetime.now(),
             creatorId=self.config.get_user().userId
         )
 
         db.media_lists.insert_one(media_list.dict())
-        # print(media_list)
-
 
         for item in list_items:
-            print('-------------', item)
-
-            # poster_id = item['ImageTags'].get('Primary')
-            # poster_url = f"{self.server_url}/emby/Items/{item['Id']}/Images/Primary?api_key={self.api_key}&X-Emby-Token={self.api_key}" if poster_id else None
-            # poster_url = f'https://image.tmdb.org/t/p/w500/{item["poster_path"]}'
-            media_item = MediaItem(
-                mediaItemId=str(uuid.uuid4()),
-                title=item['title'],
-                year=item['release_year'],
-                type=MediaType.MOVIE if item['mediatype'] == 'movie' else MediaType.SHOW,
-                # poster=poster_url,
-                providers=MediaProviderIds(
-                    imdbId=item['imdb_id'],
-                    tvdbId=item['tvdb_id']
-                ),
-                # ... add any other fields you need here ...
-            )
-            # Check for existing mediaItem
-            existing_media_item = None
-            if media_item.providers.imdbId:
-                existing_media_item = await db.media_items.find_one({"providers.imdbId": media_item.providers.imdbId})
-            elif media_item.providers.tvdbId:
-                existing_media_item = await db.media_items.find_one({"providers.tvdbId": media_item.providers.tvdbId})
-            elif media_item.title and media_item.year:
-                existing_media_item = await db.media_items.find_one({"title": media_item.title, "year": media_item.year})
-
-            if existing_media_item:
-                print('updating existing media item')
-                media_item.mediaItemId = existing_media_item['mediaItemId']
-
-                # Filter out fields in the media item that are not valid
-                valid_fields = {k: v for k, v in media_item.dict().items() if v}
-
-                db.media_items.update_one(
-                    {"mediaItemId": existing_media_item["mediaItemId"]},
-                    {"$set": valid_fields}
-                )
-            # media_item.dict()
-            else:
-                print('inserting new media item')
-                db.media_items.insert_one(media_item.dict())
-
-
-            print('adding media_list_items')
-            media_list_item = MediaListItem(
-                    mediaListItemId=str(uuid.uuid4()),
-                    mediaItemId=media_item.mediaItemId,
-                    mediaListId=media_list.mediaListId,
-                    sourceId=item['id'],
-                    dateAdded=datetime.now(),
-            )
-
-            db.media_list_items.insert_one(media_list_item.dict())
-            media_list.items.append(media_item.dict())
+            media_item = self._map_mdb_item_to_media_item(item)
+            media_list.items.append(await self.create_media_list_item(media_item, media_list))
 
         return media_list
 
     async def upload_list(self, media_list: MediaList):
-       # TODO: implement
-         pass
+        # TODO: implement
+        self.log.info("Uploading list", media_list=media_list)
+        pass

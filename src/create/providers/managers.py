@@ -30,7 +30,9 @@ class PosterManager:
 
         # Add any other providers you have
         self.provider_manager = ProviderManager(emby, plex, trakt)
+        self.log.debug("PosterManager initialized")
 
     def get_poster(self, preferred_provider: PosterProvider, media_item: MediaItem):
+        self.log.debug("Getting poster for MediaItem", media_item=media_item)
         head = self.provider_manager.prioritize_provider(preferred_provider)
         return head.get_poster(self.config, media_item)

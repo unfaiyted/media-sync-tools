@@ -6,9 +6,11 @@ from src.models import MediaList, MediaListItem, MediaType, MediaListType, Media
 
 from typing import Optional
 
+
 class JellyfinProvider:
     def __init__(self, config, filters=None, details=None, listType=MediaListType.COLLECTION):
         self.config = config
+        self.log = config.get_logger(__name__)
         self.client = config.get_client('jellyfin')
         self.filters = filters
         self.server_url = self.client.server_url
@@ -17,8 +19,6 @@ class JellyfinProvider:
         self.details = details
 
         self.id, self.library_name = self.parse_filters(filters if filters is not None else [])
-        print('id ',self.id)
-        print('library name ', self.library_name)
 
     def parse_filters(self, filters):
         id_value = None
@@ -114,7 +114,7 @@ class JellyfinProvider:
 
         media_item = MediaItem(
             mediaItemId=str(uuid.uuid4()),
-            title=item.get('Name','TITLE MISSING'),
+            title=item.get('Name', 'TITLE MISSING'),
             year=item.get('ProductionYear', None),
             type=MediaType.MOVIE if item['Type'] == 'Movie' else MediaType.SHOW,
             poster=poster_url,
@@ -141,9 +141,9 @@ class JellyfinProvider:
             #         existing_media_item[field] = value
             db.media_items.update_one(
                 {"mediaItemId": existing_media_item["mediaItemId"]},
-                {"$set": valid_fields }
+                {"$set": valid_fields}
             )
-         # media_item.dict()
+        # media_item.dict()
         else:
             print('inserting new media item')
             db.media_items.insert_one(media_item.dict())
@@ -166,6 +166,7 @@ class JellyfinProvider:
     def search_jellyfin_for_external_ids(self, media_item: MediaItem) -> dict or None:
         print('searching jellyfin for external ids', media_item)
         match = None
+
         def search_id(external_id: str) -> Optional[dict]:
             try:
                 search_results = self.client.get_media(external_id=external_id)
@@ -183,27 +184,27 @@ class JellyfinProvider:
         tmdb_result = search_id(f"Tmdb.{media_item.providers.tmdbId}")
 
         if imdb_result:
-           return imdb_result
+            return imdb_result
         elif tvdb_result:
-           return tvdb_result
+            return tvdb_result
         elif tmdb_result:
-           return tmdb_result
+            return tmdb_result
 
-            #emby_media_items = self.emby.search(media.title, emby_type)
+            # emby_media_items = self.emby.search(media.title, emby_type)
             # for emby_media in emby_media_items:
-                # try:
-                    # if emby_media['ProductionYear'] == media.year:
+            # try:
+            # if emby_media['ProductionYear'] == media.year:
 
         emby_type = 'Movie' if media_item.type == MediaType.MOVIE else 'Series'
         # Fallback to name and year
         search_results = self.client.search(media_item.title, emby_type)
         print('SEARCH RESULTS::::', search_results)
         if search_results:
-                for result in search_results:
-                    if int(result['ProductionYear']) == int(media_item.year):
-                        match = result
-                        break
-                return match
+            for result in search_results:
+                if int(result['ProductionYear']) == int(media_item.year):
+                    match = result
+                    break
+            return match
         return match
 
     def upload_list(self, media_list: MediaList):
@@ -220,19 +221,18 @@ class JellyfinProvider:
         print(media_list)
 
         if type == MediaListType.COLLECTION:
-           list = self.client.create_collection(media_list.name, media_list.sortName)
+            list = self.client.create_collection(media_list.name, media_list.sortName)
         elif type == MediaListType.PLAYLIST:
-           list = self.client.create_playlist(media_list.name, media_list.sortName)
+            list = self.client.create_playlist(media_list.name, media_list.sortName)
         else:
             print('invalid list type')
             return None
-
 
         # Main List Poster
         self.save_poster(media_list.sourceListId, media_list.poster)
 
         print(f'adding {len(media_list.items)} items to list {list["Id"]}')
-        print(f'media list items',media_list.items)
+        print(f'media list items', media_list.items)
         for media_list_item in media_list.items:
             print(f'adding item {media_list_item.item.title} to list {list["Id"]}')
             jellyItem = self.search_jellyfin_for_external_ids(media_list_item.item)
@@ -270,7 +270,7 @@ class JellyfinProvider:
         elif isinstance(poster, MediaPoster):
             print('uploading image from MediaPoster')
             # create image from MediaPoster
-            poster = MediaPosterImageCreator(poster)
+            poster = MediaPosterImageCreator(poster, self.log)
             poster = poster.create()
             poster_location = f'{self.config.get_root_path()}/poster.png'
             poster.save(poster_location)

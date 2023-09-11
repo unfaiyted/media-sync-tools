@@ -153,9 +153,9 @@ class TmdbShowFilters(TmdbFilters):
 
 
 
-class MdbFilter(BaseFilters):
+class MdbFilters(BaseFilters):
     listId: Optional[str] = None
     library: Optional[str] = None
 
 
-Filters = Optional[Union[PlexFilters, JellyfinFilters, TraktFilters, TmdbFilters, MdbFilter, TvdbFilters, TmdbShowFilters, EmbyFilters]]
+Filters = Optional[Union[PlexFilters, JellyfinFilters, TraktFilters, TmdbFilters, MdbFilters, TvdbFilters, TmdbShowFilters, EmbyFilters]]

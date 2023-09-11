@@ -39,14 +39,14 @@ class TraktProvider(BaseMediaProvider):
         if media_list:
             self.filters = media_list.filters
             self.username = self.filters.username
-            self.list_slug_or_id = self.filters.listSlug if self.filters.listSlug else self.filters.listId
+            self.list_slug_or_id = self.filters.listSlug or self.filters.listId
 
         self.log = config.get_logger(__name__)
         self.log.info("TraktProvider initialized", user=self.username, list_slug_or_id=self.list_slug_or_id)
 
     async def get_list(self) -> MediaList or None:
         """
-        Retrieve media list from Trakt.
+        Retrieve MediaList from Trakt.
 
         :return: MediaList containing items fetched from Trakt.
         """
@@ -83,7 +83,8 @@ class TraktProvider(BaseMediaProvider):
         await db.media_lists.insert_one(media_list.dict())
 
         for item in list_items:
-            media_list.items.append(await self.create_media_item(item, media_list))
+            media_item = self._map_trakt_item_to_media_item(item, self.log)
+            media_list.items.append(await self.create_media_list_item(media_item, media_list, provider_list_id=item['ids']['trakt']))
 
         return media_list
 
@@ -91,12 +92,12 @@ class TraktProvider(BaseMediaProvider):
     def _map_trakt_item_to_media_item(provider_item: dict, log) -> MediaItem:
         log.info("Mapping Trakt item to MediaItem", provider_item=provider_item)
         """
-        Map a Trakt item to MediaItem object.
+        Map a TraktItem to MediaItem object.
 
         :param provider_item: Item fetched from Trakt.
         :return: Mapped MediaItem object.
         """
-        item = provider_item['show'] if 'show' in provider_item else provider_item['movie']
+        item = provider_item.get('show', provider_item['movie'])
         return MediaItem(
             title=item['title'],
             year=item['year'],
@@ -109,32 +110,3 @@ class TraktProvider(BaseMediaProvider):
                 tvRageId=item['ids'].get('tvrage'),
             ))
 
-    async def create_media_item(self, provider_item: dict, media_list: MediaList) -> MediaItem:
-        """
-        Create a MediaItem based on provided Trakt item.
-
-        :param provider_item: Item fetched from Trakt.
-        :param media_list: Media list to which item belongs.
-        :return: Created MediaItem.
-        """
-        db = self.config.get_db()
-
-        media_item = self._map_trakt_item_to_media_item(provider_item, self.log)
-        media_item.poster = await self.poster_manager.get_poster(preferred_provider=TmdbPosterProvider(config=self.config), media_item=media_item)
-
-        existing_media_item = await self.get_existing_media_item(media_item)
-        if existing_media_item:
-            media_item = await self.merge_and_update_media_item(media_item, existing_media_item)
-
-        media_list_item = MediaListItem(
-            mediaListItemId=str(uuid.uuid4()),
-            mediaListId=media_list.mediaListId,
-            mediaItemId=media_item.mediaItemId,
-            sourceId=media_item.providers.traktId,
-            dateAdded=datetime.now()
-        )
-
-        await db.media_list_items.insert_one(media_list_item.dict())
-        media_list_item.item = media_item
-
-        return media_item

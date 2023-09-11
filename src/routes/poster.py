@@ -81,8 +81,9 @@ async def create_media_poster(media_poster: MediaPoster):
 
     # raise HTTPException(status_code=400, detail="MediaPoster already exists")
     media_poster_dict = media_poster.dict()
+    log = (await ConfigManager.get_manager()).get_logger
 
-    poster = MediaPosterImageCreator(media_poster)
+    poster = MediaPosterImageCreator(media_poster, log)
 
     image = poster.create()
     byteArr = BytesIO()
