@@ -89,6 +89,7 @@ class ConfigManager:
                 structlog.dev.set_exc_info,
                 structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S"),
                 redact_sensitive_data,  # <-- Add this line
+                redact_keys_based_on_name,
                 CenteredConsoleRenderer(),
             ],
             wrapper_class=structlog.make_filtering_bound_logger(logging.NOTSET),
@@ -184,8 +185,8 @@ class ConfigManager:
     def add_clients(self, clients):
         self.log.debug('Adding clients', clients=clients)
         for name, client_data in clients.items():
-            self.log.debug('Adding client', clientName=name)
             client_type = client_data.get('type')
+            self.log.debug('Adding client', clientName=name, client_type=client_type)
 
             if client_type == 'plex':
                 server_url = client_data.get('server_url')
@@ -232,7 +233,7 @@ class ConfigManager:
     # Rest of the methods remain the same
 
     def add_plex_client(self, name, server_url, access_token):
-        self.log.info('Adding plex client', clientName=name)
+        self.log.info('Found plex client', clientName=name)
         try:
             plex_client = PlexServer(server_url, access_token, timeout=120)
             self.clients[name] = plex_client

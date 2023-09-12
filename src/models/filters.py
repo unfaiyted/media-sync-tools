@@ -1,4 +1,3 @@
-
 from dataclasses import field, dataclass
 from enum import Enum
 
@@ -6,7 +5,6 @@ import structlog
 from pydantic import BaseModel, validator, Field
 from typing import List, Optional, ForwardRef, Tuple, Union, Dict, Annotated
 import re
-
 
 
 class FilterType(str, Enum):
@@ -28,7 +26,6 @@ class BaseFilters(BaseModel):
     _valid_keys: List[str] = []  # Pass-list Items, keep
 
     _key_remapping = {}
-
 
     class Config:
         json_exclude = {'log'}
@@ -65,6 +62,8 @@ class BaseFilters(BaseModel):
 
     def parse_filters(self) -> Dict[str, str]:
         """Parse the filter's dict."""
+        # This will convert and remove filters given various conditions.
+        # For example, it will convert camelCase to snake_case, and remove invalid keys.
         parsed_filters = {}
         self._log.info("Parsing filters", filters=self.dict())
 
@@ -149,7 +148,7 @@ class PlexFilters(BaseFilters):
     _valid_filters = {
         'title', 'studio', 'genre', 'contentRating', 'decade',
         'genre', 'actor', 'country', 'studio', 'actor', 'libtype'
-        'director', 'resolution', 'producer', 'actor', 'country',
+                                                        'director', 'resolution', 'producer', 'actor', 'country',
         'addedAt', 'sort', 'year', 'maxresults', 'libtype'
     }
 
@@ -183,11 +182,11 @@ class JellyfinFilters(BaseFilters):
     isPlayed: Optional[bool] = None
     isFavorite: Optional[bool] = None
 
+
 class TraktFilters(BaseFilters):
     listId: Optional[str] = None
     listSlug: Optional[str] = None
     username: Optional[str] = None
-
 
 
 class TmdbFilters(BaseFilters):
@@ -217,7 +216,8 @@ class TmdbFilters(BaseFilters):
     withoutCompanies: Optional[str] = None
     withWatchProviders: Optional[str] = None
     withoutWatchProviders: Optional[str] = None
-    year: Optional[int] =    None
+    year: Optional[int] = None
+
 
 class TvdbFilters(TmdbFilters):
     listId: Optional[str] = None
@@ -242,4 +242,6 @@ class MdbFilters(BaseFilters):
     library: Optional[str] = None
 
 
-Filters = Annotated[Union[BaseFilters, PlexFilters, JellyfinFilters, TraktFilters, TmdbFilters, MdbFilters, TvdbFilters, TmdbShowFilters, EmbyFilters], Field(discriminator='filterType')]
+Filters = Annotated[Union[
+    BaseFilters, PlexFilters, JellyfinFilters, TraktFilters, TmdbFilters, MdbFilters, TvdbFilters, TmdbShowFilters, EmbyFilters], Field(
+    discriminator='filterType')]

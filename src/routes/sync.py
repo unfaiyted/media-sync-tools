@@ -6,7 +6,7 @@ from starlette.background import BackgroundTasks
 from src.create.plex import sync_plex_collections, sync_plex_playlists, sync_plex_sample_searches
 from src.db.queries import media_list_queries
 from src.create import ListBuilder
-from src.models.configs import SyncOptions
+from src.models import SyncOptions
 from src.models import MediaList, MediaListType, MediaListOptions
 from src.config import ConfigManager
 from src.create.toplists import sync_top_lists
@@ -22,6 +22,7 @@ from src.tasks.tasks import sync_libraries_from_provider, sync_all_collections_f
     sync_media_list_to_provider
 
 router = APIRouter()
+
 
 @router.get("/watched")
 async def trigger_sync_watchlist():
@@ -65,6 +66,7 @@ async def trigger_sync_playlist():
             'Friends',
             'Rick and Morty'
         ]
+
         log.info(f'Creating playlist {name} with {len(shows)} shows.')
         create_emby_playlist(config, name, shows)
 
@@ -102,6 +104,7 @@ async def trigger_sync_collection():
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": str(e)})
 
+
 @router.get("/libraries")
 async def trigger_sync_libraries():
     config = await ConfigManager.get_manager()
@@ -112,17 +115,19 @@ async def trigger_sync_libraries():
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": str(e)})
 
+
 @router.get("/plex")
 async def trigger_sync_plex():
     config = await ConfigManager.get_manager()
     try:
         # await sync_plex_collections(config)
-        #await sync_plex_playlists(config)
+        # await sync_plex_playlists(config)
         await sync_plex_sample_searches(config)
 
         return JSONResponse(status_code=200, content={"message": "Sync plex libraries successfully."})
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": str(e)})
+
 
 @router.get('/trakt')
 async def handle_trakt():
@@ -141,7 +146,6 @@ async def handle_trakt():
 @router.get('/ratings')
 async def handle_ratings(background_tasks: BackgroundTasks):
     config = await ConfigManager.get_manager()
-
 
     try:
 
@@ -245,10 +249,6 @@ async def sync_media_list_to_provider(payload: MediaListOptions, ):
     db = (await ConfigManager.get_manager()).get_db()
 
     # Add a record to the database if it doesn't exist for MediaListOptions each user should have a unique record
-    # for each list they want to sync.
-
-
-    # Check which clients are selected for sync. We will loop over each client and sync the list to that client.
 
     # Collection where MediaListOptions are stored
     collection = db.media_list_options
@@ -279,7 +279,6 @@ async def sync_media_list_to_provider(payload: MediaListOptions, ):
     media_list = await media_list_queries.get_media_list_with_items(db, payload.mediaListId)
     media_list = MediaList(**media_list)
 
-
     print(f'Found {len(clients_to_sync)} clients to sync to.')
     print(f'Found {len(media_list.items)} items to sync.')
 
@@ -290,7 +289,6 @@ async def sync_media_list_to_provider(payload: MediaListOptions, ):
         list = ListBuilder(config, media_list=media_list)
         print(f'Syncing list to client {client.client.name}')
         await list.sync(client.client.name.lower())
-
 
         #   Your syncing logic here. For example:
         # await sync_to_client(client, payload)
@@ -311,57 +309,76 @@ async def create_sync_options(sync_option: SyncOptions, ):
 
 @router.get("/options/{sync_options_id}", response_model=SyncOptions)
 async def read_sync_options(sync_options_id: str, ):
-    db = (await ConfigManager.get_manager()).get_db()
+    config = await ConfigManager.get_manager()
+    db = config.get_db()
+    log = config.get_logger(__name__)
 
     sync_option = await db.sync_options.find_one({"syncOptionsId": sync_options_id})
+    log.info(f'Getting sync options', sync_options_id=sync_options_id)
     if sync_option is None:
+        log.error(f'SyncOption not found!', sync_options_id=sync_options_id)
         raise HTTPException(status_code=404, detail="SyncOption not found")
+    log.debug(f'Complete sync get', sync_options_id=sync_options_id, sync_option=sync_option)
     return sync_option
 
 
 # Get Sync Options by Config ID
 @router.get("/options/config/{config_id}", response_model=SyncOptions)
 async def read_sync_options_by_config_id(config_id: str, ):
-    db = (await ConfigManager.get_manager()).get_db()
+    config = await ConfigManager.get_manager()
+    db = config.get_db()
+    log = config.get_logger(__name__)
 
     SyncOptions.update_forward_refs()
     sync_option = await db.sync_options.find_one({"configId": config_id})
-    print(sync_option)
+    log.info(f'Getting sync options', config_id=config_id)
     if sync_option is None:
+        log.error(f'SyncOption not found!', config_id=config_id)
         raise HTTPException(status_code=404, detail="SyncOption not found")
+    log.debug(f'Complete sync get', config_id=config_id, sync_option=sync_option)
     return sync_option
 
 
 @router.put("/options/{sync_options_id}", response_model=SyncOptions)
 async def update_sync_options(sync_options_id: str, sync_option: SyncOptions):
-    db = (await ConfigManager.get_manager()).get_db()
+    config = await ConfigManager.get_manager()
+    db = config.get_db()
+    log = config.get_logger(__name__)
 
     existing_sync_option = await db.sync_options.find_one({"syncOptionsId": sync_options_id})
+    log.info(f'Updating sync options', sync_options_id=sync_options_id, sync_option=sync_option)
     if existing_sync_option is None:
+        log.error(f'SyncOption not found!', sync_options_id=sync_options_id)
         raise HTTPException(status_code=404, detail="SyncOption not found")
 
     sync_option_dict = sync_option.dict()
     await db.sync_options.replace_one({"syncOptionsId": sync_options_id}, sync_option_dict)
+    log.debug(f'Complete sync update', sync_options_id=sync_options_id, sync_option=sync_option)
     return sync_option_dict
 
 
 @router.delete("/options/{sync_options_id}", response_model=SyncOptions)
 async def delete_sync_options(sync_options_id: str, ):
-    db = (await ConfigManager.get_manager()).get_db()
+    config = await ConfigManager.get_manager()
+    db = config.get_db()
+    log = config.get_logger(__name__)
 
     existing_sync_option = await db.sync_options.find_one({"syncOptionsId": sync_options_id})
+    log.info(f'Deleting sync options', sync_options_id=sync_options_id)
     if existing_sync_option is None:
+        log.error(f'SyncOption not found!', sync_options_id=sync_options_id)
         raise HTTPException(status_code=404, detail="SyncOption not found")
     await db.sync_options.delete_one({"syncOptionsId": sync_options_id})
+    log.debug(f'Complete sync delete', sync_options_id=sync_options_id)
     return existing_sync_option
 
 
 class ImportUrlRequest(BaseModel):
     url: str
 
+
 @router.post("/import/list/", response_model=MediaList)
 async def import_list(payload: ImportUrlRequest):
     config = await ConfigManager.get_manager()
-    media_list = await import_url(config,payload.url)
+    media_list = await import_url(config, payload.url)
     return media_list
-

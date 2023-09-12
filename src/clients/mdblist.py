@@ -1,5 +1,7 @@
 import requests
 
+from src.models.providers.mdb import MdbItem
+
 
 class MdbClient:
     BASE_URL = "https://mdblist.com/api/"
@@ -53,6 +55,14 @@ class MdbClient:
         endpoint = f"lists/{list_id}/items"
         self.log.debug("Getting list items", endpoint=endpoint, list_id=list_id)
         return self._make_request(endpoint)
+
+    def get_list_items_as_objects(self, list_id) -> list[MdbItem]:
+        items = self.get_list_items(list_id)
+        self.log.info("Getting list items as objects", list_id=list_id, items=items)
+
+        # Map to MdbItem objects
+        return [MdbItem(**item) for item in items]
+
 
     def get_top_lists(self):
         endpoint = "lists/top"

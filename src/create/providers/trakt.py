@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 from typing import List, Optional
 
+from src.models.providers.trakt import TraktItem
 from src.models import MediaItem
 from src.clients.trakt import TraktClient
 from src.create.providers.base_provider import BaseMediaProvider
@@ -94,6 +95,7 @@ class TraktProvider(BaseMediaProvider):
 
         for item in list_items:
             self.log.debug("Appending media item", item=item)
+            item = TraktItem(**item)
             media_item = self._map_trakt_item_to_media_item(item, self.log)
             media_list.items.append(
                 await self.create_media_list_item(media_item, media_list, TmdbPosterProvider(config=self.config)))
@@ -101,30 +103,32 @@ class TraktProvider(BaseMediaProvider):
         return media_list
 
     @staticmethod
-    def _map_trakt_item_to_media_item(provider_item: dict, log) -> MediaItem | None:
+    def _map_trakt_item_to_media_item(trakt_item: TraktItem, log) -> MediaItem | None:
         """
         Map a TraktItem to MediaItem object.
 
-        :param provider_item: Item fetched from Trakt.
+        :param trakt_item: Item fetched from Trakt.
         :return: Mapped MediaItem object.
         """
-        log.info("Mapping TraktItem to MediaItem", provider_item=provider_item)
-        item = provider_item.get('show', provider_item.get('movie', {}))
-        log.debug("Mapped item", item=item)
+        log.info("Mapping TraktItem to MediaItem", provider_item=trakt_item)
+        item_type = trakt_item.type
+        log.debug("Mapped item", item=trakt_item, item_type=item_type)
 
-        if item is None:
-            log.error("Error processing item", item=item)
+        if trakt_item is None:
+            log.error("Error processing item", item=trakt_item)
             return None
+
+        item = trakt_item.get_item()
 
         return MediaItem(
             mediaItemId=str(uuid.uuid4()),
-            title=item['title'],
-            year=item['year'],
-            type=MediaType.MOVIE if provider_item['type'] == 'movie' else MediaType.SHOW,
+            title=item.title,
+            year=item.year,
+            type=MediaType.MOVIE if trakt_item.type == 'movie' else MediaType.SHOW,
             providers=MediaProviderIds(
-                imdbId=item['ids'].get('imdb'),
-                tvdbId=item['ids'].get('tvdb'),
-                traktId=item['ids'].get('trakt'),
-                tmdbId=item['ids'].get('tmdb'),
-                tvRageId=item['ids'].get('tvrage'),
+                imdbId=item.ids.imdb,
+                tvdbId=item.ids.tvdb,
+                traktId=item.ids.trakt,
+                tmdbId=item.ids.tmdb,
+                tvRageId=item.ids.tvrage,
             ))

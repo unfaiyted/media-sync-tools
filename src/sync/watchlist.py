@@ -23,8 +23,10 @@ def sync_watchlist(config):
     # Create poster
     icon_path = f'{root_dir}/resources/eye.png'
 
-    emby.create_poster(f'{config_path}/watchlist.png', watchlist_collection_name, root_dir, icon_path)
-    emby.upload_image(emby_watchlist['Id'], f'{config_path}/watchlist.png')
+
+    # TODO: implement new poster logic
+    # emby.create_poster(f'{config_path}/watchlist.png', watchlist_collection_name, root_dir, icon_path)
+    # emby.upload_image(emby_watchlist['Id'], f'{config_path}/watchlist.png')
 
     for media in plex_watchlist:
         print(f'Processing media: {media.title}')

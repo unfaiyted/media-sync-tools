@@ -12,41 +12,6 @@ import time
 from src.models import EmbyFilters, MediaType
 from src.models import MediaList, MediaItem
 
-from enum import Enum
-
-
-class EmbyLibraryItemType(Enum):
-    AUDIO = "Audio"
-    VIDEO = "Video"
-    FOLDER = "Folder"
-    EPISODE = "Episode"
-    MOVIE = "Movie"
-    TRAILER = "Trailer"
-    ADULT_VIDEO = "AdultVideo"
-    MUSIC_VIDEO = "MusicVideo"
-    BOX_SET = "BoxSet"
-    MUSIC_ALBUM = "MusicAlbum"
-    MUSIC_ARTIST = "MusicArtist"
-    SEASON = "Season"
-    SERIES = "Series"
-    GAME = "Game"
-    GAME_SYSTEM = "GameSystem"
-    BOOK = "Book"
-
-
-class EmbyImageType(Enum):
-    PRIMARY = "Primary"
-    ART = "Art"
-    BACKDROP = "Backdrop"
-    BANNER = "Banner"
-    LOGO = "Logo"
-    THUMB = "Thumb"
-    DISC = "Disc"
-    BOX = "Box"
-    SCREENSHOT = "Screenshot"
-    MENU = "Menu"
-    CHAPTER = "Chapter"
-
 
 class EmbyClient:
     def __init__(self, get_logger, server_url, username, api_key):
@@ -526,19 +491,19 @@ class EmbyClient:
     def get_movies_by_genre(self, limit=50, genre="Action"):
         return self.get_media(limit, "Movie", genre=genre)
 
-    @staticmethod
-    def create_poster(path, text, root_path, icon_path='/resources/icons/tv.png'):
-        width, height = 400, 600
-        start, end = (233, 0, 4), (88, 76, 76)
-        angle = -160
-        font_path = f'{root_path}/resources/fonts/OpenSans-SemiBold.ttf'  # path to your .ttf font file
-
-        image_creator = PosterImageCreator(width, height, "cyan-teal", angle, font_path)
-        img = image_creator.create_gradient().add_icon_with_text(icon_path, text)
-
-        img.save(path, quality=95)
-        return img
-
+    # @staticmethod
+    # def create_poster(path, text, root_path, icon_path='/resources/icons/tv.png'):
+    #     width, height = 400, 600
+    #     start, end = (233, 0, 4), (88, 76, 76)
+    #     angle = -160
+    #     font_path = f'{root_path}/resources/fonts/OpenSans-SemiBold.ttf'  # path to your .ttf font file
+    #
+    #     # image_creator = PosterImageCreator(width, height, "cyan-teal", angle, font_path)
+    #     img = image_creator.create_gradient().add_icon_with_text(icon_path, text)
+    #
+    #     img.save(path, quality=95)
+    #     return img
+    #
     ####
     # MediaList based Methods
     ####

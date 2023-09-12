@@ -4,8 +4,6 @@ from enum import Enum
 from pydantic import BaseModel
 from typing import List, Optional, ForwardRef
 
-from src.models import MediaList
-
 
 class LibraryType(str, Enum):
     UNKNOWN = 'UNKNOWN'
@@ -19,13 +17,13 @@ class LibraryType(str, Enum):
 
     # ... other types ...
 
+
 class Library(BaseModel):
     libraryId: str = None
     name: str
     type: LibraryType
     clients: Optional[List[LibraryClient]]
     configId: str
-    Lists: Optional[MediaList]
 
 
 class LibraryClient(BaseModel):
@@ -34,6 +32,3 @@ class LibraryClient(BaseModel):
     libraryName: str
     clientId: str
     mediaListId: Optional[str]
-
-
-

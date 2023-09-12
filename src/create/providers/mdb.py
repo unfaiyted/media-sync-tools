@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
+from src.models.providers.mdb import MdbItem
 from src.clients.mdblist import MdbClient
 from src.config import ConfigManager
 from src.create.providers.base_provider import BaseMediaProvider
@@ -46,15 +47,15 @@ class MdbProvider(BaseMediaProvider):
         self.log.info("MdbProvider initialized", filters=filters, id=self.id)
 
     @staticmethod
-    def _map_mdb_item_to_media_item(item):
+    def _map_mdb_item_to_media_item(item: MdbItem):
         return MediaItem(
             mediaItemId=str(uuid.uuid4()),
-            title=item['title'],
-            year=item['release_year'],
-            type=MediaType.MOVIE if item['mediatype'] == 'movie' else MediaType.SHOW,
+            title=item.title,
+            year=item.release_year,
+            type=MediaType.MOVIE if item.mediatype == 'movie' else MediaType.SHOW,
             providers=MediaProviderIds(
-                imdbId=item['imdb_id'],
-                tvdbId=item['tvdb_id']
+                imdbId=item.imdb_id,
+                tvdbId=item.tvdb_id,
             ),
         )
 
@@ -63,20 +64,22 @@ class MdbProvider(BaseMediaProvider):
         Retrieve media list from Mdb.
         :return:
         """
+        db = self.config.get_db()
+
         if self.id is None:
             self.log.error('No list id provided. Cannot get list.')
             return None
 
         mdb_list = self.client.get_list_information(list_id=self.id)[0]
-        list_items = self.client.get_list_items(mdb_list['id'])
-        db = self.config.get_db()
+        list_items = self.client.get_list_items_as_objects(mdb_list['id'])
+        self.log.debug('MDB list items', list_items=list_items)
 
         media_list = MediaList(
             mediaListId=str(uuid.uuid4()),
             name=mdb_list['name'],
             type=self.listType,
             sortName=mdb_list['name'],
-            filters=self.filters,
+            filters=self.filters.dict(),
             items=[],
             clientId='mdb',
             createdAt=datetime.now(),
@@ -86,6 +89,7 @@ class MdbProvider(BaseMediaProvider):
         db.media_lists.insert_one(media_list.dict())
 
         for item in list_items:
+            self.log.debug('Original MDB item', item=item)
             media_item = self._map_mdb_item_to_media_item(item)
             self.log.debug("Appending media item", item=item, media_list=media_list)
             media_list.items.append(await self.create_media_list_item(media_item, media_list))

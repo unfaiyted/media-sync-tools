@@ -113,8 +113,9 @@ def emby_to_plex_sync_collection(config):
             except:
                 print('Error uploading poster')
                 # Create a poster for it
-                emby.create_poster(poster_path, plex_collection.title)
-                emby.upload_image(emby_collection['Id'], poster_path)
+                # TODO: Replace poster creation logic
+                # emby.create_poster(poster_path, plex_collection.title)
+                # emby.upload_image(emby_collection['Id'], poster_path)
 
             item_metadata = emby.get_item_metadata(emby_collection['Id'])
 

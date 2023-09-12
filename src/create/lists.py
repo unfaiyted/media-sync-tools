@@ -45,12 +45,11 @@ class Lists:
         emby_previously_watchlist = self.emby.create_collection('Previously Watched', 'Mixed',
                                                                 '!000_Watchlist_Previously_Watched')
 
-        self.emby.create_poster(f'{self.config.get_config_path()}/previously-watched.png', 'Previously Watched',
-                                self.config.get_root_path(), f'{self.config.get_root_path()}/resources/eye-closed.png')
-        self.emby.upload_image(emby_previously_watchlist['Id'],
-                               f'{self.config.get_config_path()}/previously-watched.png')
-
-        print('Created Previously Watchedlist')
+        # TODO: Use new Poster logic to create poster
+        # self.emby.create_poster(f'{self.config.get_config_path()}/previously-watched.png', 'Previously Watched',
+        #                         self.config.get_root_path(), f'{self.config.get_root_path()}/resources/eye-closed.png')
+        # self.emby.upload_image(emby_previously_watchlist['Id'],
+        #                        f'{self.config.get_config_path()}/previously-watched.png')
 
         print('emby_watchlist', emby_watchlist)
 

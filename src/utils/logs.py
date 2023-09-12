@@ -1,7 +1,8 @@
 import copy
 from structlog import PrintLogger
 from structlog.dev import ConsoleRenderer
-
+import copy
+import _thread
 from src.models import ConfigClientFieldsValue
 
 class CenteredConsoleRenderer(ConsoleRenderer):
@@ -11,10 +12,8 @@ class CenteredConsoleRenderer(ConsoleRenderer):
         # Split the string to get the timestamp, log level, and event.
         date, time, start_log_level_segment, log_level, end_log_level_segment, event = s.split(' ', 5)
         start_log_level_segment = start_log_level_segment.strip().strip('[')
-        # print(f'LOG------- {date} {time} st-> {start_log_level_segment} ll-> {log_level} , stlen=> {len(start_log_level_segment)} , ll=> {len(log_level)} , end-> {end_log_level_segment} , event-> {event}')
-        # Get log level from the segment and center it within a space of 10 characters between brackets.
+        # Get log level from the segment and center it within a space of 17 characters between brackets.
         log_level_centered = f"[{start_log_level_segment.strip().center(17)}"
-
         return f"{date} {time} {log_level_centered} {event.strip()}"
 
 
@@ -30,23 +29,46 @@ class NamedPrintLogger(PrintLogger):
 
 
 def redact_keys_based_on_name(_, __, event_dict):
-    REDACTED_KEYS = ["api_key", "password",'apikey']
+    REDACTED_KEYS = ["api_key", "password", 'apikey', 'bearer_token', 'client_secret', 'client_id', 'access_token', 'refresh_token']
+    MAX_DEPTH = 5
 
-    def recursive_redact(data):
+    def recursive_redact(data, current_depth=0):
+        if current_depth == MAX_DEPTH:
+            return
+
         if isinstance(data, dict):
+            new_data = {}
             for key, value in data.items():
-                if key in REDACTED_KEYS:
-                    data[key] = "[REDACTED]"
-                else:
-                    recursive_redact(value)
-        elif isinstance(data, list):
-            for item in data:
-                recursive_redact(item)
+                # Check for un-picklable objects
+                if isinstance(value, _thread.LockType):
+                    continue
 
-    # Make a deep copy of event_dict and then modify that
-    event_copy = copy.deepcopy(event_dict)
-    recursive_redact(event_copy)
-    return event_copy
+                if key in REDACTED_KEYS:
+                    new_data[key] = "[REDACTED]"
+                else:
+                    new_data[key] = recursive_redact(value, current_depth + 1)
+            return new_data
+
+        elif isinstance(data, list):
+            new_data = []
+            for item in data:
+                if not isinstance(item, _thread.LockType):
+                    new_data.append(recursive_redact(item, current_depth + 1))
+            return new_data
+
+        elif hasattr(data, '__dict__') and not isinstance(data, type):
+            new_obj = copy.copy(data)  # shallow copy of the object
+            for key, value in data.__dict__.items():
+                if key in REDACTED_KEYS:
+                    setattr(new_obj, key, "[REDACTED]")
+                else:
+                    setattr(new_obj, key, recursive_redact(value, current_depth + 1))
+            return new_obj
+
+        return data
+
+    return recursive_redact(event_dict)
+
 
 
 def redact_sensitive_data(logger, log_method, event_dict):

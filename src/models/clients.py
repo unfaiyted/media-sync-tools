@@ -2,11 +2,10 @@ from __future__ import annotations  # Use this to enable postponed evaluation of
 
 from enum import Enum
 from pydantic import BaseModel, validator
-from typing import List, Optional
+from typing import List, Optional, ForwardRef
 from bson import ObjectId
 
 from src.models.libraries import LibraryClient
-
 
 class ClientType(str, Enum):
     UNKNOWN = 'UNKNOWN'
@@ -36,8 +35,8 @@ class Client(BaseModel):
     label: str
     type: ClientType
     name: str
-    LibraryClients: Optional[List[LibraryClient]]
-    ConfigClient: Optional[List[ConfigClient]]
+    LibraryClients: Optional[List[ForwardRef('LibraryClient')]]
+    ConfigClient: Optional[List[ForwardRef('ConfigClient')]]
 
     @validator('clientId', pre=True, always=True)
     def validate_object_id(cls, value):
