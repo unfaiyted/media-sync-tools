@@ -21,7 +21,8 @@ import motor.motor_asyncio
 import motor
 
 from src.utils.string import is_uuid
-from src.utils.logs import NamedPrintLoggerFactory, CenteredConsoleRenderer
+from src.utils.logs import NamedPrintLoggerFactory, CenteredConsoleRenderer, redact_sensitive_data, \
+    redact_keys_based_on_name
 
 config_manager = None
 
@@ -32,7 +33,6 @@ class ConfigManager:
     def __init__(self, config_path=None, config_id=None):
         load_dotenv()
         self.log = self.get_logger(__name__)
-        self.setup_logging()
         self.clients = {}
         self.clients_details = {}
         self.accounts = {}
@@ -42,7 +42,7 @@ class ConfigManager:
         self.sync = {}
         self.root_path = os.path.dirname(os.path.abspath(__file__))
         self.config_path = config_path or os.path.join(
-            self.root_path, '../', 'config')
+        self.root_path, '../', 'config')
         self.create_subdirectories()
         self.db = self.get_db()
 
@@ -62,7 +62,6 @@ class ConfigManager:
     @classmethod
     async def create(cls, config_path=None, config_id=None):
         self = cls(config_path, config_id)
-        # self.config_id = config_id
         await self.init_async()
         return self
 
@@ -71,27 +70,6 @@ class ConfigManager:
         if self.config_id:
             self.log.debug('Config ID found', configId=self.config_id)
             await self.fetch_and_load_config_from_db()
-
-    def setup_logging(self):
-        self.log.info('Setting up logging')
-
-        structlog.configure(
-            processors=[
-                structlog.stdlib.add_logger_name,
-                structlog.contextvars.merge_contextvars,
-                structlog.processors.add_log_level,
-                structlog.processors.StackInfoRenderer(),
-                structlog.dev.set_exc_info,
-                structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S"),
-                CenteredConsoleRenderer(),
-            ],
-            wrapper_class=structlog.make_filtering_bound_logger(logging.NOTSET),
-            context_class=dict,
-            logger_factory=NamedPrintLoggerFactory(),
-            cache_logger_on_first_use=False
-        )
-        # log = structlog.get_logger()
-        self.log = structlog.get_logger(__name__)
 
     @staticmethod
     def get_logger(name=None) -> structlog.stdlib.BoundLogger:
@@ -110,6 +88,7 @@ class ConfigManager:
                 structlog.processors.StackInfoRenderer(),
                 structlog.dev.set_exc_info,
                 structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S"),
+                redact_sensitive_data,  # <-- Add this line
                 CenteredConsoleRenderer(),
             ],
             wrapper_class=structlog.make_filtering_bound_logger(logging.NOTSET),
@@ -138,7 +117,7 @@ class ConfigManager:
                       len=len(config_data.clients))
 
         for config_client in config_data.clients:
-            self.log.info(f'Processing client:', clientName=config_client.client.name)
+            self.log.info('Processing client:', clientName=config_client.client.name)
             details = {
                 'type': config_client.client.name.lower(),
             }
@@ -205,7 +184,7 @@ class ConfigManager:
     def add_clients(self, clients):
         self.log.debug('Adding clients', clients=clients)
         for name, client_data in clients.items():
-            self.log.debug('Adding client', clientName=name, clientData=client_data)
+            self.log.debug('Adding client', clientName=name)
             client_type = client_data.get('type')
 
             if client_type == 'plex':

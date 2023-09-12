@@ -237,7 +237,6 @@ class TmdbShowFilters(TmdbFilters):
     withType: Optional[str] = None
 
 
-
 class MdbFilters(BaseFilters):
     listId: Optional[str] = None
     library: Optional[str] = None

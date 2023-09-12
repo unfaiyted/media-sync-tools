@@ -10,6 +10,7 @@ scheduler = AsyncIOScheduler()
 
 async def check_and_execute_tasks():
     config = await ConfigManager().get_manager()
+    log = config.get_logger(__name__)
     db = config.get_db()  # Get your database connection, similar to what's in your routes
     now = datetime.now()
 
@@ -17,6 +18,7 @@ async def check_and_execute_tasks():
     tasks_ready = await db.scheduledTasks.find({"nextExecution": {"$lte": now}}).to_list(None)
 
     for task in tasks_ready:
+        log.debug(f"Executing task with payload", task=task)
         await execute_task(task['taskType'], task.get('payload'))
 
         # Update task's lastExecuted and nextExecution in the database

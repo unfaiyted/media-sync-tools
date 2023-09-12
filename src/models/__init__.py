@@ -8,7 +8,7 @@ from typing import List, Optional, ForwardRef, Tuple, Union
 from bson import ObjectId
 
 from src.models.filters import TmdbFilters, TraktFilters, JellyfinFilters, PlexFilters, EmbyFilters, \
-    Filters, FilterType
+    Filters, FilterType, MdbFilters
 
 
 class MediaListType(str, Enum):
@@ -109,6 +109,8 @@ class MediaList(BaseModel):
             return TmdbFilters(**filters)
         elif filter_type == FilterType.EMBY:
             return EmbyFilters(**filters)
+        elif filter_type == FilterType.MDB:
+            return MdbFilters(**filters)
 
         raise ValueError(f"Unknown filter type: {filter_type}")
 

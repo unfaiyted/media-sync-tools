@@ -27,12 +27,14 @@ async def sync_top_lists(config):
             creatorId=config.get_user().userId,
             clientId='mdb',
         )
-
+        log.debug("Creating media list", media_list=media_list)
         media_list.filters = MdbFilters(
+            filtersId=str(uuid.uuid4()),
             clientId=media_list.clientId,
             filterType=FilterType.MDB,
             listId=top_list['id']
         )
+        log.debug("Adding filters to media list", media_list=media_list)
 
         log.debug("Creating media list", media_list=media_list)
         if top_list['mediatype'] == 'movie':

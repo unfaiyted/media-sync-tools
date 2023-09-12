@@ -66,7 +66,7 @@ async def trigger_sync_playlist():
             'Rick and Morty'
         ]
         log.info(f'Creating playlist {name} with {len(shows)} shows.')
-        create_emby_playlist(log, config, name, shows)
+        create_emby_playlist(config, name, shows)
 
         return JSONResponse(status_code=200, content={"message": "Sync watchlist started successfully."})
     except Exception as e:

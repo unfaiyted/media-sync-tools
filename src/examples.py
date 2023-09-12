@@ -33,12 +33,14 @@ async def examples(config):
     # mdb_list_api = config.get_client('mdb')
 
     db = config.get_db()
+
     class UserBase(BaseModel):
         email: str
         name: str
         password: str
 
     user = UserBase(email="aaaa", name="asdfasdf", password="asdfasdf")
+
     async def create_user(user: UserBase):
         user_data = user.dict()
         # Remember to hash the password before inserting
@@ -62,6 +64,7 @@ def main():
     # url = "https://www.example.com"
     result = asyncio.run(examples(config))
     # print(result)
+
 
 if __name__ == "__main__":
     main()

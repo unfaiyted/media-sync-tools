@@ -7,13 +7,13 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps, ImageFilter
 from src.models import MediaPosterOverlayOptions, MediaPoster, MediaPosterTextOptions
 
 class MediaPosterImageCreator:
-    def __init__(self, media_poster: MediaPoster, log):
+    def __init__(self, media_poster: MediaPoster, get_logger):
         """
         Initialize the MediaPosterImageCreator.
         :param media_poster: MediaPoster instance
         :param log:
         """
-        self.log = log
+        self.log = get_logger(__name__)
         self.media_poster = media_poster
         width = media_poster.width
         height = media_poster.height

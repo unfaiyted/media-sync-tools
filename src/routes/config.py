@@ -6,6 +6,7 @@ from bson import ObjectId
 from src.models import Config, ConfigClient, ClientField, ConfigClientFieldsValue
 from src.config import ConfigManager
 from src.db.queries import config_queries
+
 router = APIRouter()
 
 # Connect to MongoDB
@@ -160,6 +161,7 @@ router = APIRouter()
 
 router = APIRouter()
 
+
 # CRUD operations for Config
 @router.post("/", response_model=Config)
 async def create_config(config_item: Config):
@@ -170,7 +172,8 @@ async def create_config(config_item: Config):
     await db.configs.insert_one(config_dict)
     return config_dict
 
-#get all configs
+
+# get all configs
 @router.get("/", response_model=List[Config])
 async def read_all_config():
     db = (await ConfigManager.get_manager()).get_db()
@@ -182,6 +185,7 @@ async def read_all_config():
         raise HTTPException(status_code=404, detail="Config not found")
     return configs
 
+
 @router.get("/{config_id}", response_model=Config)
 async def read_config(config_id: str):
     db = (await ConfigManager.get_manager()).get_db()
@@ -189,6 +193,7 @@ async def read_config(config_id: str):
     if config_item is None:
         raise HTTPException(status_code=404, detail="Config not found")
     return config_item
+
 
 @router.put("/{config_id}", response_model=Config)
 async def update_config(config_id: str, config_item: Config):
@@ -200,6 +205,7 @@ async def update_config(config_id: str, config_item: Config):
     config_dict = config_item.dict()
     await db.configs.replace_one({"configId": config_id}, config_dict)
     return config_dict
+
 
 @router.delete("/{config_id}", response_model=Config)
 async def delete_config(config_id: str):
@@ -222,6 +228,7 @@ async def get_config_clients_by_config_id(configId: str):
     if not config_clients:
         raise HTTPException(status_code=404, detail="Config Clients not found")
     return config_clients
+
 
 @router.post("/client/", response_model=ConfigClient)
 async def create_config_client(config_client: ConfigClient):
@@ -258,6 +265,7 @@ async def read_config_client_by_config_id_and_type(config_id: str, type: str):
 
     return matching_config_clients
 
+
 @router.get("/client/{config_client_id}", response_model=ConfigClient)
 async def read_config_client(config_client_id: str):
     db = (await ConfigManager.get_manager()).get_db()
@@ -265,6 +273,7 @@ async def read_config_client(config_client_id: str):
     if config_client is None:
         raise HTTPException(status_code=404, detail="Config Client not found")
     return config_client
+
 
 @router.put("/client/{config_client_id}", response_model=ConfigClient)
 async def update_config_client(config_client_id: str, config_client: ConfigClient):
@@ -276,6 +285,7 @@ async def update_config_client(config_client_id: str, config_client: ConfigClien
     config_client_dict = config_client.dict()
     await db.config_clients.replace_one({"configClientId": config_client_id}, config_client_dict)
     return config_client_dict
+
 
 @router.delete("/client/{config_client_id}", response_model=ConfigClient)
 async def delete_config_client(config_client_id: str):
@@ -296,12 +306,13 @@ async def create_config_client_fields_value(fieldValue: ConfigClientFieldsValue)
 
     result = await db.config_client_fields_values.find_one({"configClientId": fieldValue.configClientId,
                                                             "configClientFieldId": fieldValue.configClientFieldId})
-    if(result is not None):
+    if (result is not None):
         fieldValue.configClientFieldValueId = fieldValue.configClientId
         value_dict = fieldValue.dict()
 
         await db.config_client_fields_values.replace_one({"configClientId": fieldValue.configClientId,
-                                                          "configClientFieldId": fieldValue.configClientFieldId}, value_dict)
+                                                          "configClientFieldId": fieldValue.configClientFieldId},
+                                                         value_dict)
 
         return value_dict
 
@@ -331,6 +342,7 @@ async def read_config_client_fields_value(value_id: str):
         raise HTTPException(status_code=404, detail="Config Client Fields Value not found")
     return value
 
+
 @router.put("/client-fields-value/{value_id}", response_model=ConfigClientFieldsValue)
 async def update_config_client_fields_value(value_id: str, value: ConfigClientFieldsValue):
     db = (await ConfigManager.get_manager()).get_db()
@@ -342,6 +354,7 @@ async def update_config_client_fields_value(value_id: str, value: ConfigClientFi
     await db.config_client_fields_values.replace_one({"configClientFieldsId": value_id}, value_dict)
     return value_dict
 
+
 @router.delete("/client-fields-value/{value_id}", response_model=ConfigClientFieldsValue)
 async def delete_config_client_fields_value(value_id: str):
     db = (await ConfigManager.get_manager()).get_db()
@@ -350,6 +363,7 @@ async def delete_config_client_fields_value(value_id: str):
         raise HTTPException(status_code=404, detail="Config Client Fields Value not found")
     await db.config_client_fields_values.delete_one({"configClientFieldsId": value_id})
     return existing_value
+
 
 # Fetch Field Values for a Given configId
 @router.get("/client-fields-value/config/{config_id}", response_model=List[ConfigClientFieldsValue])
@@ -362,6 +376,7 @@ async def read_all_config_client_fields_values_by_config_id(config_id: str):
     if values is None:
         raise HTTPException(status_code=404, detail="Config Client Fields Value not found")
     return values
+
 
 #
 # @router.post("/filter/", response_model=Filter)
@@ -425,9 +440,12 @@ async def read_full_config(config_id: str):
         raise HTTPException(status_code=404, detail="Config not found")
     return config_object
 
+
 @router.get("/hydrate/{user_id}", response_model=Config)
 async def hydrate_config(user_id: str):
-    db = (await ConfigManager.get_manager()).get_db()
+    config = await ConfigManager.get_manager()
+    db = config.get_db()
+    log = config.get_logger(__name__)
 
     # Fetch the user data
     user = await db.users.find_one({"userId": user_id})
@@ -447,36 +465,37 @@ async def hydrate_config(user_id: str):
     config_clients = await db.config_clients.find({"configId": appConfig.configId}).to_list(length=None)
 
     if libraries is not None:
-        print('libraries', libraries)
-        library_clients = await db.library_clients.find({"libraryId": {"$in": [library['libraryId'] for library in libraries]}}).to_list(length=None)
+        log.debug('Found libraries', libraries=libraries)
+        library_clients = await db.library_clients.find(
+            {"libraryId": {"$in": [library['libraryId'] for library in libraries]}}).to_list(length=None)
 
         for library in libraries:
-            library['clients'] = [library_client for library_client in library_clients if library_client['libraryId'] == library['libraryId']]
+            log.debug('Found library', library=library)
+            library['clients'] = [library_client for library_client in library_clients if
+                                  library_client['libraryId'] == library['libraryId']]
 
     # Fetch ClientField data based on the found clients
-    client_fields = await db.client_fields.find({"clientId": {"$in": [client['clientId'] for client in config_clients]}}).to_list(length=None)
+    client_fields = await db.client_fields.find(
+        {"clientId": {"$in": [client['clientId'] for client in config_clients]}}).to_list(length=None)
 
     for config_client in config_clients:
-        config_client['clientFields'] = [field for field in client_fields if field['clientId'] == config_client['clientId']]
+        log.debug('Found config client', config_client=config_client)
+        config_client['clientFields'] = [field for field in client_fields if
+                                         field['clientId'] == config_client['clientId']]
         config_client['clientFieldValues'] = list(
             await db.config_client_field_values.find(
                 {"configClientId": config_client['configClientId']}
             ).to_list(length=None)
         )
-
-        print('config_client', config_client['clientFieldValues'])
+        # print('config_client', config_client['clientFieldValues'])
 
         config_client['client'] = [client for client in clients if client['clientId'] == config_client['clientId']][0]
     sync_options = await db.sync_options.find_one({"configId": appConfig.configId})
-
 
     appConfig.user = user
     appConfig.clients = config_clients
     appConfig.libraries = libraries
     appConfig.sync = sync_options
 
-
-
-
-
+    log.debug('Assembled config', config=appConfig)
     return appConfig

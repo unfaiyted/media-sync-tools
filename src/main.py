@@ -1,6 +1,10 @@
 import sys
 import os
+
 # Get the absolute path of the 'src' folder
+import structlog
+import logging
+
 src_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'src'))
 sys.path.append(src_path)
 
@@ -10,7 +14,6 @@ from src.config import ConfigManager
 from src.routes import poster, images, sync, utils, config, client, lists, users, library, tasks
 from src.tasks.scheduler import start_scheduler, stop_scheduler
 from src.utils.db_init import DatabaseInitializer
-
 
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
@@ -27,9 +30,22 @@ app.add_middleware(
 )
 
 
+# def setup_uvicorn_logging():
+#     uvicorn_config = uvicorn.config.LOGGING_CONFIG
+#     uvicorn_config["formatters"]["access"]["()"] = structlog.stdlib.ProcessorFormatter
+#     uvicorn_config["formatters"]["access"]["processor"] = structlog.processors.JSONRenderer()
+#     uvicorn_config["formatters"]["default"]["()"] = structlog.stdlib.ProcessorFormatter
+#     uvicorn_config["formatters"]["default"]["processor"] = structlog.processors.JSONRenderer()
+#     uvicorn.config.LOGGING_CONFIG = uvicorn_config
+#
+#     logging.config.dictConfig(uvicorn.config.LOGGING_CONFIG)
+
 @app.on_event("startup")
 async def on_startup():
-    root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..','config'))
+    config_man = await ConfigManager.get_manager()
+    config_man.get_logger(__name__).info("Starting up")
+    # setup_uvicorn_logging()
+    root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'config'))
     await DatabaseInitializer(f'{root_path}/config.yml', ConfigManager.get_db()).run()
     start_scheduler()
 
@@ -37,7 +53,6 @@ async def on_startup():
 @app.on_event("shutdown")
 async def on_shutdown():
     stop_scheduler()
-
 
 
 app.include_router(images.router, prefix="/image", tags=["images"])
@@ -53,4 +68,3 @@ app.include_router(tasks.router, prefix="/task", tags=["tasks"])
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8000)
-
