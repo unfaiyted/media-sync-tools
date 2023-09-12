@@ -335,14 +335,11 @@ class ListBuilder:
                 width=4,
                 height=4
             )
+
         )
 
         poster = MediaPosterImageCreator(media_poster, self.log)
 
-        poster.create_gradient() \
-            .add_background_image_from_query(search_query=self.title) \
-            .add_icon_with_text(self.icon_path, self.title) \
-            .add_border()
         poster_location = f'{self.config.get_root_path()}/list-builder.png'
         poster.save(poster_location, quality=95)
         return poster_location
@@ -367,8 +364,6 @@ class ListBuilder:
 
         self.log.info(f'Creating {self.type} - {self.title}', title=self.title, type=self.type)
         media_list: MediaList = await self._get_media_list_from_provider()
-
-        # print('MEDIA_LIST', media_list)
 
         if media_list is None:
             self.log.info(f'Unable to get media list', title=self.title)

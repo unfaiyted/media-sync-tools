@@ -32,14 +32,20 @@ def redact_keys_based_on_name(_, __, event_dict):
     REDACTED_KEYS = ["api_key", "password", 'apikey', 'bearer_token', 'client_secret', 'client_id', 'access_token', 'refresh_token']
     MAX_DEPTH = 5
 
+    def manual_deepcopy(data):
+        if isinstance(data, dict):
+            return {key: manual_deepcopy(value) for key, value in data.items()}
+        elif isinstance(data, list):
+            return [manual_deepcopy(item) for item in data]
+        return data
+
     def recursive_redact(data, current_depth=0):
         if current_depth == MAX_DEPTH:
-            return
+            return data
 
         if isinstance(data, dict):
             new_data = {}
-            for key, value in data.items():
-                # Check for un-picklable objects
+            for key, value in manual_deepcopy(data).items():
                 if isinstance(value, _thread.LockType):
                     continue
 
@@ -50,15 +56,11 @@ def redact_keys_based_on_name(_, __, event_dict):
             return new_data
 
         elif isinstance(data, list):
-            new_data = []
-            for item in data:
-                if not isinstance(item, _thread.LockType):
-                    new_data.append(recursive_redact(item, current_depth + 1))
-            return new_data
+            return [recursive_redact(item, current_depth + 1) for item in data if not isinstance(item, _thread.LockType)]
 
         elif hasattr(data, '__dict__') and not isinstance(data, type):
-            new_obj = copy.copy(data)  # shallow copy of the object
-            for key, value in data.__dict__.items():
+            new_obj = data  # Shallow copy (this won't change as we're avoiding deepcopy)
+            for key, value in new_obj.__dict__.items():
                 if key in REDACTED_KEYS:
                     setattr(new_obj, key, "[REDACTED]")
                 else:
@@ -67,7 +69,7 @@ def redact_keys_based_on_name(_, __, event_dict):
 
         return data
 
-    return recursive_redact(event_dict)
+    return recursive_redact(manual_deepcopy(event_dict))  # start with a manual deep copy
 
 
 

@@ -7,15 +7,12 @@ from typing import Optional, Union
 # https://trakt.docs.apiary.io/#reference/search/text-query/get-text-query-results
 # Models are based on this result documentation
 class TraktIDs(BaseModel):
-    def __init__(self, *args, **kwargs):
-        super().__init__(args, kwargs)
-        self.tvrage = None
-
     trakt: int
     slug: str
     imdb: Optional[str]
     tmdb: Optional[int]
     tvdb: Optional[int]
+    tvrage: Optional[int]
 
 
 class Movie(BaseModel):

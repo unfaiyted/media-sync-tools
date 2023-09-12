@@ -47,3 +47,22 @@ class PosterProviderManager:
         self.log.debug("Getting poster for MediaItem", media_item=media_item)
         head = self.provider_manager.prioritize_provider(preferred_provider)
         return head.get_poster(self.config, media_item)
+
+
+class LibraryProviderManager:
+
+    def __init__(self, config):
+        """
+        Initialize the LibraryManager.
+        :param config:
+        """
+        # self.config = config
+        # self.log = config.get_logger(__name__)
+        # emby = EmbyLibraryProvider(config=config)
+        # jellyfin = JellyfinLibraryProvider(config=config)
+        # plex = PlexLibraryProvider(config=config)
+        #
+        #
+        # # Add any other providers you have
+        # self.provider_manager = ProviderManager(emby, jellyfin, plex, trakt)
+        # self.log.debug("LibraryProviderManager initialized", provider_manager=self.provider_manager)
