@@ -1,7 +1,9 @@
 import uuid
+from abc import ABC
 from datetime import datetime
 from typing import Optional
 
+from src.create.providers.list import ListProvider
 from src.models.providers.mdb import MdbItem
 from src.clients.mdblist import MdbClient
 from src.config import ConfigManager
@@ -18,7 +20,7 @@ class MdbProviderResult:
         self.movies = movies
 
 
-class MdbProvider(BaseMediaProvider):
+class MdbListProvider(ListProvider, ABC):
 
     def __init__(self, config: ConfigManager, filters: Optional[MdbFilters] = None, details: Optional[dict] = None,
                  media_list: Optional[MediaList] = None, list_type: MediaListType = MediaListType.COLLECTION):
@@ -46,18 +48,6 @@ class MdbProvider(BaseMediaProvider):
             self.id = filters.listId
         self.log.info("MdbProvider initialized", filters=filters, id=self.id)
 
-    @staticmethod
-    def _map_mdb_item_to_media_item(item: MdbItem):
-        return MediaItem(
-            mediaItemId=str(uuid.uuid4()),
-            title=item.title,
-            year=item.release_year,
-            type=MediaType.MOVIE if item.mediatype == 'movie' else MediaType.SHOW,
-            providers=MediaProviderIds(
-                imdbId=item.imdb_id,
-                tvdbId=item.tvdb_id,
-            ),
-        )
 
     async def get_list(self) -> MediaList or None:
         """
@@ -90,7 +80,7 @@ class MdbProvider(BaseMediaProvider):
 
         for item in list_items:
             self.log.debug('Original MDB item', item=item)
-            media_item = self._map_mdb_item_to_media_item(item)
+            media_item = MediaItem.from_mdb(item, self.log)
             self.log.debug("Appending media item", item=item, media_list=media_list)
             media_list.items.append(await self.create_media_list_item(media_item, media_list))
 

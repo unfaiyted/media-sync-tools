@@ -1,17 +1,17 @@
 import uuid
+from abc import ABC
 from datetime import datetime
 from typing import List, Optional
 
+from src.create.providers.list import ListProvider
 from src.models.providers.trakt import TraktItem
-from src.models import MediaItem
 from src.clients.trakt import TraktClient
-from src.create.providers.base_provider import BaseMediaProvider
 from src.create.providers.managers import PosterProviderManager
-from src.create.providers.posters import TmdbPosterProvider
+from src.create.providers.poster.tmdb import TmdbPosterProvider
 from src.models import TraktFilters, MediaListType, MediaList, MediaItem, MediaProviderIds, MediaType, MediaListItem
 
 
-class TraktProvider(BaseMediaProvider):
+class TraktListProvider(ListProvider, ABC):
     def __init__(self, config, filters: Optional[TraktFilters] = None, details: Optional[dict] = None,
                  media_list: Optional[MediaList] = None, list_type: MediaListType = MediaListType.COLLECTION):
         """
@@ -104,33 +104,4 @@ class TraktProvider(BaseMediaProvider):
 
         return media_list
 
-    @staticmethod
-    def _map_trakt_item_to_media_item(trakt_item: TraktItem, log) -> MediaItem | None:
-        """
-        Map a TraktItem to MediaItem object.
 
-        :param trakt_item: Item fetched from Trakt.
-        :return: Mapped MediaItem object.
-        """
-        log.info("Mapping TraktItem to MediaItem", provider_item=trakt_item)
-        item_type = trakt_item.type
-        log.debug("Mapped item", item=trakt_item, item_type=item_type)
-
-        if trakt_item is None:
-            log.error("Error processing item", item=trakt_item)
-            return None
-
-        item = trakt_item.get_item()
-
-        return MediaItem(
-            mediaItemId=str(uuid.uuid4()),
-            title=item.title,
-            year=item.year,
-            type=MediaType.MOVIE if trakt_item.type == 'movie' else MediaType.SHOW,
-            providers=MediaProviderIds(
-                imdbId=item.ids.imdb,
-                tvdbId=item.ids.tvdb,
-                traktId=item.ids.trakt,
-                tmdbId=item.ids.tmdb,
-                tvRageId=item.ids.tvrage,
-            ))

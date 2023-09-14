@@ -1,13 +1,14 @@
 import uuid
 
+from src.create.providers.list.ai import AiListProvider
+from src.create.providers.list.emby import EmbyListProvider
+from src.create.providers.list.jellyfin import JellyfinListProvider
+from src.create.providers.list.mdb import MdbListProvider
+from src.create.providers.list.plex import PlexListProvider
+from src.create.providers.list.tmdb import TmdbListProvider
+from src.create.providers.list.trakt import TraktListProvider
 from src.create.posters import MediaPosterImageCreator
-from src.create.providers.jellyfin import JellyfinProvider
-from src.create.providers.emby import EmbyProvider
-from src.create.providers.plex import PlexProvider
-from src.create.providers.tmdb import TmdbProvider
-from src.create.providers.ai import AiProvider
-from src.create.providers.mdb import MdbProvider
-from src.create.providers.trakt import TraktProvider
+
 from src.models import MediaListType, MediaList, MediaPoster, MediaItem, MediaImageType, MediaPosterTextOptions, \
     MediaPosterGradientOptions, MediaPosterBorderOptions
 
@@ -217,13 +218,13 @@ class ListBuilder:
 
         provider_mapping = {
             'self': (lambda: print('Using media list')),
-            'ai': (lambda: AiProvider(self.media_types, self.description, self._process_filters('ai'), self.limit)),
-            'mdb': (lambda: MdbProvider(self.config, media_list=self.media_list, list_type=self.type)),
-            'trakt': (lambda: TraktProvider(self.config, media_list=self.media_list, list_type=self.type)),
-            'tmdb': (lambda: TmdbProvider(self.config, media_list=self.media_list, list_type=self.type)),
-            'plex': (lambda: PlexProvider(self.config, media_list=self.media_list)),
-            'emby': (lambda: EmbyProvider(self.config, list_type=self.type)),
-            'jellyfin': (lambda: JellyfinProvider(self.config, media_list=self.media_list, list_type=self.type))
+            'ai': (lambda: AiListProvider(self.media_types, self.description, self._process_filters('ai'), self.limit)),
+            'mdb': (lambda: MdbListProvider(self.config, media_list=self.media_list, list_type=self.type)),
+            'trakt': (lambda: TraktListProvider(self.config, media_list=self.media_list, list_type=self.type)),
+            'tmdb': (lambda: TmdbListProvider(self.config, media_list=self.media_list, list_type=self.type)),
+            'plex': (lambda: PlexListProvider(self.config, media_list=self.media_list)),
+            'emby': (lambda: EmbyListProvider(self.config, list_type=self.type)),
+            'jellyfin': (lambda: JellyfinListProvider(self.config, media_list=self.media_list, list_type=self.type))
         }
 
         if self.provider in provider_mapping:
@@ -251,13 +252,13 @@ class ListBuilder:
 
         provider_mapping = {
             'self': (lambda: print('Using media list')),
-            'ai': (lambda: AiProvider(self.media_types, self.description, self._process_filters('ai'), self.limit)),
-            'mdb': (lambda: MdbProvider(self.config, media_list=self.media_list, list_type=self.type)),
-            'trakt': (lambda: TraktProvider(self.config, media_list=self.media_list, list_type=self.type)),
-            'tmdb': (lambda: TmdbProvider(self.config, media_list=self.media_list, list_type=self.type)),
-            'plex': (lambda: PlexProvider(self.config, media_list=self.media_list, list_type=self.type)),
-            'emby': (lambda: EmbyProvider(self.config, media_list=self.media_list, list_type=self.type)),
-            'jellyfin': (lambda: JellyfinProvider(self.config, media_list=self.media_list, list_type=self.type))
+            'ai': (lambda: AiListProvider(self.media_types, self.description, self._process_filters('ai'), self.limit)),
+            'mdb': (lambda: MdbListProvider(self.config, media_list=self.media_list, list_type=self.type)),
+            'trakt': (lambda: TraktListProvider(self.config, media_list=self.media_list, list_type=self.type)),
+            'tmdb': (lambda: TmdbListProvider(self.config, media_list=self.media_list, list_type=self.type)),
+            'plex': (lambda: PlexListProvider(self.config, media_list=self.media_list, list_type=self.type)),
+            'emby': (lambda: EmbyListProvider(self.config, media_list=self.media_list, list_type=self.type)),
+            'jellyfin': (lambda: JellyfinListProvider(self.config, media_list=self.media_list, list_type=self.type))
         }
 
         if provider in provider_mapping:
@@ -282,8 +283,8 @@ class ListBuilder:
 
         provider_mapping = {
             'self': (lambda: print('Using media list')),
-            'plex': (lambda: PlexProvider(self.config, self.filters, listType=self.type)),
-            'emby': (lambda: EmbyProvider(self.config, self.filters, details=self, listType=self.type))
+            'plex': (lambda: PlexListProvider(self.config, self.filters, listType=self.type)),
+            'emby': (lambda: EmbyListProvider(self.config, self.filters, details=self, listType=self.type))
         }
 
         if self.provider in provider_mapping:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from enum import Enum
 from pydantic import BaseModel
 from typing import List, Optional, ForwardRef
@@ -20,15 +21,20 @@ class LibraryType(str, Enum):
 
 class Library(BaseModel):
     libraryId: str = None
+    configId: str
+    name: str
+    createdAt: datetime
+    clientId: str
+    sourceId: Optional[str]
+    mediaListId: Optional[str]
+    type: LibraryType
+
+
+# old library model refactors to this
+class LibraryGroup(BaseModel):
+    libraryGroupId: str = None
+    configId: str
     name: str
     type: LibraryType
-    clients: Optional[List[LibraryClient]]
-    configId: str
+    libraries: Optional[List[Library]]
 
-
-class LibraryClient(BaseModel):
-    libraryClientId: Optional[str] = None
-    libraryId: str
-    libraryName: str
-    clientId: str
-    mediaListId: Optional[str]

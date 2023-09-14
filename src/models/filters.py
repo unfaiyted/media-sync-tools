@@ -1,3 +1,4 @@
+import uuid
 from dataclasses import field, dataclass
 from enum import Enum
 
@@ -21,7 +22,7 @@ class BaseFilters(BaseModel):
     _log = structlog.get_logger(__name__)
     clientId: str
     filterType: FilterType
-    filtersId: str
+    filtersId: str = str(uuid.uuid4())
     _invalid_keys: List[str] = ["clientId", "filterType", "filtersId"]  # Blocklist items, get rid of
     _valid_keys: List[str] = []  # Pass-list Items, keep
 

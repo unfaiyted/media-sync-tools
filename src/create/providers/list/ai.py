@@ -1,7 +1,7 @@
 
 
 
-class AiProvider:
+class AiListProvider:
 
     media_list = []
 

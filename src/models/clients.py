@@ -5,7 +5,6 @@ from pydantic import BaseModel, validator
 from typing import List, Optional, ForwardRef
 from bson import ObjectId
 
-from src.models.libraries import LibraryClient
 
 class ClientType(str, Enum):
     UNKNOWN = 'UNKNOWN'
@@ -35,8 +34,8 @@ class Client(BaseModel):
     label: str
     type: ClientType
     name: str
-    LibraryClients: Optional[List[ForwardRef('LibraryClient')]]
-    ConfigClient: Optional[List[ForwardRef('ConfigClient')]]
+    description: Optional[str] = 'A client'
+    libraries: Optional[List[ForwardRef('Library')]]
 
     @validator('clientId', pre=True, always=True)
     def validate_object_id(cls, value):

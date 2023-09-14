@@ -15,31 +15,31 @@ class TraktIDs(BaseModel):
     tvrage: Optional[int]
 
 
-class Movie(BaseModel):
+class TraktMovie(BaseModel):
     title: str
     year: int
     ids: TraktIDs
 
 
-class Show(BaseModel):
+class TraktShow(BaseModel):
     title: str
     year: int
     ids: TraktIDs
 
 
-class Episode(BaseModel):
+class TraktEpisode(BaseModel):
     season: int
     number: int
     title: str
     ids: TraktIDs
 
 
-class Person(BaseModel):
+class TraktPerson(BaseModel):
     name: str
     ids: TraktIDs
 
 
-class User(BaseModel):
+class TraktUser(BaseModel):
     username: str
     private: bool
     name: str
@@ -64,7 +64,7 @@ class TraktList(BaseModel):
     comment_count: int
     likes: int
     ids: TraktIDs
-    user: User
+    user: TraktUser
 
 
 class TraktItem(BaseModel):
@@ -72,13 +72,13 @@ class TraktItem(BaseModel):
     score: Optional[float]
     listed_at: Optional[datetime]
     notes: Optional[str]
-    movie: Optional[Movie]
-    show: Optional[Show]
-    episode: Optional[Episode]
-    person: Optional[Person]
+    movie: Optional[TraktMovie]
+    show: Optional[TraktShow]
+    episode: Optional[TraktEpisode]
+    person: Optional[TraktPerson]
     list: Optional[TraktList]
 
-    def get_item(self) -> Union[Movie, Show, Episode, Person, TraktList]:
+    def get_item(self) -> Union[TraktMovie, TraktShow, TraktEpisode, TraktPerson, TraktList]:
         if self.movie:
             return self.movie
         elif self.show:

@@ -10,10 +10,11 @@ from src.db.queries import library_queries
 from src.create import ListBuilder
 from src.models import MediaListType, Library, LibraryType, MediaList
 from src.config import ConfigManager
-from src.models.libraries import LibraryClient
+from src.models import Library
 
 async def sync_libraries_from_provider(payload):
     print("Lists synced from provider!")
+
 
     payload = {
         'configId': 'APP-DEFAULT-CONFIG',
@@ -24,7 +25,7 @@ async def sync_libraries_from_provider(payload):
     # starting with the main library list and then get all the the sub lists.
     # then we can get the items from each list and sync them to our database MediaLists and MediaListItems
 
-    config = ConfigManager().get_manager()
+    config = await ConfigManager().get_manager()
     db = config.get_db()  # Get your database connection, similar to what's in your routes
 
     # get the emby client
@@ -110,44 +111,39 @@ async def sync_all_collections_from_provider(payload):
     embyCollectionTypes: List = ['boxsets']
 
     # Your initial config and database setup
-    config = ConfigManager().get_manager()
+    config = await ConfigManager().get_manager()
+    log = config.get_logger(__name__)
     db = config.get_db()
 
     # get the emby client
     emby = config.get_client('emby')
     libraries = emby.get_libraries()
-    # print('libraries',libraries)
 
-    # Retrieve collections of type "Collection" from Emby.
-    # Assuming emby has a method like `get_collections_of_type`
 
     boxset_libraries = [lib for lib in libraries if lib.get('CollectionType') == 'boxsets']
     print(boxset_libraries)
+    log.debug('Emby Box-set (collection) Libraries', boxset_libraries=boxset_libraries)
 
     # Loop through the Emby collections
     for library in boxset_libraries:
 
-        print('Looking at library')
-        # print('library', library)
-        # Check if the collection already exists in the database
+        log.debug('Emby Box-set (collection) Library', library=library)
+
         boxsets, boxset_count = emby.get_items_from_parent(library['Id'])
-        print('Boxset found.', boxset_count)
-        print('boxsets', boxsets)
 
+        log.debug('Emby Box-sets (collections)', boxset_count=boxset_count)
         for boxset in boxsets:
-            print('Looking at boxset', boxset['Name'], boxset['Id'])
-            # print('boxset', boxset)
-
+            log.info('Emby Box-set (collection)', boxset=boxset)
             matching_collection: Optional[MediaList] = await media_list_queries.get_media_list_by_source_id(db, boxset['Id'])
 
         # get the items from the boxset
             if not matching_collection:
-                print('No matching collection found')
+                log.debug('No matching collection found')
                 # If the collection isn't in the database, add it.
                 new_media_list = MediaList(
                     sourceListId=boxset['Id'],
-                    clientId='EMBYCLIENTID',
-                    creatorId="YOUR_CREATOR_ID", # Adjust this accordingly
+                    clientId='emby',
+                    creatorId=config.get_user().userId,  # Adjust this accordingly
                     name=boxset['Name'],
                     type=MediaListType.COLLECTION,
                     sortName=boxset['SortName'] if 'SortName' in boxset else boxset['Name'],
@@ -258,6 +254,22 @@ async def sync_media_list_to_provider(payload):
     print("Media list synced to provider!")
 
 # async def sync_media_list_to_provider(payload):
+
+
+async def sync_provider_libraries(payload):
+    # Get all of the providers that are part of the LibraryProviders group.
+    # For each provider, get the libraries from the provider.
+    # For each library, check if it exists in the database.
+    # If it does not exist, create it.
+    # If it does exist, update it.
+
+
+    config = await ConfigManager().get_manager(payload.get('configId'))
+
+
+
+
+
 
 
 async def execute_task(task_type, payload):

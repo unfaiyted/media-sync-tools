@@ -1,18 +1,21 @@
 import uuid
+from abc import ABC
 from datetime import datetime
 from typing import Dict, List, Optional, Union
 from plexapi.server import PlexServer
 from plexapi.video import Movie, Show
 
+from src.create.providers.list import ListProvider
 from src.clients.plex import PlexManager
 from src.config import ConfigManager
 from src.create.providers.base_provider import BaseMediaProvider
+
 from src.models import PlexFilters
-from src.create.providers.posters import PosterProvider, TmdbPosterProvider
+from src.create.providers.poster.tmdb import  TmdbPosterProvider
 from src.models import MediaList, MediaListItem, MediaType, MediaListType, MediaItem, MediaProviderIds
 
 
-class PlexProvider(BaseMediaProvider):
+class PlexListProvider(ListProvider, ABC):
     def __init__(self, config: ConfigManager, filters: Optional[PlexFilters] = None, details: Optional[dict] = None,
                  media_list: Optional[MediaList] = None, list_type: MediaListType = MediaListType.COLLECTION):
         """
@@ -32,28 +35,7 @@ class PlexProvider(BaseMediaProvider):
         self.list_type = self.media_list.type if self.media_list else list_type
         self.plex_manager = PlexManager(self.config)
 
-    def _map_plex_item_to_media_item(self, item: Movie or Show):
-        """
-        Map a Plex item to a MediaItem.
-        :param item:
-        :return:
-        """
-        self.log.debug("Mapping Plex item to MediaItem", item=item)
-        external_ids = self.plex_manager.extract_external_ids(item)
 
-        media_item = MediaItem(
-            mediaItemId=str(uuid.uuid4()),
-            title=item.title,
-            year=item.year,
-            type=MediaType.MOVIE if item.TYPE == 'movie' else MediaType.SHOW,
-            providers=MediaProviderIds(
-                imdbId=external_ids.get('imdb', None),
-                tvdbId=external_ids.get('tvdb', None),
-                tmdbId=external_ids.get('tmdb', None),
-            ),
-        )
-
-        return media_item
 
     async def get_list(self):
         db = self.config.get_db()
@@ -96,7 +78,7 @@ class PlexProvider(BaseMediaProvider):
 
         for item in list_items:
             self.log.debug("Creating media item", item=item, media_list=self.media_list)
-            media_item = self._map_plex_item_to_media_item(item)
+            media_item = MediaItem.from_plex(item, self.log)
             self.media_list.items.append(
                 await self.create_media_list_item(media_item, self.media_list, TmdbPosterProvider(config=self.config)))
             # Adjust the logic based on how Plex's client class methods and responses are structured.

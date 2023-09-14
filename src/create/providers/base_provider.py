@@ -4,7 +4,7 @@ from abc import ABC
 from datetime import datetime
 from typing import Optional
 
-from src.create.providers.posters import TmdbPosterProvider, PosterProvider
+from src.create.providers.poster.tmdb import TmdbPosterProvider, PosterProvider
 from src.create.providers.managers import PosterProviderManager
 from src.models import MediaItem, MediaProviderIds, MediaList, MediaListItem
 
@@ -119,3 +119,4 @@ class BaseMediaProvider(ABC):  # ABC means it's an abstract base class
         self.log.debug("Inserted media_list_item", media_list_item=media_list_item)
         self.log.debug('Created MediaListItem from MediaItem', media_item=media_item.dict())
         return media_list_item
+

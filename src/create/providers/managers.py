@@ -1,6 +1,11 @@
+from src.create.providers.poster.emby import EmbyPosterProvider
+from src.create.providers.poster.jellyfin import JellyfinPosterProvider
+from src.create.providers.poster.plex import PlexPosterProvider
+from src.create.providers.poster.tmdb import TmdbPosterProvider
+from src.create.providers.poster.trakt import TraktPosterProvider
+from src.create.providers.poster import PosterProvider
+
 from src.models import MediaItem
-from src.create.providers.posters import EmbyPosterProvider, PlexPosterProvider, TraktPosterProvider, PosterProvider, \
-    JellyfinPosterProvider, TmdbPosterProvider
 
 
 class ProviderManager:
@@ -48,21 +53,3 @@ class PosterProviderManager:
         head = self.provider_manager.prioritize_provider(preferred_provider)
         return head.get_poster(self.config, media_item)
 
-
-class LibraryProviderManager:
-
-    def __init__(self, config):
-        """
-        Initialize the LibraryManager.
-        :param config:
-        """
-        # self.config = config
-        # self.log = config.get_logger(__name__)
-        # emby = EmbyLibraryProvider(config=config)
-        # jellyfin = JellyfinLibraryProvider(config=config)
-        # plex = PlexLibraryProvider(config=config)
-        #
-        #
-        # # Add any other providers you have
-        # self.provider_manager = ProviderManager(emby, jellyfin, plex, trakt)
-        # self.log.debug("LibraryProviderManager initialized", provider_manager=self.provider_manager)

@@ -6,7 +6,6 @@ from pydantic import BaseModel, validator
 from typing import List, Optional, ForwardRef, Tuple, Union
 from bson import ObjectId
 
-# from .users import User
 
 from .clients import Client, ClientField, FieldType, ClientType
 
@@ -29,7 +28,7 @@ from .media_lists import (MediaProviderIds,
                           MediaListOptions,
                           MediaItem,
                           MediaType)
-from .libraries import Library, LibraryClient, LibraryType
+from .libraries import Library, LibraryGroup, LibraryType
 
 
 class Provider(str, Enum):
@@ -111,7 +110,7 @@ MediaList.update_forward_refs()
 MediaListItem.update_forward_refs()
 MediaListOptions.update_forward_refs()
 Library.update_forward_refs()
-LibraryClient.update_forward_refs()
+LibraryGroup.update_forward_refs()
 Client.update_forward_refs()
 ClientField.update_forward_refs()
 ConfigClientFieldsValue.update_forward_refs()
