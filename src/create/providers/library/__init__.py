@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Optional
 
 from src.models import LibraryType
 from src.create.providers.base_provider import BaseMediaProvider
@@ -33,7 +34,7 @@ class LibraryProvider(BaseMediaProvider, ABC):
         pass
 
     @abstractmethod
-    def sync_libraries(self, libraries: list[Library]):
+    def sync_libraries(self, libraries: Optional[list[Library]]):
         """
         Sync libraries from provider.
         :return:
@@ -49,12 +50,15 @@ class LibraryProvider(BaseMediaProvider, ABC):
         pass
 
     @abstractmethod
-    def sync_all_library_items(self):
+    async def get_libraries_and_sync_items(self, libraries: Optional[list[Library]] = None):
         """
-        Sync all library items from provider.
+        Sync all libraries and their items from Emby.
         :return:
         """
-        pass
+        libraries = await self.sync_libraries(libraries=libraries)
+        for library in libraries:
+            await self.sync_library_items(library)
+        return libraries
 
     @abstractmethod
     def save_poster(self, item_id: str, poster: MediaPoster or str):

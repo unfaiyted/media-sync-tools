@@ -5,13 +5,14 @@ import requests
 import string
 
 from plexapi.library import LibrarySection
+from plexapi.server import PlexServer
 
 from src.models import MediaListType
 
 
 class PlexManager:
     def __init__(self, config):
-        self.client = config.get_client("plex")
+        self.client: PlexServer = config.get_client("plex")
         self.log = config.get_logger(__name__)
         # self.account = config.get_account("plex")
         self.guidLookup = self.get_all("TV Shows")
@@ -102,10 +103,9 @@ class PlexManager:
     def search_list_items(self, media, type):
         if type == MediaListType.COLLECTION:
             self.log.debug("Searching collection items", media=media)
-            if media:
-                if hasattr(media, 'children'):
-                    self.log.debug("Collection has children", children=media.children)
-                    return media.children
+            if media and hasattr(media, 'children'):
+                self.log.debug("Collection has children", children=media.children)
+                return media.children
         elif type == MediaListType.PLAYLIST:
             self.log.debug("Searching playlist items", media=media)
             if media:

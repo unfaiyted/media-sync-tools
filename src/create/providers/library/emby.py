@@ -2,9 +2,9 @@ import uuid
 from abc import ABC
 from datetime import datetime
 
-from create.providers.libraries import LibraryProvider
-from create.providers.posters import EmbyPosterProvider
-from models import Library, MediaList, MediaListType, EmbyFilters, MediaItem
+from src.create.providers.library import LibraryProvider
+from src.create.providers.poster.emby import EmbyPosterProvider
+from src.models import Library, MediaList, MediaListType, EmbyFilters, MediaItem
 
 
 class EmbyLibraryProvider(LibraryProvider, ABC):
@@ -120,3 +120,6 @@ class EmbyLibraryProvider(LibraryProvider, ABC):
                 await self.create_media_list_item(media_item, media_list, EmbyPosterProvider(config=self.config)))
 
         return media_list
+
+
+

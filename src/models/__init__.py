@@ -35,7 +35,6 @@ class Provider(str, Enum):
     OPENAI = "OPENAI"
     MDB = "MDB"
     TRAKT = "TRAKT"
-    # ... other types ...
 
 
 class SyncOptions(BaseModel):

@@ -166,12 +166,15 @@ class JellyfinListProvider(ListProvider, ABC):
         elif poster.startswith('/'):
             self.log.info('uploading image from local', path=poster)
             self.client.upload_image(item_id, poster)
-        # if the poster is a MediaPoster object, process the image
         elif isinstance(poster, MediaPoster):
-            self.log.info('uploading image from MediaPoster instance', poster=poster)
-            # create image from MediaPoster
-            poster = MediaPosterImageCreator(poster, self.log)
-            poster = poster.create()
-            poster_location = f'{self.config.get_root_path()}/poster.png'
-            poster.save(poster_location)
-            self.client.upload_image(item_id, poster_location)
+            self._save_media_poster(poster, item_id)
+
+    # TODO Rename this here and in `save_poster`
+    def _save_media_poster(self, poster, item_id):
+        self.log.info('uploading image from MediaPoster instance', poster=poster)
+        # create image from MediaPoster
+        poster = MediaPosterImageCreator(poster, self.log)
+        poster = poster.create()
+        poster_location = f'{self.config.get_root_path()}/poster.png'
+        poster.save(poster_location)
+        self.client.upload_image(item_id, poster_location)

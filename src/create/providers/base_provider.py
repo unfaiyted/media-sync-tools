@@ -97,7 +97,7 @@ class BaseMediaProvider(ABC):  # ABC means it's an abstract base class
         self.log.info('Creating MediaListItem from MediaItem', media_item=media_item)
 
         if existing_media_item := await self.get_existing_media_item(media_item):
-            self.log.debug("Found existing media_item", media_item=existing_media_item)
+            self.log.debug("Found existing MediaItem", media_item=existing_media_item)
             media_item = await self.merge_and_update_media_item(media_item, existing_media_item)
 
         if media_item.poster is None:
