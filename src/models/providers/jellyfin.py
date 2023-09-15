@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 
 from enum import Enum
 
-class JellyfinLibraryItemType(Enum):
+class JellyfinItemType(Enum):
     AUDIO = "Audio"
     VIDEO = "Video"
     FOLDER = "Folder"

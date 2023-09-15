@@ -3,11 +3,9 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 
 from src.models import MediaList, MediaListType, EmbyFilters
-from src.models import LibraryType
 from src.create.providers.base_provider import BaseMediaProvider
 
 from src.models import Library
-from src.models import MediaPoster
 
 
 class LibraryProvider(BaseMediaProvider, ABC):
@@ -18,20 +16,6 @@ class LibraryProvider(BaseMediaProvider, ABC):
         self.log = config.get_logger(__name__)
         self.client = self.create_client()
         self.db = self.config.get_db()
-
-    @staticmethod
-    def _map_emby_library_type_to_media_list_type(self, library_type: str) -> LibraryType:
-        """
-        Map an Emby library type to a MediaListType.
-        :param library_type:
-        :return:
-        """
-        if library_type == 'movies':
-            return LibraryType.MOVIES
-        elif library_type == 'tvshows':
-            return LibraryType.SHOWS
-        else:
-            return LibraryType.UNKNOWN
 
     @abstractmethod
     def create_client(self):

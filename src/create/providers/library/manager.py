@@ -20,7 +20,7 @@ class LibraryProviderManager:
         jellyfin = JellyfinLibraryProvider(config=config)
         plex = PlexLibraryProvider(config=config)
 
-        if len(providers) == 0:
+        if not providers:
             providers = [emby, jellyfin, plex]
 
         self.providers = providers
