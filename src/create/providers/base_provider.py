@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Optional
 
 from src.create.providers.poster.tmdb import TmdbPosterProvider, PosterProvider
-from src.create.providers.managers import PosterProviderManager
+from src.create.providers.poster.manager import PosterProviderManager
 from src.models import MediaItem, MediaProviderIds, MediaList, MediaListItem
 
 

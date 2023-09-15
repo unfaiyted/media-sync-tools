@@ -85,6 +85,7 @@ class BaseFilters(BaseModel):
 
 
 class EmbyFilters(BaseFilters):
+    filterType = FilterType.EMBY
     listId: Optional[str] = None
     library: Optional[str] = None
     search: Optional[str] = None
@@ -115,6 +116,7 @@ class EmbyFilters(BaseFilters):
 
 
 class PlexFilters(BaseFilters):
+    filterType = FilterType.PLEX
     listId: Optional[str] = None
     library: Optional[str] = None
     type: Optional[str] = None
@@ -155,6 +157,7 @@ class PlexFilters(BaseFilters):
 
 
 class JellyfinFilters(BaseFilters):
+    filterType = FilterType.JELLYFIN
     listId: Optional[str] = None
     library: Optional[str] = None
     search: Optional[str] = None
@@ -185,12 +188,14 @@ class JellyfinFilters(BaseFilters):
 
 
 class TraktFilters(BaseFilters):
+    filterType = FilterType.TRAKT
     listId: Optional[str] = None
     listSlug: Optional[str] = None
     username: Optional[str] = None
 
 
 class TmdbFilters(BaseFilters):
+    filterType = FilterType.TMDB
     listId: Optional[str] = None
     page: Optional[int] = None
     language: Optional[str] = None
@@ -221,10 +226,12 @@ class TmdbFilters(BaseFilters):
 
 
 class TvdbFilters(TmdbFilters):
+    filterType = FilterType.TVDB
     listId: Optional[str] = None
 
 
 class TmdbShowFilters(TmdbFilters):
+    filterType = FilterType.TMDB
     airDateGte: Optional[str] = None
     airDateLte: Optional[str] = None
     firstAirDateYear: Optional[int] = None
@@ -239,6 +246,7 @@ class TmdbShowFilters(TmdbFilters):
 
 
 class MdbFilters(BaseFilters):
+    filterType = FilterType.MDB
     listId: Optional[str] = None
     library: Optional[str] = None
 

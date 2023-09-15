@@ -20,6 +20,7 @@ class MediaType(str, Enum):
     UNKNOWN = "UNKNOWN"
     SEASON = "SEASON"
     SHOW = "SHOW"
+    CO
     # ... other types ...
 
 

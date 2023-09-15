@@ -8,8 +8,8 @@ from src.config import ConfigManager
 from src.models import EmbyFilters
 from src.create.providers.poster.emby import EmbyPosterProvider
 from src.create.posters import MediaPosterImageCreator
-from src.create.providers.managers import PosterProviderManager
-from src.models import MediaList, MediaType, MediaListType, MediaItem, MediaProviderIds, MediaPoster
+from src.create.providers.poster.manager import PosterProviderManager
+from src.models import MediaList, MediaListType, MediaItem, MediaPoster
 from src.clients.emby import EmbyClient
 
 
@@ -98,7 +98,7 @@ class EmbyListProvider(ListProvider, ABC):
 
             for item in all_list_items:
                 self.log.debug("Creating media list item", item=item, media_list=media_list)
-                media_item = self._map_emby_item_to_media_item(item, self.log)
+                media_item = MediaItem.from_emby(item, self.log)
                 media_list.items.append(
                     await self.create_media_list_item(media_item, media_list, EmbyPosterProvider(config=self.config)))
 
@@ -178,4 +178,3 @@ class EmbyListProvider(ListProvider, ABC):
             poster_location = f'{self.config.get_root_path()}/poster.png'
             poster.save(poster_location)
             self.client.upload_image(item_id, poster_location)
-

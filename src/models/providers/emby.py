@@ -3,8 +3,10 @@ from typing import Dict, List, Optional
 
 from enum import Enum
 
+from models import MediaType
 
-class EmbyLibraryItemType(Enum):
+
+class EmbyItemType(Enum):
     AUDIO = "Audio"
     VIDEO = "Video"
     FOLDER = "Folder"
@@ -21,6 +23,16 @@ class EmbyLibraryItemType(Enum):
     GAME = "Game"
     GAME_SYSTEM = "GameSystem"
     BOOK = "Book"
+
+
+    @classmethod
+    def from_media_type(cls, type: MediaType):
+
+        if type == MediaType.MOVIE:
+            return cls.MOVIE
+        elif type == MediaType.TV:
+            return cls.SERIES
+        elif type == MediaType.ANIME:
 
 
 class EmbyImageType(Enum):

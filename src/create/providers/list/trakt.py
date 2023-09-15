@@ -6,7 +6,7 @@ from typing import List, Optional
 from src.create.providers.list import ListProvider
 from src.models.providers.trakt import TraktItem
 from src.clients.trakt import TraktClient
-from src.create.providers.managers import PosterProviderManager
+from src.create.providers.poster.manager import PosterProviderManager
 from src.create.providers.poster.tmdb import TmdbPosterProvider
 from src.models import TraktFilters, MediaListType, MediaList, MediaItem, MediaProviderIds, MediaType, MediaListItem
 
@@ -97,7 +97,7 @@ class TraktListProvider(ListProvider, ABC):
             self.log.debug("Appending media item", item=item)
             item = TraktItem(**item)
             self.log.debug("TraktItem to be mapped", item=item)
-            media_item = self._map_trakt_item_to_media_item(item, self.log)
+            media_item = MediaItem.from_trakt(item, self.log)
             self.log.debug("MediaItem after mapping", media_item=media_item)
             media_list.items.append(
                 await self.create_media_list_item(media_item, media_list, TmdbPosterProvider(config=self.config)))

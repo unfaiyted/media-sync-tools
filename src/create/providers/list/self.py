@@ -1,13 +1,12 @@
 import uuid
 from datetime import datetime
 
-from src.routes.config import db
 from src.models import MediaListType, MediaList, MediaItem, MediaType, MediaProviderIds, MediaListItem
 
 
 class SelfProvider:
 
-    def __init__(self, config, filters=None, details=None, media_list: MediaList=None):
+    def __init__(self, config, filters=None, details=None, media_list: MediaList = None):
         self.config = config
         self.filters = filters
         self.details = details
@@ -22,15 +21,16 @@ class SelfProvider:
     async def get_list(self):
         filter_query_params = self._convert_filters_to_query_params()
 
-        # check if its an exisiting mediaList in the database
+        # check if its existing mediaList in the database
         db = self.config.get_db()
         existing_media_list = None
         if self.media_list:
             existing_media_list = await db.media_lists.find_one({"mediaListId": self.media_list.mediaListId})
 
+        media_list = self.media_list
+
         if existing_media_list:
             print('updating existing media list')
-            media_list = self.media_list
             media_list.mediaListId = existing_media_list['mediaListId']
             media_list.updatedAt = datetime.now()
             db.media_lists.update_one(
@@ -40,8 +40,7 @@ class SelfProvider:
 
         db.media_lists.insert_one(media_list.dict())
 
-
-        if(media_list.items is None):
+        if media_list.items is None:
             print('media list items is none')
             return media_list
 
@@ -83,7 +82,8 @@ class SelfProvider:
 
         existing_media_list_item = None
         if list_item.mediaListItemId:
-            existing_media_list_item = await db.media_list_items.find_one({"mediaListItemId": list_item.mediaListItemId})
+            existing_media_list_item = await db.media_list_items.find_one(
+                {"mediaListItemId": list_item.mediaListItemId})
 
         if existing_media_list_item:
             print('updating existing media list item')
@@ -97,5 +97,3 @@ class SelfProvider:
         db.media_list_items.insert_one(list_item.dict())
 
         return list_item
-
-

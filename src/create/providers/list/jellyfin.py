@@ -8,7 +8,7 @@ from src.config import ConfigManager
 from src.models import JellyfinFilters
 from src.create.providers.poster.jellyfin import JellyfinPosterProvider
 from src.create.posters import MediaPosterImageCreator
-from src.create.providers.managers import PosterProviderManager
+from src.create.providers.poster.manager import PosterProviderManager
 from src.models import MediaList, MediaType, MediaListType, MediaItem, MediaProviderIds, MediaPoster
 from src.clients.jellyfin import JellyfinClient
 

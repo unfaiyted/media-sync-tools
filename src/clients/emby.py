@@ -9,6 +9,7 @@ from mimetypes import guess_type
 import base64
 import time
 
+from models.providers.emby import EmbyItemType
 from src.models import EmbyFilters, MediaType
 from src.models import MediaList, MediaItem
 
@@ -598,6 +599,7 @@ class EmbyClient:
     def search_media_item_by_external_ids(self, media_item=None) -> dict or None:
         # if media_list_item is none we should set the media_item to a media_list_item object
 
+
         if media_item is None:
             self.log.info('no media item provided')
             return None
@@ -621,34 +623,41 @@ class EmbyClient:
         tmdb_result = search_id(f"Tmdb.{media_item.providers.tmdbId}")
 
         if imdb_result:
+            self.log.debug(f"Found {imdb_result} for {media_item}")
             return imdb_result
         elif tvdb_result:
+            self.log.debug(f"Found {tvdb_result} for {media_item}")
             return tvdb_result
         elif tmdb_result:
+            self.log.debug(f"Found {tmdb_result} for {media_item}")
             return tmdb_result
 
 
         emby_type = 'Movie' if media_item.type == MediaType.MOVIE else 'Series'
+        emby_type = EmbyItemType.from_media_type(media_item.type)
         # Fallback to name and year
-        search_results = self.search(media_item.item.title, emby_type)
+        search_results = self.search(media_item.title, emby_type)
         # print('SEARCH RESULTS::::', search_results)
         if search_results:
+            self.log.debug(f"Found results for MediaItem", search_results=search_results, media_item=media_item)
             for result in search_results:
-                if int(result['ProductionYear']) == int(media_item.item.year):
+                self.log.debug(f"Checking {result} for {media_item}", result=result, media_item=media_item)
+                if int(result['ProductionYear']) == int(media_item.year):
                     match = result
                     break
             return match
         return match
 
     async def get_poster_from_emby_by_media_item(self, media_item):
-        emby_item = await self.search_media_item_by_external_ids(media_item=media_item)
+        self.log.info(f"Searching for poster for {media_item.title}", media_item=media_item)
+        emby_item = self.search_media_item_by_external_ids(media_item=media_item)
 
         if emby_item is None:
             self.log.info('Item not found in Emby')
             return None
 
         if poster_id := emby_item['ImageTags'].get('Primary'):
-            self.log.info(f"Found poster for {media_item.item.title} in Emby", poster_id=poster_id)
+            self.log.info(f"Found poster for {media_item.title} in Emby", poster_id=poster_id)
             return f"{self.server_url}/emby/Items/{emby_item['Id']}/Images/Primary?api_key={self.api_key}&X-Emby-Token={self.api_key}"
         else:
             return None

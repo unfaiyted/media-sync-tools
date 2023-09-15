@@ -48,7 +48,6 @@ class MdbListProvider(ListProvider, ABC):
             self.id = filters.listId
         self.log.info("MdbProvider initialized", filters=filters, id=self.id)
 
-
     async def get_list(self) -> MediaList or None:
         """
         Retrieve media list from Mdb.

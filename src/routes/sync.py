@@ -3,6 +3,10 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import BaseModel
 from starlette.background import BackgroundTasks
 
+from src.create.providers.library.emby import EmbyLibraryProvider
+from src.create.providers.library.jellyfin import JellyfinLibraryProvider
+from src.create.providers.library.manager import LibraryProviderManager
+from src.create.providers.library.plex import PlexLibraryProvider
 from src.create.plex import sync_plex_collections, sync_plex_playlists, sync_plex_sample_searches
 from src.db.queries import media_list_queries
 from src.create import ListBuilder
@@ -108,8 +112,27 @@ async def trigger_sync_collection():
 @router.get("/libraries")
 async def trigger_sync_libraries():
     config = await ConfigManager.get_manager()
+
+    emby = EmbyLibraryProvider(config=config)
+    jellyfin = JellyfinLibraryProvider(config=config)
+    plex = PlexLibraryProvider(config=config)
+
+    library_manager = LibraryProviderManager(config, emby, jellyfin, plex)
+    log = config.get_logger(__name__)
+
+
+    # Fetch all libraries across all providers:
+    all_libraries = await library_manager.fetch_all_libraries()
+    for library in all_libraries:
+        log.info('Found library', library=library)
+
+    await library_manager.sync_all_libraries_items()
+
+    # Sync a specific library by libraryId or sourceId
+    # response = library_manager.sync_specific_library("some-library-id-or-source-id")
+    # print(response)
     try:
-        await sync_libraries_from_provider(config)
+    # await sync_libraries_from_provider(config)
 
         return JSONResponse(status_code=200, content={"message": "Sync libraries successfully."})
     except Exception as e:
