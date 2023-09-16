@@ -1,29 +1,19 @@
-import uuid
 from abc import ABC
-from datetime import datetime
 from typing import Optional
 
+from src.create.providers.poster.tmdb import TmdbPosterProvider
 from src.create.providers.list import ListProvider
-from src.models.providers.mdb import MdbItem
 from src.clients.mdblist import MdbClient
 from src.config import ConfigManager
-from src.create.providers.base_provider import BaseMediaProvider
-from src.models import MediaList, MediaListItem, MediaType, MediaListType, MediaItem, MediaProviderIds
+from src.models import MediaList, MediaListType, Provider
 from src.models.filters import MdbFilters
-
-
-class MdbProviderResult:
-    def __init__(self, id, name, description, movies):
-        self.id = id
-        self.name = name
-        self.description = description
-        self.movies = movies
 
 
 class MdbListProvider(ListProvider, ABC):
 
     def __init__(self, config: ConfigManager, filters: Optional[MdbFilters] = None, details: Optional[dict] = None,
-                 media_list: Optional[MediaList] = None, list_type: MediaListType = MediaListType.COLLECTION):
+                 media_list: Optional[MediaList] = None, list_type: MediaListType = MediaListType.COLLECTION,
+                 client_id: str = 'mdb'):
         """
         Initialize the MdbProvider.
         :param config: Configuration for the provider.
@@ -32,10 +22,12 @@ class MdbListProvider(ListProvider, ABC):
         :param list_type: Type of media list. Default is COLLECTION.
         """
         super().__init__(config)
+        self.name = Provider.MDB
         self.config = config
+        self.client_id = client_id
         self.log = config.get_logger(__name__)
-        self.listType = list_type
-        self.client: MdbClient = config.get_client('mdb')
+        self.list_type = list_type
+        self.client: MdbClient = config.get_client(client_id)
         self.filters = filters
 
         if media_list:
@@ -48,6 +40,22 @@ class MdbListProvider(ListProvider, ABC):
             self.id = filters.listId
         self.log.info("MdbProvider initialized", filters=filters, id=self.id)
 
+    def get_list_by_id(self, list_id) -> MediaList | None:
+        """
+        Retrieve media list from Mdb.
+        :return:
+        """
+        if self.id is None:
+            self.log.error('No list id provided. Cannot get list.')
+            return None
+
+        mdb_list = self.client.get_list_information(list_id=self.id)[0]
+        return MediaList.from_mdb(log=self.log,
+                                  mdb_list=mdb_list,
+                                  client_id=self.client_id,
+                                  creator_id=self.config.get_user().userId,
+                                  filters=self.filters)
+
     async def get_list(self) -> MediaList or None:
         """
         Retrieve media list from Mdb.
@@ -59,32 +67,12 @@ class MdbListProvider(ListProvider, ABC):
             self.log.error('No list id provided. Cannot get list.')
             return None
 
-        mdb_list = self.client.get_list_information(list_id=self.id)[0]
-        list_items = self.client.get_list_items_as_objects(mdb_list['id'])
-        self.log.debug('MDB list items', list_items=list_items)
-
-        media_list = MediaList(
-            mediaListId=str(uuid.uuid4()),
-            name=mdb_list['name'],
-            type=self.listType,
-            sortName=mdb_list['name'],
-            filters=self.filters.dict(),
-            items=[],
-            clientId='mdb',
-            createdAt=datetime.now(),
-            creatorId=self.config.get_user().userId
-        )
+        media_list = self.get_list_by_id(self.id)
+        list_items = self.client.get_list_items_as_objects(media_list.sourceListId)
 
         db.media_lists.insert_one(media_list.dict())
 
-        for item in list_items:
-            self.log.debug('Original MDB item', item=item)
-            media_item = MediaItem.from_mdb(item, self.log)
-            self.log.debug("Appending media item", item=item, media_list=media_list)
-            media_list.items.append(await self.create_media_list_item(media_item, media_list))
-
-        self.log.debug("Returning media list", media_list=media_list)
-        return media_list
+        return self.add_items_to_media_list(media_list, 'mdb', list_items, TmdbPosterProvider(config=self.config))
 
     async def upload_list(self, media_list: MediaList):
         # TODO: implement

@@ -5,12 +5,17 @@ from plexapi.server import PlexServer
 
 from src.clients.jellyfin import JellyfinClient
 from src.clients.tmdb import TmdbClient
-from src.models import MediaItem, MediaProviderIds
+from src.models import MediaItem, MediaProviderIds, ProviderType
 
 
 class PosterProvider(ABC):
 
     def __init__(self):
+        """
+        Initialize the PosterProvider.
+
+        """
+        self.provider_type = ProviderType.POSTER
         self.next_provider = None
 
     def set_next(self, provider: 'PosterProvider'):

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import uuid
 from datetime import datetime
 from enum import Enum
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional, ForwardRef
 
 
@@ -37,7 +38,6 @@ class LibraryType(str, Enum):
 
     @classmethod
     def from_jellyfin(cls, provider_type: str):
-        # print(provider_type, 'from_jellyfin')
         if provider_type == 'movies':
             return cls.MOVIES
         elif provider_type == 'tvshows':
@@ -63,8 +63,9 @@ class LibraryType(str, Enum):
 
         return cls.UNKNOWN
 
+
 class Library(BaseModel):
-    libraryId: str = None
+    libraryId: str = Field(default_factory=uuid.uuid4)
     configId: str
     name: str
     createdAt: datetime
@@ -73,10 +74,43 @@ class Library(BaseModel):
     mediaListId: Optional[str]
     type: LibraryType
 
+    @classmethod
+    def from_plex(cls, provider_library, config_id):
+        return cls(
+            name=provider_library.title,
+            type=LibraryType.from_plex(provider_library.type),
+            sourceId=provider_library.key,
+            createdAt=datetime.now(),
+            configId=config_id,
+            clientId='plex',
+        )
+
+    @classmethod
+    def from_emby(cls, provider_library, config_id):
+        return cls(
+            name=provider_library['Name'],
+            type=LibraryType.from_emby(provider_library.get('CollectionType', LibraryType.UNKNOWN)),
+            sourceId=provider_library['Id'],
+            createdAt=datetime.now(),
+            configId=config_id,
+            clientId='emby',
+        )
+
+    @classmethod
+    def from_jellyfin(cls, provider_library, config_id):
+        return cls(
+            name=provider_library['Name'],
+            type=LibraryType.from_jellyfin(provider_library.get('CollectionType', LibraryType.UNKNOWN)),
+            sourceId=provider_library['Id'],
+            createdAt=datetime.now(),
+            configId=config_id,
+            clientId='jellyfin',
+        )
+
 
 # old library model refactors to this
 class LibraryGroup(BaseModel):
-    libraryGroupId: str = None
+    libraryGroupId: str = Field(default_factory=uuid.uuid4)
     configId: str
     name: str
     type: LibraryType

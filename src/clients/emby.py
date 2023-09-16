@@ -9,8 +9,9 @@ from mimetypes import guess_type
 import base64
 import time
 
-from models.providers.emby import EmbyItemType
-from src.models import EmbyFilters, MediaType
+from src.models import MediaItemType
+from src.models.providers.emby import EmbyItemType
+from src.models import EmbyFilters, MediaListType
 from src.models import MediaList, MediaItem
 
 
@@ -176,6 +177,22 @@ class EmbyClient:
         total_count = response.get('TotalRecordCount', 0)
         self.log.debug('Items from parent', items=items, total_count=total_count)
         return items, total_count
+
+    def get_all_items_from_parent(self, parent_id, per_request_limit = 100) -> list:
+        offset = 0
+        all_list_items = []
+
+        while True:
+            list_items, list_items_count = self.get_items_from_parent(parent_id, limit=per_request_limit, offset=offset)
+            self.log.info("Getting items from parent", offset=offset, list_items_count=list_items_count)
+            all_list_items.extend(list_items)
+            offset += per_request_limit
+            if offset > list_items_count:
+                self.log.debug("Reached end of Emby list items", offset=offset, list_items_count=list_items_count)
+                break
+
+        return all_list_items
+
 
     def get_libraries(self):
         url = self._build_url(f'Users/{self.user_id}/views')
@@ -632,8 +649,6 @@ class EmbyClient:
             self.log.debug(f"Found {tmdb_result} for {media_item}")
             return tmdb_result
 
-
-        emby_type = 'Movie' if media_item.type == MediaType.MOVIE else 'Series'
         emby_type = EmbyItemType.from_media_type(media_item.type)
         # Fallback to name and year
         search_results = self.search(media_item.title, emby_type)
@@ -642,9 +657,15 @@ class EmbyClient:
             self.log.debug(f"Found results for MediaItem", search_results=search_results, media_item=media_item)
             for result in search_results:
                 self.log.debug(f"Checking {result} for {media_item}", result=result, media_item=media_item)
-                if int(result['ProductionYear']) == int(media_item.year):
-                    match = result
+
+                # check if the item is a movie or a series
+                if media_item.type == 'movie' or media_item.type == 'series':
+                    self.log.debug(f"Checking {result} for {media_item}", result=result, media_item=media_item)
+                    if int(result['ProductionYear']) == int(media_item.year):
+                        self.log.info(f"Found {result} for {media_item}", result=result, media_item=media_item)
+                        match = result
                     break
+
             return match
         return match
 

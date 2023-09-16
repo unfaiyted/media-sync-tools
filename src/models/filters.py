@@ -22,7 +22,7 @@ class BaseFilters(BaseModel):
     _log = structlog.get_logger(__name__)
     clientId: str
     filterType: FilterType
-    filtersId: str = str(uuid.uuid4())
+    filtersId: str = Field(default_factory=lambda: str(uuid.uuid4))
     _invalid_keys: List[str] = ["clientId", "filterType", "filtersId"]  # Blocklist items, get rid of
     _valid_keys: List[str] = []  # Pass-list Items, keep
 

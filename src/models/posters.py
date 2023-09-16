@@ -1,7 +1,8 @@
+import uuid
 from enum import Enum
 from typing import Optional, Tuple, List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class MediaPosterBorderOptions(BaseModel):
@@ -88,7 +89,7 @@ class MediaImageType(str, Enum):
 
 
 class MediaPoster(BaseModel):
-    mediaPosterId: Optional[str] = None
+    mediaPosterId: str = Field(default_factory=uuid.uuid4)
     mediaItemId: Optional[str] = None
     url: Optional[str] = None
     width: int
@@ -104,7 +105,7 @@ class MediaPoster(BaseModel):
 
 
 class ProviderPoster(BaseModel):
-    providerPosterId: Optional[str] = None
+    providerPosterId: str = Field(default_factory=uuid.uuid4)
     providerId: str
     url: str
     width: int

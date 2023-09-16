@@ -3,9 +3,10 @@ from abc import ABC
 from datetime import datetime
 from typing import Optional
 
+from src.models.providers.emby import EmbyItem
 from src.create.providers.list import ListProvider
 from src.config import ConfigManager
-from src.models import EmbyFilters
+from src.models import EmbyFilters, Provider
 from src.create.providers.poster.emby import EmbyPosterProvider
 from src.create.posters import MediaPosterImageCreator
 from src.create.providers.poster.manager import PosterProviderManager
@@ -15,7 +16,8 @@ from src.clients.emby import EmbyClient
 
 class EmbyListProvider(ListProvider, ABC):
     def __init__(self, config: ConfigManager, filters: Optional[EmbyFilters] = None, details: Optional[dict] = None,
-                 media_list: Optional[MediaList] = None, list_type: MediaListType = MediaListType.COLLECTION):
+                 media_list: Optional[MediaList] = None, list_type: MediaListType = MediaListType.COLLECTION,
+                 client_id='emby'):
         """
         Initialize the EmbyProvider.
         :param config: Instance of ConfigManager
@@ -25,8 +27,11 @@ class EmbyListProvider(ListProvider, ABC):
         """
         super().__init__(config)  # Initialize the BaseMediaProvider
         self.config = config
+        self.db = config.get_db()
+        self.client_id = client_id
+        self.name = Provider.EMBY
         self.log = config.get_logger(__name__)
-        self.client: EmbyClient = config.get_client('emby')
+        self.client: EmbyClient = config.get_client(client_id)
         self.filters = filters
         self.media_list = media_list
         self.server_url = self.client.server_url
@@ -50,6 +55,28 @@ class EmbyListProvider(ListProvider, ABC):
 
         self.log.debug("EmbyProvider initialized", filters=self.filters)
 
+    def get_list_by_id(self, list_id: str):
+        """
+        Retrieve MediaList from Emby.
+        :return:
+        """
+        self.log.info("Getting Emby list by id")
+
+        # all_list_items = self.client.get_all_items_from_parent(self.id)
+
+        self.log.debug("Getting items from parent", parent_id=self.id)
+        emby_list = self.client.get_list(list_id=self.id)
+
+        filters = EmbyFilters(
+            clientId=self.client_id,
+            listId=list_id)
+
+        return MediaList.from_emby(log=self.log,
+                                   emby_list=emby_list,
+                                   client_id=self.client_id,
+                                   creator_id=self.config.get_user().userId,
+                                   filters=filters.dict())
+
     async def get_list(self):
         """
         Retrieve MediaList from Emby.
@@ -65,39 +92,13 @@ class EmbyListProvider(ListProvider, ABC):
 
         if self.id is not None:
             self.log.debug("Getting items from parent", parent_id=self.id)
-            limit = 100
-            offset = 0
-            all_list_items = []
-
-            while True:
-                list_items, list_items_count = self.client.get_items_from_parent(self.id, limit=limit, offset=offset)
-                self.log.info("Getting items from parent", offset=offset, list_items_count=list_items_count)
-                all_list_items.extend(list_items)
-                offset += limit
-                if offset > list_items_count:
-                    break
-
-            emby_list = self.client.get_list(list_id=self.id)
-            db = self.config.get_db()
-
-            media_list = MediaList(
-                mediaListId=str(uuid.uuid4()),
-                name=emby_list['Name'],
-                type=self.list_type,
-                sourceListId=emby_list['Id'],
-                filters=self.filters,
-                items=[],  # Will be populated later
-                sortName=emby_list['SortName'],
-                clientId='emby',
-                createdAt=datetime.now(),
-                creatorId=self.config.get_user().userId
-            )
-
-            db.media_lists.insert_one(media_list.dict())
-            self.log.debug("Inserted MediaLis in database", media_list=media_list)
+            all_list_items = self.client.get_all_items_from_parent(self.id)
+            media_list = self.get_list_by_id(self.id)
+            self.log.debug("Inserted MediaList in database", media_list=media_list)
 
             for item in all_list_items:
                 self.log.debug("Creating media list item", item=item, media_list=media_list)
+                item = EmbyItem(**item)
                 media_item = MediaItem.from_emby(item, self.log)
                 media_list.items.append(
                     await self.create_media_list_item(media_item, media_list, EmbyPosterProvider(config=self.config)))

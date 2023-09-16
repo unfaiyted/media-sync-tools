@@ -87,7 +87,7 @@ class PlexManager:
         self.log.debug("Returning combined results", len=len(combined_results))
         return combined_results
 
-    def search_lists(self, listId, type):
+    def search_lists_by_type(self, listId, type):
         try:
             if type == MediaListType.COLLECTION:
                 self.log.debug("Searching collection", listId=listId)
@@ -98,6 +98,12 @@ class PlexManager:
         except Exception as e:
             self.log.error("Error searching list", listId=listId, error=e, type=type, args=e.args)
             return None
+
+    def search_list_by_id(self, listId):
+        plex_list = self.search_lists_by_type(listId, MediaListType.COLLECTION)
+        if plex_list is None:
+            plex_list = self.search_lists_by_type(listId, MediaListType.PLAYLIST)
+        return plex_list
 
     def search_list_items(self, media, type):
         if type == MediaListType.COLLECTION:
@@ -131,7 +137,7 @@ class PlexManager:
             ids['tmdb'] = plex_item.guid.split('themoviedb://')[1].split('?')[0]
 
             # You can continue adding checks for other ID types in a similar manner...
-                # Check for TVDB
+            # Check for TVDB
         if "thetvdb://" in plex_item.guid:
             ids['tvdb'] = plex_item.guid.split('thetvdb://')[1].split('?')[0]
 

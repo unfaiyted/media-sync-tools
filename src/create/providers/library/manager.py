@@ -65,3 +65,18 @@ class LibraryProviderManager:
             libraries = await provider.get_libraries()
             for library in libraries:
                 await provider.sync_library_items(library)
+
+    def sync_library(self, client_id, library_name):
+        """
+        Sync a specific library from a specific provider.
+        :param client_id:
+        :param library_name:
+        :return:
+        """
+        for provider in self.providers:
+            if provider.client_id == client_id:
+                libraries = provider.get_libraries()
+                for library in libraries:
+                    if library.name == library_name:
+                        provider.sync_library_items(library)
+        pass

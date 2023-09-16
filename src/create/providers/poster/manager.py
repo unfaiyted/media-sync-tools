@@ -1,3 +1,6 @@
+from abc import ABC
+
+from src.create.providers.base_provider import BaseMediaProvider
 from src.create.providers.provider_manager import ProviderManager
 from src.create.providers.poster import PosterProvider
 from src.create.providers.poster.emby import EmbyPosterProvider
@@ -8,7 +11,7 @@ from src.create.providers.poster.trakt import TraktPosterProvider
 from src.models import MediaItem
 
 
-class PosterProviderManager:
+class PosterProviderManager(BaseMediaProvider, ABC):
 
     def __init__(self, config):
         """
@@ -31,4 +34,3 @@ class PosterProviderManager:
         self.log.debug("Getting poster for MediaItem", media_item=media_item)
         head = self.provider_manager.prioritize_provider(preferred_provider)
         return head.get_poster(self.config, media_item)
-

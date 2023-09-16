@@ -1,24 +1,24 @@
-import uuid
 from abc import ABC
-from datetime import datetime
 from typing import Optional
 
+from src.models import PlexFilters
 from src.create.providers.list import ListProvider
 from src.config import ConfigManager
-from src.models import JellyfinFilters
+from src.models import JellyfinFilters, Provider
 from src.create.providers.poster.jellyfin import JellyfinPosterProvider
 from src.create.posters import MediaPosterImageCreator
 from src.create.providers.poster.manager import PosterProviderManager
-from src.models import MediaList, MediaType, MediaListType, MediaItem, MediaProviderIds, MediaPoster
+from src.models import MediaList,  MediaListType, MediaItem, MediaPoster
 from src.clients.jellyfin import JellyfinClient
 
 
 class JellyfinListProvider(ListProvider, ABC):
     def __init__(self, config: ConfigManager,
+                 media_list: Optional[MediaList] = None,
+                 list_type: MediaListType = MediaListType.COLLECTION,
                  filters: Optional[JellyfinFilters] = None,
                  details: Optional[dict] = None,
-                 media_list: Optional[MediaList] = None,
-                 list_type: MediaListType = MediaListType.COLLECTION):
+                 client_id: str = 'jellyfin'):
         """
         Initialize the JellyfinProvider.
         :param config: Instance of ConfigManager
@@ -26,10 +26,12 @@ class JellyfinListProvider(ListProvider, ABC):
         :param details:
         :param list_type:
         """
-        super().__init__(config)  # Initialize the BaseMediaProvider
+        super().__init__(config)
+        self.name = Provider.JELLYFIN
         self.config = config
         self.log = config.get_logger()
-        self.client: JellyfinClient = config.get_client('emby')
+        self.client_id = client_id
+        self.client: JellyfinClient = config.get_client(client_id)
         self.filters = filters
         self.media_list = media_list
         self.server_url = self.client.server_url
@@ -49,7 +51,24 @@ class JellyfinListProvider(ListProvider, ABC):
 
         self.log.debug("JellyfinProvider initialized", id=self.id, library_name=self.library_name)
 
+    def get_list_by_id(self, list_id: str):
+        """
+        Retrieve MediaList from Emby.
+        :return:
+        """
+        self.log.info("Getting Emby list by id", parent_id=self.id)
 
+        emby_list = self.client.get_list(list_id=self.id)
+
+        filters = PlexFilters(
+            clientId=self.client_id,
+            listId=list_id)
+
+        return MediaList.from_emby(log=self.log,
+                                   emby_list=emby_list,
+                                   client_id=self.client_id,
+                                   creator_id=self.config.get_user().userId,
+                                   filters=filters.dict())
 
     async def get_list(self):
         """
@@ -66,40 +85,16 @@ class JellyfinListProvider(ListProvider, ABC):
 
         if self.id is not None:
             self.log.debug("Getting items from parent", parent_id=self.id)
-            limit = 100
-            offset = 0
-            all_list_items = []
+            all_list_items = self.client.get_all_items_from_parent(self.id)
 
-            while True:
-                list_items, list_items_count = self.client.get_items_from_parent(self.id, limit=limit, offset=offset)
-                self.log.info("Getting items from parent", offset=offset, list_items_count=list_items_count)
-                all_list_items.extend(list_items)
-                offset += limit
-                if offset > list_items_count:
-                    break
+            media_list = self.get_list_by_id(self.id)
 
-            emby_list = self.client.get_list(list_id=self.id)
-            db = self.config.get_db()
-
-            media_list = MediaList(
-                mediaListId=str(uuid.uuid4()),
-                name=emby_list['Name'],
-                type=self.list_type,
-                sourceListId=emby_list['Id'],
-                items=[],  # Will be populated later
-                sortName=emby_list['SortName'],
-                clientId='emby',
-                createdAt=datetime.now(),
-                creatorId=self.config.get_user().userId
-            )
-
-            db.media_lists.insert_one(media_list.dict())
-            self.log.debug("Inserted MediaLis in database", media_list=media_list)
-
+            self.log.debug("Inserted MediaList in database", media_list=media_list)
             for item in all_list_items:
                 self.log.debug("Creating media list item", item=item, media_list=media_list)
                 media_item = MediaItem.from_jellyfin(item, self.log)
-                media_list.items.append(await self.create_media_list_item(media_item, media_list, JellyfinPosterProvider(config=self.config)))
+                media_list.items.append(await self.create_media_list_item(media_item, media_list,
+                                                                          JellyfinPosterProvider(config=self.config)))
 
             return media_list
         return None
@@ -136,10 +131,12 @@ class JellyfinListProvider(ListProvider, ABC):
                 continue
 
             if list_type == MediaListType.PLAYLIST:
-                self.log.debug(f'adding item {media_list_item.item.title} to playlist {emby_list["Name"]}', emby_list=emby_list)
+                self.log.debug(f'adding item {media_list_item.item.title} to playlist {emby_list["Name"]}',
+                               emby_list=emby_list)
                 self.client.add_item_to_playlist(emby_list['Id'], emby_item['Id'])
             elif list_type == MediaListType.COLLECTION:
-                self.log.debug(f'adding item {media_list_item.item.title} to collection {emby_list["Name"]}', emby_list=emby_list)
+                self.log.debug(f'adding item {media_list_item.item.title} to collection {emby_list["Name"]}',
+                               emby_list=emby_list)
                 self.client.add_item_to_collection(emby_list['Id'], emby_item['Id'])
 
             poster = (media_list_item.poster if media_list_item.poster is not None else media_list_item.item.poster)

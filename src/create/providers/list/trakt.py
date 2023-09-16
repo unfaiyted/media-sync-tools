@@ -8,7 +8,7 @@ from src.models.providers.trakt import TraktItem
 from src.clients.trakt import TraktClient
 from src.create.providers.poster.manager import PosterProviderManager
 from src.create.providers.poster.tmdb import TmdbPosterProvider
-from src.models import TraktFilters, MediaListType, MediaList, MediaItem, MediaProviderIds, MediaType, MediaListItem
+from src.models import TraktFilters, MediaListType, MediaList, MediaItem, MediaProviderIds, MediaListItem, Provider
 
 
 class TraktListProvider(ListProvider, ABC):
@@ -25,6 +25,7 @@ class TraktListProvider(ListProvider, ABC):
         """
         super().__init__(config)
         self.log = config.get_logger(__name__)
+        self.name = Provider.TRAKT
         self.list_type = list_type
         self.client: TraktClient = config.get_client('trakt')
         self.poster_manager = PosterProviderManager(config=config)
@@ -61,35 +62,17 @@ class TraktListProvider(ListProvider, ABC):
                                                 list_id_or_slug=self.list_slug_or_id) if self.username else self.client.get_list_items_by_id(
             list_id=self.list_slug_or_id)
 
-        if not self.details:
-            list_info = self.client.get_list(username=self.username,
-                                             list_id_or_slug=self.list_slug_or_id) if self.username else self.client.get_list_by_id(
-                list_id=self.list_slug_or_id)
+        trakt_list = self.client.get_list(username=self.username,
+                                          list_id_or_slug=self.list_slug_or_id) if self.username else self.client.get_list_by_id(
+            list_id=self.list_slug_or_id)
 
-            self.details = {
-                'title': list_info['name'],
-                'description': list_info['description'],
-                'sort_title': list_info['name'],
-                'sourceListId': list_info['ids']['trakt']
-            }
-
-        media_list = MediaList(
-            mediaListId=str(uuid.uuid4()),
-
-            name=self.details['title'],
-            type=self.list_type,
-            sourceListId=self.list_slug_or_id,
-            items=[],
-            description=self.details['description'],
-            sortName=self.details['sort_title'],
-            filters=self.filters.dict(),
+        filters = TraktFilters(
             clientId='trakt',
-            createdAt=datetime.now(),
-            creatorId=self.config.get_user().userId
-        )
+            library=trakt_list['name'])
+        media_list = MediaList.from_trakt(self.log, trakt_list, self.config.get_user().userId, filters)
 
         db = self.config.get_db()
-        self.log.debug('Filters',  filters=self.filters)
+        self.log.debug('Filters', filters=self.filters)
         self.log.debug('MediaList', media_list=media_list)
         await db.media_lists.insert_one(media_list.dict())
 
@@ -103,5 +86,3 @@ class TraktListProvider(ListProvider, ABC):
                 await self.create_media_list_item(media_item, media_list, TmdbPosterProvider(config=self.config)))
 
         return media_list
-
-

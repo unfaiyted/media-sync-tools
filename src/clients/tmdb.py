@@ -7,6 +7,7 @@ import time
 
 class TmdbClient:
     TMDB_API_URL = "https://api.themoviedb.org/3"
+    TMDB_V4_API_URL = "https://api.themoviedb.org/4"
     TMDB_IMAGE_URL = "https://image.tmdb.org/t/p/original"
     RETRY_MAX = 5
     RETRY_DELAY = 5  # Starts with 5 seconds
@@ -21,13 +22,18 @@ class TmdbClient:
             "Authorization": f"Bearer {self.bearer_key}"
         }
 
-    def _request(self, method, endpoint, **kwargs):
+    def _request(self, method, endpoint, version=3, **kwargs):
         retries = 0
         delay = self.RETRY_DELAY
 
         while retries <= self.RETRY_MAX:
-            self.log.debug("Making request", method=method, endpoint=endpoint, retries=retries)
-            response = requests.request(
+            if version == 4:
+                self.log.debug("Making request", method=method, endpoint=endpoint, retries=retries)
+                response = requests.request(
+                    method, f"{self.TMDB_V4_API_URL}{endpoint}", headers=self._headers(), **kwargs)
+            else:
+                self.log.debug("Making request", method=method, endpoint=endpoint, retries=retries)
+                response = requests.request(
                 method, f"{self.TMDB_API_URL}{endpoint}", headers=self._headers(), **kwargs)
 
             if response.status_code == 429:  # Too Many Requests
@@ -129,3 +135,10 @@ class TmdbClient:
 
         return None
 
+    def get_list_by_id(self, list_id):
+        """
+        Retrieve MediaList from TMDB by ID.
+        :return:
+        """
+        self.log.info("Getting TMDB list by id", list_id=list_id)
+        return self._request("GET", f"/list/{list_id}", version=4)

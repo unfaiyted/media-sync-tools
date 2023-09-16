@@ -1,10 +1,10 @@
 from __future__ import annotations  # Use this to enable postponed evaluation of type annotations
 
+import uuid
 from enum import Enum
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, Field
 from typing import List, Optional, ForwardRef, Tuple, Union
-from bson import ObjectId
 
 
 from .clients import Client, ClientField, FieldType, ClientType
@@ -27,7 +27,9 @@ from .media_lists import (MediaProviderIds,
                           MediaListItem,
                           MediaListOptions,
                           MediaItem,
-                          MediaType)
+                          MediaListItemType,
+                          MediaItemType
+                          )
 from .libraries import Library, LibraryGroup, LibraryType
 
 
@@ -35,24 +37,23 @@ class Provider(str, Enum):
     OPENAI = "OPENAI"
     MDB = "MDB"
     TRAKT = "TRAKT"
+    JELLYFIN = "JELLYFIN"
+    PLEX = "PLEX"
+    EMBY = "EMBY"
+    TMDB = "TMDB"
+    TVDB = "TVDB"
     # ... other types ...
 
 
-class SyncOptions(BaseModel):
-    syncOptionsId: str = None
-    configId: str
-    collections: bool
-    playlists: bool
-    lovedTracks: bool
-    topLists: bool
-    watched: bool
-    ratings: bool
-    trakt: bool
-    libraries: bool
+class ProviderType(str, Enum):
+    BASE = "BASE"
+    LIST = "LIST"
+    POSTER = "POSTER"
+    LIBRARY = "LIBRARY"
 
 
 class Config(BaseModel):
-    configId: str = None
+    configId: str = Field(default_factory=uuid.uuid4)
     user: Optional[ForwardRef('User')]
     userId: str
     clients: Optional[List[ForwardRef('ConfigClient')]]
@@ -61,7 +62,7 @@ class Config(BaseModel):
 
 
 class SyncOptions(BaseModel):
-    syncOptionsId: str
+    syncOptionsId: str = Field(default_factory=uuid.uuid4)
     configId: str
     collections: bool
     playlists: bool
@@ -74,7 +75,7 @@ class SyncOptions(BaseModel):
 
 
 class ConfigClient(BaseModel):
-    configClientId: str = None
+    configClientId: str = Field(default_factory=uuid.uuid4)
     label: str
     client: Optional[ForwardRef('Client')]
     clientId: str
@@ -85,7 +86,7 @@ class ConfigClient(BaseModel):
 
 
 class ConfigClientFieldsValue(BaseModel):
-    configClientFieldValueId: Optional[str] = None
+    configClientFieldValueId: Optional[str] = Field(default_factory=uuid.uuid4)
     configClientFieldId: str
     clientField: Optional[ForwardRef('ClientField')]
     configClientId: str
@@ -93,7 +94,7 @@ class ConfigClientFieldsValue(BaseModel):
 
 
 class User(BaseModel):
-    userId: str
+    userId: str = Field(default_factory=uuid.uuid4)
     email: str
     name: str
     password: str  # Remember to hash passwords before storing

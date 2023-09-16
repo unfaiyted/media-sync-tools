@@ -11,7 +11,7 @@ import time
 
 from src.models import JellyfinFilters
 from src.models import MediaList
-from src.models.media_lists import MediaItem, MediaType
+from src.models.media_lists import MediaItem, MediaListType
 
 
 class JellyfinClient:
@@ -196,6 +196,21 @@ class JellyfinClient:
         total_count = response.get('TotalRecordCount', 0)
         # print(items, total_count)
         return items, total_count
+
+    def get_all_items_from_parent(self, parent_id, per_request_limit = 100) -> list:
+        offset = 0
+        all_list_items = []
+
+        while True:
+            list_items, list_items_count = self.get_items_from_parent(parent_id, limit=per_request_limit, offset=offset)
+            self.log.info("Getting items from parent", offset=offset, list_items_count=list_items_count)
+            all_list_items.extend(list_items)
+            offset += per_request_limit
+            if offset > list_items_count:
+                self.log.debug("Reached end of Jellyfin list items", offset=offset, list_items_count=list_items_count)
+                break
+
+        return all_list_items
 
     def get_libraries(self):
         url = self._build_url(f'Users/{self.user_id}/views')

@@ -2,7 +2,7 @@ import uuid
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from src.models import MediaList, MediaListType, EmbyFilters
+from src.models import MediaList, MediaListType, EmbyFilters, ProviderType
 from src.create.providers.base_provider import BaseMediaProvider
 
 from src.models import Library
@@ -10,19 +10,13 @@ from src.models import Library
 
 class LibraryProvider(BaseMediaProvider, ABC):
 
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self, config, client_id):
+        super().__init__(config, client_id=client_id)
         self.config = config
         self.log = config.get_logger(__name__)
-        self.client = self.create_client()
+        self.type = ProviderType.LIBRARY
+        self.client_id = client_id
         self.db = self.config.get_db()
-
-    @abstractmethod
-    def create_client(self):
-        """
-        Create and return the client for the specific provider.
-        """
-        pass
 
     # @abstractmethod
     # def sync_all_library_items(self):
@@ -38,7 +32,7 @@ class LibraryProvider(BaseMediaProvider, ABC):
     #     Save poster to provider.
     #     :return:
     #     """
-        # pass
+    # pass
 
     # @abstractmethod
     # async def fetch_provider_library_items(self, library: Library):
@@ -134,6 +128,13 @@ class LibraryProvider(BaseMediaProvider, ABC):
             media_list.items.append(media_item)
 
         self.log.info("Saving MediaList", total_items=len(media_list.items), media_list=media_list)
+        self.log.debug("Synced Jellyfin library items", library=library, media_list=media_list)
+
+        for item in media_list.items:
+            self.log.debug("Creating media list item", item=item)
+            media_list.items.append(
+                await self.create_media_list_item(item, media_list)
+            )
         return media_list
 
     @abstractmethod
@@ -144,4 +145,3 @@ class LibraryProvider(BaseMediaProvider, ABC):
         :return:
         """
         pass
-

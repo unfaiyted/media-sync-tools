@@ -1,7 +1,8 @@
 from __future__ import annotations  # Use this to enable postponed evaluation of type annotations
 
+import uuid
 from enum import Enum
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, Field
 from typing import List, Optional, ForwardRef
 from bson import ObjectId
 
@@ -22,7 +23,7 @@ class FieldType(str, Enum):
 
 
 class ClientField(BaseModel):
-    clientFieldId: str = None
+    clientFieldId: str = Field(default_factory=uuid.uuid4)
     clientId: str
     name: str
     placeholderValue: Optional[str] = ''
@@ -30,7 +31,7 @@ class ClientField(BaseModel):
 
 
 class Client(BaseModel):
-    clientId: Optional[str]
+    clientId: str = Field(default_factory=uuid.uuid4)
     label: str
     type: ClientType
     name: str

@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 
 from enum import Enum
 
-from models import MediaType
+from src.models import MediaItemType
 
 
 class EmbyItemType(Enum):
@@ -26,13 +26,22 @@ class EmbyItemType(Enum):
 
 
     @classmethod
-    def from_media_type(cls, type: MediaType):
+    def from_media_type(cls, type: MediaItemType):
 
-        if type == MediaType.MOVIE:
+        if type == MediaItemType.MOVIE:
             return cls.MOVIE
-        elif type == MediaType.TV:
+        elif type == MediaItemType.SHOW:
             return cls.SERIES
-        elif type == MediaType.ANIME:
+        elif type == MediaItemType.SEASON:
+            return cls.SEASON
+        elif type == MediaItemType.EPISODE:
+            return cls.EPISODE
+        elif type == MediaItemType.LIST:
+            return cls.BOX_SET
+
+        return cls.FOLDER
+
+
 
 
 class EmbyImageType(Enum):

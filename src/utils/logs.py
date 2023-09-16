@@ -29,7 +29,7 @@ class NamedPrintLogger(PrintLogger):
 
 
 def redact_keys_based_on_name(_, __, event_dict):
-    REDACTED_KEYS = ["api_key", "password", 'apikey', 'bearer_token', 'client_secret', 'client_id', 'access_token', 'refresh_token']
+    REDACTED_KEYS = ["api_key", "password", 'apikey', 'bearer_token', 'client_secret', 'access_token', 'refresh_token']
     MAX_DEPTH = 5
 
     def manual_deepcopy(data):

@@ -3,48 +3,100 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import List, ForwardRef, Optional, Union
+from typing import List, ForwardRef, Optional
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, Field
 
-from src.models.providers.mdb import MdbItem
-from src.models.providers.trakt import TraktMovie, TraktShow, TraktItem
-from src.models.providers.jellyfin import JellyfinItemType
-
+from src.models.providers.tmdb import TmdbList, TmdbMovieDetails
 from src.models import Filters, FilterType, TraktFilters, PlexFilters, JellyfinFilters, \
     TmdbFilters, EmbyFilters, MdbFilters
+from src.models.providers.jellyfin import JellyfinItemType
+from src.models.providers.mdb import MdbItem
+from src.models.providers.trakt import TraktMovie, TraktShow, TraktItem
 
 
-class MediaType(str, Enum):
+class MediaItemType(str, Enum):
     MOVIE = "MOVIE"
     EPISODE = "EPISODE"
     UNKNOWN = "UNKNOWN"
+    # sublists
     SEASON = "SEASON"
     SHOW = "SHOW"
-    CO
+    LIST = "LIST"
+
     # ... other types ...
+
+    @classmethod
+    def is_list(cls, item_type: MediaItemType):
+        return (item_type == MediaItemType.LIST or
+                item_type == MediaItemType.SHOW or
+                item_type == MediaItemType.SEASON)
+
+    @classmethod
+    def from_plex(cls, TYPE):
+        pass
+
+    @classmethod
+    def from_emby(cls, emby_type):
+        if emby_type == 'Movie':
+            return MediaItemType.MOVIE
+        elif emby_type == 'BoxSet':
+            return MediaItemType.LIST
+        elif emby_type == 'Season':
+            return MediaItemType.SEASON
+        elif emby_type == 'Series':
+            return MediaItemType.SHOW
+        elif emby_type == 'Episode':
+            return MediaItemType.EPISODE
+        else:
+            print('unknown emby type', emby_type)
+            return MediaItemType.UNKNOWN
+
+    @classmethod
+    def from_trakt(cls, type):
+        pass
 
 
 class MediaListType(str, Enum):
     COLLECTION = "COLLECTION"
     PLAYLIST = "PLAYLIST"
     LIBRARY = "LIBRARY"
+
     # ... other types ...
+
     @classmethod
     def from_jellyfin(cls, list_type):
 
         if list_type == JellyfinItemType.BOX_SET:
             return MediaListType.COLLECTION
         elif list_type == JellyfinItemType.SEASON:
-            return MediaListType.PLAYLIST
+            return MediaListType.LIBRARY
         elif list_type == JellyfinItemType.SERIES:
+            return MediaListType.LIBRARY
 
+    @classmethod
+    def from_plex(cls, TYPE):
+        pass
 
+    @classmethod
+    def from_emby(cls, param):
+        pass
+
+    @classmethod
+    def from_trakt(cls, param):
+        pass
+
+    @classmethod
+    def from_tmdb(cls, param):
+        pass
+
+    @classmethod
+    def from_mdb(cls, param):
         pass
 
 
 class MediaListOptions(BaseModel):
-    mediaListOptionsId: str
+    mediaListOptionsId: str = Field(default_factory=uuid.uuid4)
     userId: str
     type: MediaListType
     clients: List[ForwardRef('ConfigClient')]
@@ -57,7 +109,7 @@ class MediaListOptions(BaseModel):
 
 class MediaList(BaseModel):
     sourceListId: Optional[str]
-    mediaListId: str = None
+    mediaListId: str = Field(default_factory=uuid.uuid4)
     clientId: str  # client provider
     creatorId: str
     sourceListId: Optional[str]
@@ -96,9 +148,12 @@ class MediaList(BaseModel):
         raise ValueError(f"Unknown filter type: {filter_type}")
 
     @classmethod
-    def from_emby(cls, emby_list: dict, log) -> MediaList:
+    def from_emby(cls, log, emby_list: dict, client_id: str, creator_id: str, filters: EmbyFilters = None) -> MediaList:
         """
         Map an Emby list to a MediaList.
+        :param client_id:
+        :param filters:
+        :param creator_id:
         :param emby_list:
         :param log:
         :return:
@@ -107,21 +162,23 @@ class MediaList(BaseModel):
         return MediaList(
             mediaListId=str(uuid.uuid4()),
             name=emby_list['Name'],
-            type=MediaListType.COLLECTION if emby_list['Type'] == 'Collection' else MediaListType.PLAYLIST,
+            type=MediaListType.from_emby(['Type']),  # == 'Collection' else MediaListType.PLAYLIST,
             sourceListId=emby_list['Id'],
-            filters=EmbyFilters(
-                clientId=emby_list['CollectionType'],
-                library=emby_list['Name']).dict(),
+            filters=filters.dict(),
             sortName=emby_list['SortName'],
-            clientId='emby',
+            clientId=client_id,
             createdAt=datetime.now(),
-            creatorId='emby'
+            creatorId=creator_id
         )
 
     @classmethod
-    def from_jellyfin(cls, jellyfin_list: dict, log) -> MediaList:
+    def from_jellyfin(cls, log, jellyfin_list: dict, client_id: str, creator_id: str,
+                      filters: JellyfinFilters = None) -> MediaList:
         """
         Map a Jellyfin list to a MediaList.
+        :param client_id:
+        :param filters:
+        :param creator_id:
         :param jellyfin_list:
         :param log:
         :return:
@@ -133,19 +190,20 @@ class MediaList(BaseModel):
             type=MediaListType.from_jellyfin(jellyfin_list['Type']),
             # type=MediaListType.COLLECTION if jellyfin_list['Type'] == 'Collection' else MediaListType.PLAYLIST,
             sourceListId=jellyfin_list['Id'],
-            filters=JellyfinFilters(
-                clientId=jellyfin_list['CollectionType'],
-                library=jellyfin_list['Name']).dict(),
+            filters=filters.dict(),
             sortName=jellyfin_list['SortName'],
-            clientId='jellyfin',
+            clientId=client_id,
             createdAt=datetime.now(),
-            creatorId='jellyfin'
+            creatorId=creator_id
         )
 
     @classmethod
-    def from_plex(cls, plex_list, log) -> MediaList:
+    def from_plex(cls, log, plex_list, creator_id, client_id: str, filters: PlexFilters = None) -> MediaList:
         """
         Map a Plex list to a MediaList.
+        :param client_id:
+        :param filters:
+        :param creator_id:
         :param plex_list:
         :param log:
         :return:
@@ -154,21 +212,23 @@ class MediaList(BaseModel):
         return MediaList(
             mediaListId=str(uuid.uuid4()),
             name=plex_list.title,
-            type=MediaListType.COLLECTION if plex_list.TYPE == 'collection' else MediaListType.PLAYLIST,
+            type=MediaListType.from_plex(plex_list.TYPE),
+            description=plex_list.summary,
             sourceListId=plex_list.ratingKey,
-            filters=PlexFilters(
-                clientId=plex_list.TYPE,
-                library=plex_list.title).dict(),
-            sortName=plex_list.title,
-            clientId='plex',
+            filters=filters.dict(),
+            sortName=plex_list.titleStort,
+            clientId=client_id,
             createdAt=datetime.now(),
-            creatorId='plex'
+            creatorId=creator_id
         )
 
     @classmethod
-    def from_trakt(cls, trakt_list: dict, log) -> MediaList:
+    def from_trakt(cls, log, trakt_list: dict, client_id: str, creator_id, filters: TraktFilters = None) -> MediaList:
         """
         Map a Trakt list to a MediaList.
+        :param client_id:
+        :param filters:
+        :param creator_id:
         :param trakt_list:
         :param log:
         :return:
@@ -177,21 +237,23 @@ class MediaList(BaseModel):
         return MediaList(
             mediaListId=str(uuid.uuid4()),
             name=trakt_list['name'],
-            type=MediaListType.COLLECTION if trakt_list['list_type'] == 'official' else MediaListType.PLAYLIST,
+            type=MediaListType.from_trakt(trakt_list['list_type']),
             sourceListId=trakt_list['ids']['trakt'],
-            filters=TraktFilters(
-                clientId=trakt_list['list_type'],
-                library=trakt_list['name']).dict(),
+            description=trakt_list['description'],
+            filters=filters.dict(),
             sortName=trakt_list['name'],
-            clientId='trakt',
+            clientId=client_id,
             createdAt=datetime.now(),
-            creatorId='trakt'
+            creatorId=creator_id
         )
 
     @classmethod
-    def from_tmdb(cls, tmdb_list: dict, log) -> MediaList:
+    def from_tmdb(cls, log, tmdb_list: TmdbList, client_id: str, creator_id: str, filters: TmdbFilters = None) -> MediaList:
         """
         Map a TMDB list to a MediaList.
+        :param client_id:
+        :param filters:
+        :param creator_id:
         :param tmdb_list:
         :param log:
         :return:
@@ -199,40 +261,74 @@ class MediaList(BaseModel):
         log.info("Mapping TMDB list to MediaList", tmdb_list=tmdb_list)
         return MediaList(
             mediaListId=str(uuid.uuid4()),
-            name=tmdb_list['name'],
-            type=MediaListType.COLLECTION if tmdb_list['list_type'] == 'official' else MediaListType.PLAYLIST,
-            sourceListId=tmdb_list['id'],
-            filters=TmdbFilters(
-                clientId=tmdb_list['list_type'],
-                library=tmdb_list['name']).dict(),
-            sortName=tmdb_list['name'],
-            clientId='tmdb',
+            name=tmdb_list.name,
+            type=MediaListType.COLLECTION,
+            sourceListId=tmdb_list.id,
+            filters=filters.dict(),
+            sortName=tmdb_list.name,
+            clientId=client_id,
             createdAt=datetime.now(),
-            creatorId='tmdb'
+            creatorId=creator_id
         )
 
     @classmethod
-    def from_mdb(cls, mdb_list: dict, log) -> MediaList:
+    def from_mdb(cls, log, mdb_list: dict, client_id: str, creator_id: str, filters: MdbFilters) -> MediaList:
         """
-        Map a MDB list to a MediaList.
+        Map an MDB list to a MediaList.
+        :param client_id:
+        :param filters:
+        :param creator_id:
         :param mdb_list:
         :param log:
         :return:
         """
-        log.info("Mapping MDB list to MediaList", mdb_list=mdb_list)
+        log.info("Mapping MDB list to MediaList", creator_id, mdb_list=mdb_list)
         return MediaList(
             mediaListId=str(uuid.uuid4()),
             name=mdb_list['name'],
-            type=MediaListType.COLLECTION if mdb_list['list_type'] == 'official' else MediaListType.PLAYLIST,
+            type=MediaListType.from_mdb(mdb_list['list_type']),  # official?
             sourceListId=mdb_list['id'],
-            filters=MdbFilters(
-                clientId=mdb_list['list_type'],
-                library=mdb_list['name']).dict(),
+            filters=filters.dict(),
             sortName=mdb_list['name'],
-            clientId='mdb',
+            clientId=client_id,
             createdAt=datetime.now(),
-            creatorId='mdb'
+            creatorId=creator_id
         )
+
+    @classmethod
+    def merge_media_lists(cls, media_lists: List[MediaList]) -> MediaList | None:
+        """
+        Merge multiple MediaLists into one.
+        :param media_lists:
+        :return:
+        """
+        if len(media_lists) == 0:
+            return None
+
+        merged_media_list = media_lists[0]
+        merged_media_list.items = []
+
+        for media_list in media_lists:
+            merged_media_list.items.extend(media_list.items)
+
+        return merged_media_list
+
+    @classmethod
+    def update_details(cls, media_list: MediaList, details: dict) -> MediaList:
+        """
+        Update details of a MediaList.
+        :param media_list:
+        :param details:
+        :return:
+        """
+        media_list.name = details.get('name', media_list.name)
+        media_list.description = details.get('description', media_list.description)
+        media_list.sortName = details.get('sortName', media_list.sortName)
+        media_list.poster = details.get('poster', media_list.poster)
+        media_list.mediaPosterId = details.get('mediaPosterId', media_list.mediaPosterId)
+        media_list.filters = details.get('filters', media_list.filters)
+
+        return media_list
 
 
 class MediaProviderIds(BaseModel):
@@ -256,10 +352,10 @@ class MediaItemRatings(BaseModel):
 
 
 class MediaItem(BaseModel):
-    mediaItemId: str = None
+    mediaItemId: str = Field(default_factory=uuid.uuid4)
     title: str
     year: Optional[str]
-    type: MediaType
+    type: MediaItemType
     sortTitle: Optional[str]
     originalTitle: Optional[str]
     tagline: Optional[str]
@@ -271,9 +367,34 @@ class MediaItem(BaseModel):
     dateAdded: Optional[datetime]
     providers: Optional[MediaProviderIds]
     ratings: Optional[MediaItemRatings]
+    importId: Optional[str]
 
     @staticmethod
-    def from_emby(provider_item: dict, log) -> MediaItem:
+    def from_provider_type(provider: str, item, log) -> MediaItem:
+        """
+        Map an item from a provider to a MediaItem.
+        :param provider:
+        :param item:
+        :param log:
+        :return:
+        """
+        if provider == 'jellyfin':
+            return MediaItem.from_jellyfin(item, log)
+        elif provider == 'plex':
+            return MediaItem.from_plex(item, log)
+        elif provider == 'trakt':
+            return MediaItem.from_trakt(item, log)
+        elif provider == 'tmdb':
+            return MediaItem.from_tmdb(item, log)
+        elif provider == 'emby':
+            return MediaItem.from_emby(item, log)
+        elif provider == 'mdb':
+            return MediaItem.from_mdb(item, log)
+
+        raise ValueError(f"Unknown provider: {provider}")
+
+    @staticmethod
+    def from_emby(provider_item, log) -> MediaItem:
         """
         Map an Emby item to a MediaItem.
         :param provider_item:
@@ -283,13 +404,13 @@ class MediaItem(BaseModel):
         log.info(f"Mapping Emby item to MediaItem", provider_item=provider_item)
         return MediaItem(
             mediaItemId=str(uuid.uuid4()),
-            title=provider_item.get('Name', 'TITLE MISSING'),
-            year=provider_item.get('ProductionYear', None),
-            description=provider_item.get('Overview', None),
-            type=MediaType.MOVIE if provider_item['Type'] == 'Movie' else MediaType.SHOW,
+            title=provider_item.Name,
+            year=provider_item.ProductionYear,
+            description='',
+            type=MediaItemType.from_emby(provider_item.Type),
             providers=MediaProviderIds(
-                imdbId=provider_item['ProviderIds'].get('IMDB', None),
-                tvdbId=provider_item['ProviderIds'].get('Tvdb', None)
+                imdbId=provider_item.ProviderIds.IMDB,
+                tvdbId=provider_item.ProviderIds.Tvdb
             )
         )
 
@@ -307,7 +428,7 @@ class MediaItem(BaseModel):
             title=provider_item.get('Name', 'TITLE MISSING'),
             year=provider_item.get('ProductionYear', None),
             description=provider_item.get('Overview', None),
-            type=MediaType.MOVIE if provider_item['Type'] == 'Movie' else MediaType.SHOW,
+            type=MediaItemType.MOVIE if provider_item['Type'] == 'Movie' else MediaItemType.SHOW,
             providers=MediaProviderIds(
                 imdbId=provider_item['ProviderIds'].get('IMDB', None),
                 tvdbId=provider_item['ProviderIds'].get('Tvdb', None)
@@ -348,10 +469,9 @@ class MediaItem(BaseModel):
         external_ids = MediaItem.extract_external_ids(item)
 
         media_item = MediaItem(
-            mediaItemId=str(uuid.uuid4()),
             title=item.title,
             year=item.year,
-            type=MediaType.MOVIE if item.TYPE == 'movie' else MediaType.SHOW,
+            type=MediaItemType.from_plex(item.TYPE),
             providers=MediaProviderIds(
                 imdbId=external_ids.get('imdb', None),
                 tvdbId=external_ids.get('tvdb', None),
@@ -364,10 +484,9 @@ class MediaItem(BaseModel):
     @staticmethod
     def from_mdb(item: MdbItem, log) -> MediaItem:
         return MediaItem(
-            mediaItemId=str(uuid.uuid4()),
             title=item.title,
             year=item.release_year,
-            type=MediaType.MOVIE if item.mediatype == 'movie' else MediaType.SHOW,
+            type=MediaItemType.MOVIE if item.mediatype == 'movie' else MediaItemType.SHOW,
             providers=MediaProviderIds(
                 imdbId=item.imdb_id,
                 tvdbId=item.tvdb_id,
@@ -375,21 +494,20 @@ class MediaItem(BaseModel):
         )
 
     @staticmethod
-    def from_tmdb(item, log):
+    def from_tmdb(item: TmdbMovieDetails, log):
         """
         Map a TMDB item to a MediaItem.
         :param item:
         :return:
         """
         return MediaItem(
-            mediaItemId=str(uuid.uuid4()),
-            title=item['title'],
-            year=item['release_date'].split('-')[0],
-            description=item['overview'],
-            releaseDate=item['release_date'],
-            type=MediaType.MOVIE,
+            title=item.title,
+            year=item.release_date.split('-')[0],
+            description=item.overview,
+            releaseDate=item.release_date,
+            type=MediaItemType.MOVIE,
             providers=MediaProviderIds(
-                tmdbId=item['id'],
+                tmdbId=item.id,
             ),
         )
 
@@ -413,10 +531,9 @@ class MediaItem(BaseModel):
         item = trakt_item.get_item()
 
         return MediaItem(
-            mediaItemId=str(uuid.uuid4()),
             title=item.title,
             year=item.year,
-            type=MediaType.MOVIE if trakt_item.type == 'movie' else MediaType.SHOW,
+            type=MediaItemType.from_trakt(trakt_item.type),
             providers=MediaProviderIds(
                 imdbId=item.ids.imdb,
                 tvdbId=item.ids.tvdb,
@@ -426,11 +543,18 @@ class MediaItem(BaseModel):
             ))
 
 
+class MediaListItemType(str, Enum):
+    LIST = "LIST"
+    ITEM = "ITEM"
+
+
+
 class MediaListItem(BaseModel):
-    mediaListItemId: str = None
+    mediaListItemId: str = Field(default_factory=uuid.uuid4)
+    type: MediaListItemType
     mediaListId: str
     mediaItemId: str
     poster: Optional[str]
     mediaPosterId: Optional[str]
-    item: Optional[ForwardRef('MediaItem')]
+    item: Optional[ForwardRef('MediaItem') or ForwardRef('MediaList')]
     dateAdded: Optional[datetime]

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from enum import Enum
 
 from pydantic import BaseModel, Field
@@ -15,7 +16,6 @@ class TaskType(str, Enum):
     SYNC_LIBRARY = "SYNC_LIBRARY"
     SYNC_COLLECTIONS = "SYNC_COLLECTIONS"
     SYNC_POSTERS = "SYNC_POSTERS"
-
     SYNC_METADATA = "SYNC_METADATA"
     BACKUP = "BACKUP"
 
@@ -65,6 +65,7 @@ class TaskPayload(BaseModel):
 
 # Main Task Model
 class Task(BaseModel):
+    taskId: str = Field(default_factory=uuid.uuid4)
     taskName: str
     taskDescription: str
     type: TaskType
