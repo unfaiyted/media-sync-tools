@@ -13,7 +13,7 @@ class EmbyPosterProvider(PosterProvider, ABC):
         self.log = config.get_logger(__name__)
 
     async def get_poster_from_source(self, config, media_item: MediaItem) -> Optional[str]:
-        self.log.info('Skipping fetch poster from Emby', media_item=media_item.dict())
+        self.log.info('Attempt to Fetch poster from Emby', media_item=media_item.dict())
         emby: EmbyClient = self.config.get_client('emby')
 
         # Attempt to fetch from Emby

@@ -1,5 +1,5 @@
 # Plex Emby Sync Tools
-Plex Emby Sync Tools is a Python project that provides tools for synchronizing content between Plex and Emby media servers.
+nlex Emby Sync Tools is a Python project that provides tools for synchronizing content between Plex and Emby media servers.
 
 ### Requirements
 Python 3.x

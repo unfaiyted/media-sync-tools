@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 
+
 class MdbItem(BaseModel):
     id: int
     rank: int

@@ -1,10 +1,6 @@
 <template>
   <div>
-    <router-link to="/">Home</router-link>
-    <router-link to="/poster">Poster</router-link>
-    <router-link to="/list">List</router-link>
 
-      Home!!
   </div>
 </template>
 

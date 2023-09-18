@@ -5,6 +5,7 @@ from typing import Optional, Tuple, List
 from pydantic import BaseModel, Field
 
 
+
 class MediaPosterBorderOptions(BaseModel):
     enabled: bool = False
     width: int = 4
@@ -102,6 +103,35 @@ class MediaPoster(BaseModel):
     overlays: Optional[List[MediaPosterOverlayOptions]]
     icon: Optional[MediaPosterIconOptions]
     mediaItem: Optional[str]
+
+    @staticmethod
+    def from_media_item(self, media_item, type: MediaImageType = MediaImageType.POSTER):
+        """
+
+        :param self:
+        :param media_item: MediaItem
+        :param type:
+        :return:
+        """
+
+        width=400
+        height=600
+        if type == MediaImageType.POSTER:
+            width=600 # TODO: move the poster and media item sizes to some constant or enum
+            height=400
+
+        return MediaPoster(
+            mediaItemId=media_item.mediaItemId,
+            width=width,
+            height=height,
+            type=type,
+            border=MediaPosterBorderOptions(enabled=True,
+                                             width=4, height=4, color=(255, 255, 255)),
+            text=MediaPosterTextOptions(enabled=True,
+                                        text=media_item.title),
+            gradient=MediaPosterGradientOptions(enabled=True,
+                                                colors=[(0, 0, 0), (0, 0, 0)]),
+        )
 
 
 class ProviderPoster(BaseModel):

@@ -353,7 +353,7 @@ class MediaPosterImageCreator:
         # Method to add a single overlay element to the poster.
         pass
 
-    def _generate_poster(self):
+    def _generate_poster(self) -> Image:
         # Method to generate the final poster and return it.
         self.log.info('Poster created successfully.')
         return self.image

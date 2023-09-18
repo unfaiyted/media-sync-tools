@@ -18,6 +18,8 @@
 <script lang="ts">
 import { LinkIcon, DocumentTextIcon, UserIcon, CogIcon, UsersIcon, TvIcon} from '@heroicons/vue/24/outline';
 
+// TODO: Add a section for Providers
+
 interface Sublink {
     to: string;
     text: string;

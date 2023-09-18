@@ -1,6 +1,7 @@
 from abc import ABC
 
 from src.create.providers.base_provider import BaseMediaProvider
+from src.create.providers.poster.self import MediaPosterProvider
 from src.create.providers.provider_manager import ProviderManager
 from src.create.providers.poster import PosterProvider
 from src.create.providers.poster.emby import EmbyPosterProvider
@@ -21,6 +22,7 @@ class PosterProviderManager(BaseMediaProvider, ABC):
         self.config = config
         self.log = config.get_logger(__name__)
         emby = EmbyPosterProvider(config=config)
+        self = MediaPosterProvider(config=config)
         tmdb = TmdbPosterProvider(config=config)
         jellyfin = JellyfinPosterProvider(config=config)
         plex = PlexPosterProvider(config=config)

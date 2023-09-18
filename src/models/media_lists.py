@@ -9,7 +9,7 @@ from pydantic import BaseModel, validator, Field
 
 from src.models.providers.tmdb import TmdbList, TmdbMovieDetails
 from src.models import Filters, FilterType, TraktFilters, PlexFilters, JellyfinFilters, \
-    TmdbFilters, EmbyFilters, MdbFilters
+    TmdbFilters, EmbyFilters, MdbFilters, MediaPoster
 from src.models.providers.jellyfin import JellyfinItemType
 from src.models.providers.mdb import MdbItem
 from src.models.providers.trakt import TraktMovie, TraktShow, TraktItem
@@ -19,6 +19,7 @@ class MediaItemType(str, Enum):
     MOVIE = "MOVIE"
     EPISODE = "EPISODE"
     UNKNOWN = "UNKNOWN"
+
     # sublists
     SEASON = "SEASON"
     SHOW = "SHOW"
@@ -401,7 +402,7 @@ class MediaItem(BaseModel):
         :param log:
         :return:
         """
-        log.info(f"Mapping Emby item to MediaItem", provider_item=provider_item)
+        log.info("Mapping Emby item to MediaItem", provider_item=provider_item)
         return MediaItem(
             mediaItemId=str(uuid.uuid4()),
             title=provider_item.Name,
