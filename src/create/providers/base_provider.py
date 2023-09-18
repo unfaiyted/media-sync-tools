@@ -50,7 +50,8 @@ class BaseMediaProvider(ABC):  # ABC means it's an abstract base class
             for field in MediaProviderIds.__fields__:
                 self.log.debug('Checking for existing media item by provider ID', field=field)
                 if provider_id := getattr(media_item.providers, field, None):
-                    self.log.debug('Checking for existing media item by provider ID', field=field, provider_id=provider_id)
+                    self.log.debug('Checking for existing media item by provider ID', field=field,
+                                   provider_id=provider_id)
                     existing_media_item = await self.db.media_items.find_one(
                         {f"providers.{field}": provider_id}
                     )
@@ -130,17 +131,14 @@ class BaseMediaProvider(ABC):  # ABC means it's an abstract base class
             self.log.debug('Media item is a list. Adding list to item.')
             # media_list_item.item = self.list_manager.get_list_by_id(self.client_id, media_item.importId)
 
-
         # if media_item.poster is None:
-            # self.log.info('Fetching poster for MediaItem', media_item=media_item)
-            # media_item.poster = await self.poster_manager.get_poster(preferred_provider=preferred_poster_provider,
-            #                                                          media_item=media_item)
-            # self.log.info('Fetched poster for MediaItem', media_item=media_item)
-
+        # self.log.info('Fetching poster for MediaItem', media_item=media_item)
+        # media_item.poster = await self.poster_manager.get_poster(preferred_provider=preferred_poster_provider,
+        #                                                          media_item=media_item)
+        # self.log.info('Fetched poster for MediaItem', media_item=media_item)
 
         self.log.debug("Adding media_list_items", media_item=media_item)
         self.db.media_list_items.insert_one(media_list_item.dict())
         self.log.debug("Inserted media_list_item", media_list_item=media_list_item)
         self.log.debug('Created MediaListItem from MediaItem', media_item=media_item.dict())
         return media_list_item
-

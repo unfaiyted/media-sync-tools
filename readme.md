@@ -57,3 +57,36 @@ We welcome contributions from the community! If you want to contribute to Plex E
 
 #### License
 Plex Emby Sync Tools is licensed under the MIT License.
+
+
+
+### Notes
+
+
+Sidebar:
+- Display the list of providers in the Sidebar
+- Group that list of providers by type (say ListProvider, PosterProvider, LibraryProvider, etc)
+- Each group should be titled by the type of provider like Lists, Posters, Libraries, etc
+    - For the LibraryProvider type, display the name of the provider and the number of libraries it has
+      - When clicked,
+        - display the list of libraries for that provider with the library type in a muted smaller font
+        - it should also have a sync icon next to it
+            - when the sync icon is clicked, it should toggle sync on or off. 
+    - For the ListProvider type, just display the name of the provider
+        - When clicked, display the last 5 or so list names synced from that provider.
+          - When the list names are clicked, go to the list page based on the MediaId
+    - For the PosterProvider type, display the name of the provider.
+- Below the list we should have a button that says Add provider.
+
+
+### Onboarding Flow:
+
+User should be able to sign up with an account.
+    - Add the media servers they have already setup.
+    - Add the providers they want to sync with (say trakt and imdb).
+    - Configure sync options (say sync watchlist, sync collections, sync ratings, sync play history, etc).
+        - Sync to SyncTools 
+        - Sync to an external ListProvider
+    - Configure other options (say sync interval, etc.).
+
+

@@ -5,8 +5,8 @@ class RadarrInteractions:
     def __init__(self, config, client_name='radarr'):
         self.config = config
         self.client = self.config.get_client(client_name)
-        self.root_dir = self.config.get_client_details(client_name)['default_media_path']
-        self.quality_profile = self.config.get_client_details(client_name)['quality_profile']
+        self.root_dir = self.config.get_client_details_by_name(client_name)['default_media_path']
+        self.quality_profile = self.config.get_client_details_by_name(client_name)['quality_profile']
         self.quality_profile_id = self._get_profile_id(self.quality_profile)
 
     def _get_profile_id(self, profile_name):

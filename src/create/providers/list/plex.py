@@ -85,7 +85,7 @@ class PlexListProvider(ListProvider, ABC):
             self.log.debug("Creating media item", item=item, media_list=self.media_list)
             media_item = MediaItem.from_plex(item, self.log)
             self.media_list.items.append(
-                await self.create_media_list_item(media_item, self.media_list, PlexPosterProvider(config=self.config)))
+                await self.create_media_list_item(media_item, self.media_list ))
             # Adjust the logic based on how Plex's client class methods and responses are structured.
 
         self.log.debug("Created MediaList", media_list=self.media_list)

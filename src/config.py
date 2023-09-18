@@ -317,12 +317,15 @@ class ConfigManager:
                 self.log.info('Client by type not found!', type=id_or_type)
                 return None
 
-    def get_client_details(self, name):
+    def get_client_details_by_name(self, name):
         try:
             return self.clients_details[name]
         except:
             self.log.info(f'{name} client details not found!', clientName=name)
             return None
+
+    def get_client_details(self):
+        return self.clients_details
 
     def get_account(self, name):
         return self.accounts[name]
@@ -359,3 +362,4 @@ class ConfigManager:
                 self.log.info('Found client by client_type', clientId=clientId, client=client)
                 return self.clients[clientId]
         self.log.info('Client not found by client_type', client_type=type)
+

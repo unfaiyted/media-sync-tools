@@ -83,6 +83,6 @@ class TraktListProvider(ListProvider, ABC):
             media_item = MediaItem.from_trakt(item, self.log)
             self.log.debug("MediaItem after mapping", media_item=media_item)
             media_list.items.append(
-                await self.create_media_list_item(media_item, media_list, TmdbPosterProvider(config=self.config)))
+                await self.create_media_list_item(media_item, media_list))
 
         return media_list

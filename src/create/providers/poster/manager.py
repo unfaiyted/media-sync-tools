@@ -32,7 +32,7 @@ class PosterProviderManager(BaseMediaProvider, ABC):
         self.provider_manager = ProviderManager(tmdb, emby, jellyfin, plex, trakt)
         self.log.debug("PosterProviderManager initialized", provider_manager=self.provider_manager)
 
-    def get_poster(self, preferred_provider: PosterProvider, media_item: MediaItem):
+    def get_poster(self, media_item: MediaItem, preferred_provider: PosterProvider):
         self.log.debug("Getting poster for MediaItem", media_item=media_item)
         head = self.provider_manager.prioritize_provider(preferred_provider)
         return head.get_poster(self.config, media_item)

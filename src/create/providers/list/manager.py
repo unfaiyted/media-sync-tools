@@ -1,13 +1,15 @@
+from config import ConfigManager
 from create.providers.list.emby import EmbyListProvider
 from create.providers.list.jellyfin import JellyfinListProvider
 from create.providers.list.plex import PlexListProvider
 from create.providers.list.tmdb import TmdbListProvider
 from create.providers.list.trakt import TraktListProvider
+from models import Filters
 
 
 class ListProviderManager:
 
-    def __init__(self, config: object, *providers: object) -> object:
+    def __init__(self, config: ConfigManager, *providers: object):
         """
         Initialize the LibraryProviderManager.
         :param config:
@@ -93,5 +95,22 @@ class ListProviderManager:
                 return provider.get_list_by_id(list_id)
         return None
 
-    def get_list(self, preferred_provider, query_params):
+    def get_list(self, client_id, filters: Filters):
+        """
+        Get a list from the providers. If the list does not exist, create it.
+        :param client_id:
+        :param filters:
+        :return:
+        """
+        for provider in self.providers:
+            if provider.client_id == client_id:
+                return provider.get_list(filters=filters)
+        return None
+    def get_list_with_items(self, client_id, filters: Filters):
+        """
+        Get a list from the providers. If the list does not exist, create it.
+        :param client_id:
+        :param filters:
+        :return:
+        """
         pass

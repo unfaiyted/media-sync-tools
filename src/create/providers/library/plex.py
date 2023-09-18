@@ -40,7 +40,7 @@ class PlexLibraryProvider(LibraryProvider, ABC):
         for item in media_list.items:
             self.log.debug("Creating media list item", item=item)
             media_list.items.append(
-                await self.create_media_list_item(item, media_list, PlexPosterProvider(config=self.config))
+                await self.create_media_list_item(item, media_list)
             )
         return media_list
 

@@ -101,7 +101,7 @@ class EmbyListProvider(ListProvider, ABC):
                 item = EmbyItem(**item)
                 media_item = MediaItem.from_emby(item, self.log)
                 media_list.items.append(
-                    await self.create_media_list_item(media_item, media_list, EmbyPosterProvider(config=self.config)))
+                    await self.create_media_list_item(media_item, media_list))
 
             return media_list
         return None

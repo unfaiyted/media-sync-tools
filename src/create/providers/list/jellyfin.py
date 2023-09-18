@@ -93,8 +93,7 @@ class JellyfinListProvider(ListProvider, ABC):
             for item in all_list_items:
                 self.log.debug("Creating media list item", item=item, media_list=media_list)
                 media_item = MediaItem.from_jellyfin(item, self.log)
-                media_list.items.append(await self.create_media_list_item(media_item, media_list,
-                                                                          JellyfinPosterProvider(config=self.config)))
+                media_list.items.append(await self.create_media_list_item(media_item, media_list))
 
             return media_list
         return None
