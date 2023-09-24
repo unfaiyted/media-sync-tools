@@ -5,7 +5,6 @@ from typing import Optional, Tuple, List
 from pydantic import BaseModel, Field
 
 
-
 class MediaPosterBorderOptions(BaseModel):
     enabled: bool = False
     width: int = 4

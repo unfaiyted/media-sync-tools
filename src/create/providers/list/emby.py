@@ -1,15 +1,10 @@
-import uuid
 from abc import ABC
-from datetime import datetime
 from typing import Optional
-
 from src.models.providers.emby import EmbyItem
 from src.create.providers.list import ListProvider
 from src.config import ConfigManager
 from src.models import EmbyFilters, Provider
-from src.create.providers.poster.emby import EmbyPosterProvider
 from src.create.posters import MediaPosterImageCreator
-from src.create.providers.poster.manager import PosterProviderManager
 from src.models import MediaList, MediaListType, MediaItem, MediaPoster
 from src.clients.emby import EmbyClient
 
@@ -36,7 +31,6 @@ class EmbyListProvider(ListProvider, ABC):
         self.media_list = media_list
         self.server_url = self.client.server_url
         self.api_key = self.client.api_key
-        self.poster_manager = PosterProviderManager(config=config)
         self.list_type = list_type
         self.details = details
 
@@ -75,7 +69,7 @@ class EmbyListProvider(ListProvider, ABC):
                                    emby_list=emby_list,
                                    client_id=self.client_id,
                                    creator_id=self.config.get_user().userId,
-                                   filters=filters.dict())
+                                   filters=filters)
 
     async def get_list(self):
         """

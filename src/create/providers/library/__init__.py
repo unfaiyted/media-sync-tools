@@ -3,12 +3,12 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 
 from src.models import MediaList, MediaListType, EmbyFilters, ProviderType
-from src.create.providers.base_provider import BaseMediaProvider
+from src.create.providers.media_provider import MediaProvider
 
 from src.models import Library
 
 
-class LibraryProvider(BaseMediaProvider, ABC):
+class LibraryProvider(MediaProvider, ABC):
 
     def __init__(self, config, client_id):
         super().__init__(config, client_id=client_id)

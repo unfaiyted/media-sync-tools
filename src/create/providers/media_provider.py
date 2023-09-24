@@ -1,4 +1,4 @@
-# Let's call this base_provider.py
+# Let's call this media_provider.py
 import uuid
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -9,8 +9,8 @@ from src.models import MediaListItemType
 from src.create.providers.poster.tmdb import TmdbPosterProvider, PosterProvider
 from src.models import MediaItem, MediaProviderIds, MediaList, MediaListItem
 
-
-class BaseMediaProvider(ABC):  # ABC means it's an abstract base class
+# This is the base media provider. It's an abstract class, so it can't be instantiated.
+class MediaProvider(ABC):  # ABC means it's an abstract base class
     def __init__(self, config, client_id: str):
         """
         Initialize the BaseMediaProvider.
@@ -105,7 +105,6 @@ class BaseMediaProvider(ABC):  # ABC means it's an abstract base class
         """
         Create a MediaListItem from a provider item.
 
-        :param preferred_poster_provider: Preferred poster provider to use.
         :param media_item: Item fetched from provider.
         :param media_list: The MediaList item belongs to.
         :return: MediaItem object.

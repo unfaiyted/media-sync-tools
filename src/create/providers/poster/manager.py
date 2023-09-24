@@ -1,8 +1,8 @@
 from abc import ABC
 
-from src.create.providers.base_provider import BaseMediaProvider
+from src.create.providers.media_provider import MediaProvider
 from src.create.providers.poster.self import MediaPosterProvider
-from src.create.providers.provider_manager import ProviderManager
+from src.create.providers.provider_priority_manager import ProviderPriorityManager
 from src.create.providers.poster import PosterProvider
 from src.create.providers.poster.emby import EmbyPosterProvider
 from src.create.providers.poster.jellyfin import JellyfinPosterProvider
@@ -12,7 +12,7 @@ from src.create.providers.poster.trakt import TraktPosterProvider
 from src.models import MediaItem
 
 
-class PosterProviderManager(BaseMediaProvider, ABC):
+class PosterProviderManager(MediaProvider, ABC):
 
     def __init__(self, config):
         """
@@ -29,7 +29,7 @@ class PosterProviderManager(BaseMediaProvider, ABC):
         trakt = TraktPosterProvider(config=config)
 
         # Add any other providers you have
-        self.provider_manager = ProviderManager(tmdb, emby, jellyfin, plex, trakt)
+        self.provider_manager = ProviderPriorityManager(tmdb, emby, jellyfin, plex, trakt)
         self.log.debug("PosterProviderManager initialized", provider_manager=self.provider_manager)
 
     def get_poster(self, media_item: MediaItem, preferred_provider: PosterProvider):

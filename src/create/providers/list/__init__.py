@@ -1,12 +1,11 @@
 from abc import abstractmethod, ABC
 
 from src.models import MediaItem, ProviderType
-from src.create.providers.base_provider import BaseMediaProvider
-from src.create.providers.poster.manager import PosterProviderManager
+from src.create.providers.media_provider import MediaProvider
 from src.models import MediaList
 
 
-class ListProvider(BaseMediaProvider, ABC):
+class ListProvider(MediaProvider, ABC):
 
     def __init__(self, config, client_id: str = None):
         super().__init__(config, client_id=client_id)
@@ -14,7 +13,6 @@ class ListProvider(BaseMediaProvider, ABC):
         self.provider_type = ProviderType.LIST
         self.client_id = client_id
         self.log = config.get_logger(__name__)
-        self.poster_manager = PosterProviderManager(config=config)
 
     async def get_client(self):
         return self.config.get_client(self.client_id)

@@ -8,7 +8,7 @@ from src.create.providers.poster import PosterProvider
 from src.models import MediaItem
 
 
-class ProviderManager:
+class ProviderPriorityManager:
 
     def __init__(self, *providers ):
         """

@@ -11,7 +11,7 @@ sys.path.append(src_path)
 from fastapi import FastAPI
 
 from src.config import ConfigManager
-from src.routes import poster, images, sync, utils, config, client, lists, users, library, tasks
+from src.routes import poster, images, sync, utils, config, client, lists, users, library, tasks, providers
 from src.tasks.scheduler import start_scheduler, stop_scheduler
 from src.utils.db_init import DatabaseInitializer
 
@@ -65,6 +65,7 @@ app.include_router(users.router, prefix="/user", tags=["users"])
 app.include_router(library.router, prefix="/library", tags=["library"])
 app.include_router(poster.router, prefix="/poster", tags=["poster"])
 app.include_router(tasks.router, prefix="/task", tags=["tasks"])
+app.include_router(providers.router, prefix="/provider", tags=["providers"])
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8000)

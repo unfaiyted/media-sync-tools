@@ -1,10 +1,10 @@
-from config import ConfigManager
-from create.providers.list.emby import EmbyListProvider
-from create.providers.list.jellyfin import JellyfinListProvider
-from create.providers.list.plex import PlexListProvider
-from create.providers.list.tmdb import TmdbListProvider
-from create.providers.list.trakt import TraktListProvider
-from models import Filters
+from src.config import ConfigManager
+from src.create.providers.list.emby import EmbyListProvider
+from src.create.providers.list.jellyfin import JellyfinListProvider
+from src.create.providers.list.plex import PlexListProvider
+from src.create.providers.list.tmdb import TmdbListProvider
+from src.create.providers.list.trakt import TraktListProvider
+from src.models import Filters
 
 
 class ListProviderManager:

@@ -1,13 +1,13 @@
-from config import ConfigManager
-from create.providers.library.manager import LibraryProviderManager
-from create.providers.list.manager import ListProviderManager
-from create.providers.poster import PosterProvider
-from create.providers.poster.manager import PosterProviderManager
-from create.providers.poster.tmdb import TmdbPosterProvider
-from models import MediaItem, Filters, MediaList
+from src.config import ConfigManager
+from src.create.providers.library.manager import LibraryProviderManager
+from src.create.providers.list.manager import ListProviderManager
+from src.create.providers.poster import PosterProvider
+from src.create.providers.poster.manager import PosterProviderManager
+from src.create.providers.poster.tmdb import TmdbPosterProvider
+from src.models import MediaItem, Filters, MediaList
 
 
-class AppProviderManager:
+class MediaProviderManager:
 
     def __init__(self, config):
         """

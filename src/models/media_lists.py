@@ -160,10 +160,11 @@ class MediaList(BaseModel):
         :return:
         """
         log.info("Mapping Emby list to MediaList", emby_list=emby_list)
+        print(emby_list)
         return MediaList(
             mediaListId=str(uuid.uuid4()),
             name=emby_list['Name'],
-            type=MediaListType.from_emby(['Type']),  # == 'Collection' else MediaListType.PLAYLIST,
+            type=MediaListType.from_emby(emby_list['Type']) or MediaListType.COLLECTION,  # == 'Collection' else MediaListType.PLAYLIST,
             sourceListId=emby_list['Id'],
             filters=filters.dict(),
             sortName=emby_list['SortName'],
@@ -554,7 +555,7 @@ class MediaListItem(BaseModel):
     mediaListItemId: str = Field(default_factory=uuid.uuid4)
     type: MediaListItemType
     mediaListId: str
-    mediaItemId: str
+    mediaItemId: Optional[str]
     poster: Optional[str]
     mediaPosterId: Optional[str]
     item: Optional[ForwardRef('MediaItem') or ForwardRef('MediaList')]
